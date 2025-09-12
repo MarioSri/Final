@@ -87,7 +87,6 @@ export const NavigationOverview: React.FC = () => {
     ];
 
     const adminItems = [
-      { title: "Workflow Management", url: "/workflow", icon: GitBranch, category: "Management" },
       { title: "Approvals", url: "/approvals", icon: CheckSquare, category: "Management" },
       { title: "Analytics", url: "/analytics", icon: BarChart3, category: "Management" },
     ];
@@ -98,7 +97,6 @@ export const NavigationOverview: React.FC = () => {
       "program-head": [...commonItems, ...adminItems],
       hod: [...commonItems, ...adminItems],
       employee: [...commonItems, 
-        { title: "Workflow Management", url: "/workflow", icon: GitBranch, category: "Management" },
         { title: "Bi-Directional Routing", url: "/approval-routing", icon: CheckSquare, category: "Management" },
         { title: "Analytics", url: "/analytics", icon: BarChart3, category: "Management" }
       ],
@@ -177,13 +175,6 @@ export const NavigationOverview: React.FC = () => {
                 user.permissions.canViewAllDepartments ? "bg-green-500" : "bg-red-500"
               )} />
               <span className="text-sm">View All Departments</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className={cn(
-                "w-2 h-2 rounded-full",
-                user.permissions.canManageWorkflows ? "bg-green-500" : "bg-red-500"
-              )} />
-              <span className="text-sm">Manage Workflows</span>
             </div>
             <div className="flex items-center gap-2">
               <div className={cn(

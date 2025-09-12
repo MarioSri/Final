@@ -40,8 +40,6 @@ export const MobileBottomNav: React.FC = () => {
       baseItems.push({ path: '/approvals', icon: CheckSquare, label: 'Approve' });
     } else if (user.role === 'employee') {
       baseItems.push({ path: '/analytics', icon: BarChart3, label: 'Analytics' });
-    } else {
-      baseItems.push({ path: '/workflow', icon: GitBranch, label: 'Workflow' });
     }
 
     return baseItems;

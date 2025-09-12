@@ -423,24 +423,6 @@ export const RecipientSelector: React.FC<RecipientSelectorProps> = ({
 
         <Separator />
 
-        {/* Bulk Selection Actions */}
-        <div className="flex flex-wrap gap-2 items-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              // Add Hierarchy functionality (non-expandable)
-              console.log('Add Hierarchy clicked');
-            }}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Add Hierarchy
-          </Button>
-          <span className="text-sm font-medium text-green-600">(Optional)</span>
-        </div>
-
-        <Separator />
-
         {/* Recipient Groups */}
         <ScrollArea className="h-96">
           <div className="space-y-4">

@@ -271,7 +271,7 @@ export const WorkflowWidget: React.FC<WorkflowWidgetProps> = ({
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => navigate("/workflow")}
+              onClick={() => navigate("/approvals")}
               className={cn(isMobile && "text-xs")}
             >
               <Settings className="w-4 h-4 mr-1" />
@@ -293,7 +293,7 @@ export const WorkflowWidget: React.FC<WorkflowWidgetProps> = ({
                   workflow.escalationLevel > 0 && "border-l-4 border-l-warning"
                 )}
                 style={{ animationDelay: `${index * 100}ms` }}
-                onClick={() => navigate(`/workflow/${workflow.id}`)}
+                onClick={() => navigate(`/approvals`)}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1 min-w-0">

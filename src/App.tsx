@@ -14,7 +14,6 @@ import Documents from "./pages/Documents";
 import TrackDocuments from "./pages/TrackDocuments";
 import Calendar from "./pages/Calendar";
 import Messages from "./pages/Messages";
-import WorkflowManagement from "./pages/Workflow";
 import Approvals from "./pages/Approvals";
 import ApprovalRouting from "./pages/ApprovalRouting";
 import Analytics from "./pages/Analytics";
@@ -61,11 +60,6 @@ const App = () => (
                 <Route path="/messages" element={
                   <ProtectedRoute>
                     <Messages />
-                  </ProtectedRoute>
-                } />
-                <Route path="/workflow" element={
-                  <ProtectedRoute requiredPermissions={['canManageWorkflows']}>
-                    <WorkflowManagement />
                   </ProtectedRoute>
                 } />
                 <Route path="/approvals" element={

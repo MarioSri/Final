@@ -117,7 +117,6 @@ export function DashboardSidebar({ userRole }: DashboardSidebarProps) {
     ];
 
     const adminItems = [
-      { title: "Workflow Management", url: "/workflow", icon: GitBranch },
       { title: "Approval Center", url: "/approvals", icon: CheckSquare },
       { title: "Bi-Directional Routing", url: "/approval-routing", icon: ArrowRightLeft },
       { title: "Analytics Dashboard", url: "/analytics", icon: BarChart3 },

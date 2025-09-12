@@ -66,7 +66,6 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({ userRole }) 
       ],
       employee: [
         ...commonItems,
-        { title: "Workflow Management", url: "/workflow", icon: GitBranch },
         { title: "Bi-Directional Routing", url: "/approval-routing", icon: CheckSquare },
         { title: "Analytics Dashboard", url: "/analytics", icon: BarChart3 },
       ],
