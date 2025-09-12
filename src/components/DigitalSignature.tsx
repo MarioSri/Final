@@ -314,18 +314,31 @@ export const DigitalSignature: React.FC<SignatureComponentProps> = ({
             <TabsContent value="camera" className="space-y-4">
               <div className="space-y-4">
                 <div className="flex gap-2">
-                  <Button onClick={startCamera} disabled={cameraActive}>
+                  <Button 
+                    onClick={startCamera} 
+                    disabled={cameraActive}
+                    variant={cameraActive ? "secondary" : "default"}
+                    className={cameraActive ? "opacity-75" : ""}
+                  >
                     <Camera className="h-4 w-4 mr-2" />
-                    Start Camera
+                    {cameraActive ? "Camera Active" : "Start Camera"}
                   </Button>
                   <Button 
                     onClick={captureFromCamera} 
                     disabled={!cameraActive}
                     variant="outline"
+                    className={`${!cameraActive ? 'opacity-50' : ''}`}
                   >
+                    <Camera className="h-4 w-4 mr-2" />
                     Capture Signature
                   </Button>
-                  <Button onClick={stopCamera} disabled={!cameraActive} variant="outline">
+                  <Button 
+                    onClick={stopCamera} 
+                    disabled={!cameraActive} 
+                    variant="outline"
+                    className={`${!cameraActive ? 'opacity-50' : ''}`}
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
                     Stop Camera
                   </Button>
                 </div>

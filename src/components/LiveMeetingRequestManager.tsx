@@ -210,7 +210,7 @@ export const LiveMeetingRequestManager: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            🔴 Live Meeting Requests
+            🔴 LiveMeet+
             {filteredRequests.filter(r => r.status === 'pending').length > 0 && (
               <Badge variant="destructive" className="animate-pulse">
                 {filteredRequests.filter(r => r.status === 'pending').length} pending
@@ -237,7 +237,7 @@ export const LiveMeetingRequestManager: React.FC = () => {
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
-            title="Pending Requests"
+            title="Pending LiveMeet+"
             value={stats.pendingRequests}
             icon={<Clock className="h-5 w-5 text-yellow-600" />}
             color="yellow"
@@ -251,7 +251,7 @@ export const LiveMeetingRequestManager: React.FC = () => {
             description="Within 15 minutes"
           />
           <StatsCard
-            title="Today's Meetings"
+            title="Today's LiveMeet+"
             value={stats.todaysMeetings}
             icon={<Users className="h-5 w-5 text-blue-600" />}
             color="blue"

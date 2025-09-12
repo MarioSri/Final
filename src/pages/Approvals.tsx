@@ -1,10 +1,12 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { AdvancedDigitalSignature } from "@/components/AdvancedDigitalSignature";
+import { LiveMeetingRequestModal } from "@/components/LiveMeetingRequestModal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle2, XCircle, Clock, FileText, User, Calendar, MessageSquare, Video } from "lucide-react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,6 +15,7 @@ const Approvals = () => {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [showLiveMeetingModal, setShowLiveMeetingModal] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -181,10 +184,14 @@ const Approvals = () => {
                           Reject
                         </Button>
                         <Button size="sm" variant="outline">View Document</Button>
-                        {/* NEW: Live Meeting Request Button */}
-                        <Button size="sm" variant="outline" className="border-orange-500 text-orange-600 hover:bg-orange-50">
-                          <Video className="h-4 w-4 mr-1" />
-                          🔴 Request Meeting
+                        {/* NEW: LiveConnect+ Button */}
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="border-orange-500 text-orange-600 hover:bg-orange-50"
+                          onClick={() => setShowLiveMeetingModal(true)}
+                        >
+                          🔴 LiveConnect+
                         </Button>
                       </div>
                     </div>
@@ -228,6 +235,14 @@ const Approvals = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <LiveMeetingRequestModal
+          isOpen={showLiveMeetingModal}
+          onClose={() => setShowLiveMeetingModal(false)}
+          documentId="approval-request"
+          documentType="letter"
+          documentTitle="Approval Request"
+        />
       </div>
     </DashboardLayout>
   );

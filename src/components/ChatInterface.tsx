@@ -580,9 +580,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
           <h3 className="font-semibold">Channels</h3>
           <div className="flex items-center gap-2">
             {getConnectionIcon()}
-            <Button size="sm" variant="ghost" onClick={() => setShowSettings(true)}>
-              <Settings className="w-4 h-4" />
-            </Button>
           </div>
         </div>
       </div>
@@ -641,9 +638,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
                   <Search className="w-4 h-4" />
                 </Button>
                 <Button size="sm" variant="ghost">
-                  <Phone className="w-4 h-4" />
-                </Button>
-                <Button size="sm" variant="ghost">
                   <Video className="w-4 h-4" />
                 </Button>
                 <Button size="sm" variant="ghost">
@@ -663,10 +657,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
                     <DropdownMenuItem onClick={() => handleCreatePoll('Quick Poll', ['Yes', 'No'])}>
                       <BarChart3 className="w-4 h-4 mr-2" />
                       Create Poll
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Zap className="w-4 h-4 mr-2" />
-                      AI Summary
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

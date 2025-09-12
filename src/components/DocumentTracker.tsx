@@ -21,7 +21,8 @@ import {
   Calendar,
   User,
   PenTool,
-  Signature
+  Signature,
+  Shield
 } from "lucide-react";
 import { DigitalSignature } from "./DigitalSignature";
 import { useToast } from "@/hooks/use-toast";
@@ -356,6 +357,10 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
                   <Button variant="outline" size="sm">
                     <Download className="h-4 w-4 mr-2" />
                     Download
+                  </Button>
+                  <Button variant="outline" size="sm" className="text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400">
+                    <Shield className="h-4 w-4 mr-2" />
+                    Approval Chain with Bypass
                   </Button>
                   
                   {userRole === 'Principal' || userRole === 'Registrar' || userRole === 'HOD' ? (

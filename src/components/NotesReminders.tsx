@@ -16,7 +16,11 @@ import {
   Pin,
   Palette,
   Search,
-  Filter
+  Filter,
+  Lock,
+  Unlock,
+  Move,
+  Sliders
 } from "lucide-react";
 import {
   Select,
@@ -67,6 +71,7 @@ interface StickyNoteItemProps {
   isMessagesPage: boolean;
   isDragging: boolean;
   draggedNoteId: number | null;
+  isLocked: boolean;
   onMouseDown: (e: React.MouseEvent, note: Note) => void;
   onTouchStart: (e: React.TouchEvent, note: Note) => void;
   onTogglePin: (id: number) => void;
@@ -79,6 +84,7 @@ function StickyNoteItem({
   isMessagesPage, 
   isDragging, 
   draggedNoteId, 
+  isLocked, 
   onMouseDown, 
   onTouchStart,
   onTogglePin, 
@@ -99,7 +105,9 @@ function StickyNoteItem({
   return (
     <div
       ref={noteRef}
-      className={`sticky-note w-64 p-4 rounded-lg shadow-md hover:shadow-lg animate-scale-in ${note.color} ${isMessagesPage ? 'cursor-move' : 'cursor-default'} ${
+      className={`sticky-note w-64 p-4 rounded-lg shadow-md hover:shadow-lg animate-scale-in ${note.color} ${
+        isMessagesPage && !isLocked ? 'cursor-move' : 'cursor-default'
+      } ${
         isDragging && draggedNoteId === note.id 
           ? 'transition-none transform-gpu scale-105 shadow-2xl' 
           : 'transition-all duration-200'
@@ -155,6 +163,7 @@ export function NotesReminders({ userRole, isMessagesPage = false }: NotesRemind
   const [draggedNoteId, setDraggedNoteId] = useState<number | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [notes, setNotes] = useState<Note[]>([
     {
@@ -293,9 +302,13 @@ export function NotesReminders({ userRole, isMessagesPage = false }: NotesRemind
     ));
   };
 
+  const toggleLock = () => {
+    setIsLocked(!isLocked);
+  };
+
   // Advanced mouse-based drag functionality (from Dashboard)
   const handleMouseDown = (e: React.MouseEvent, note: Note) => {
-    if (!isMessagesPage) return;
+    if (!isMessagesPage || isLocked) return;
     
     e.preventDefault();
     e.stopPropagation();
@@ -349,7 +362,7 @@ export function NotesReminders({ userRole, isMessagesPage = false }: NotesRemind
   };
 
   const handleTouchStart = (e: React.TouchEvent, note: Note) => {
-    if (!isMessagesPage) return;
+    if (!isMessagesPage || isLocked) return;
     
     e.preventDefault();
     e.stopPropagation();
@@ -615,14 +628,27 @@ export function NotesReminders({ userRole, isMessagesPage = false }: NotesRemind
                 <StickyNote className="w-5 h-5 text-primary" />
                 Sticky Notes
               </CardTitle>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search notes..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-64"
-                />
+              <div className="flex items-center gap-2">
+                {isMessagesPage && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleLock}
+                    title={isLocked ? "Unlock notes for moving" : "Lock notes in place"}
+                    className={`p-2 ${isLocked ? "text-red-600 border-red-300" : "text-green-600 border-green-300"}`}
+                  >
+                    {isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                  </Button>
+                )}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search notes..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 w-64"
+                  />
+                </div>
               </div>
             </div>
           </CardHeader>
@@ -636,13 +662,20 @@ export function NotesReminders({ userRole, isMessagesPage = false }: NotesRemind
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
             >
-              {/* Drag instruction for Messages page */}
-              {isMessagesPage && sortedNotes.length > 0 && (
-                <div className="absolute top-2 left-2 z-20">
+              {/* Status indicators in top-right corner - matches Dashboard design */}
+              {isMessagesPage && isLocked && (
+                <div className="absolute top-2 right-2 z-20">
+                  <Badge variant="secondary" className="text-xs bg-red-100 text-red-700">
+                    <Lock className="w-3 h-3 mr-1" />
+                    Locked
+                  </Badge>
+                </div>
+              )}
+              
+              {isMessagesPage && !isLocked && sortedNotes.length > 0 && (
+                <div className="absolute top-2 right-2 z-20">
                   <Badge variant="outline" className="text-xs bg-white/80">
-                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                    </svg>
+                    <Move className="w-3 h-3 mr-1" />
                     Drag to move
                   </Badge>
                 </div>
@@ -655,6 +688,7 @@ export function NotesReminders({ userRole, isMessagesPage = false }: NotesRemind
                   isMessagesPage={isMessagesPage}
                   isDragging={isDragging}
                   draggedNoteId={draggedNoteId}
+                  isLocked={isLocked}
                   onMouseDown={handleMouseDown}
                   onTouchStart={handleTouchStart}
                   onTogglePin={togglePin}

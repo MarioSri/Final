@@ -151,10 +151,7 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
-            🔴 Request Live Meeting
-            <Badge variant="outline" className="text-xs">
-              {documentType.toUpperCase()}: {documentTitle}
-            </Badge>
+            🔴 LiveConnect+
           </DialogTitle>
           <DialogDescription>
             Request immediate clarification meeting for document review and discussion
@@ -189,16 +186,27 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
             <div className="space-y-3">
               <Label className="text-base font-medium">Urgency Level</Label>
               <RadioGroup value={urgency} onValueChange={(value: any) => setUrgency(value)}>
-                {Object.entries(URGENCY_CONFIGS).map(([key, config]) => (
-                  <div key={key} className="flex items-center space-x-2">
-                    <RadioGroupItem value={key} id={key} />
-                    <Label htmlFor={key} className={`flex items-center gap-2 text-${(config as any).color}-600`}>
-                      <span>{(config as any).icon}</span>
-                      <span className="font-medium">{(config as any).label}</span>
-                      <span className="text-sm text-gray-500">({(config as any).description})</span>
-                    </Label>
-                  </div>
-                ))}
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="immediate" id="immediate" />
+                  <Label htmlFor="immediate" className="flex items-center gap-2 text-red-600">
+                    <span>🔥</span>
+                    <span className="font-medium">Immediate</span>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="urgent" id="urgent" />
+                  <Label htmlFor="urgent" className="flex items-center gap-2 text-orange-600">
+                    <span>⚡</span>
+                    <span className="font-medium">Urgent</span>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="normal" id="normal" />
+                  <Label htmlFor="normal" className="flex items-center gap-2 text-blue-600">
+                    <span>📅</span>
+                    <span className="font-medium">Normal</span>
+                  </Label>
+                </div>
               </RadioGroup>
             </div>
 
@@ -334,17 +342,6 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
                 rows={4}
                 className="resize-none"
               />
-            </div>
-
-            {/* Request Summary */}
-            <div className="bg-blue-50 p-4 rounded-lg space-y-2">
-              <h4 className="font-medium text-blue-900">Request Summary</h4>
-              <div className="space-y-1 text-sm">
-                <p><span className="font-medium">Urgency:</span> {urgencyConfig.icon} {urgencyConfig.label}</p>
-                <p><span className="font-medium">Format:</span> {meetingFormat === 'online' ? '💻' : meetingFormat === 'in_person' ? '🏢' : '🔄'} {meetingFormat.replace('_', ' ')}</p>
-                <p><span className="font-medium">Purpose:</span> {purposeConfig.icon} {purposeConfig.label}</p>
-                <p><span className="font-medium">Expected Response:</span> {urgencyConfig.description}</p>
-              </div>
             </div>
           </div>
         </div>

@@ -135,7 +135,7 @@ export function AuthenticationCard({ onLogin }: AuthenticationCardProps) {
 
           <div className="text-center text-sm text-muted-foreground">
             <p>Institutional Activity Oversight and Management System</p>
-            <p className="text-xs mt-1">© 2024 HITAM. All rights reserved.</p>
+            <p className="text-xs mt-1">© 2025 HITAM. All rights reserved.</p>
           </div>
         </CardContent>
       </Card>

@@ -19,7 +19,8 @@ import {
   X,
   Check,
   Minus,
-  ArrowRight
+  ArrowRight,
+  Plus
 } from "lucide-react";
 
 interface Recipient {
@@ -423,31 +424,19 @@ export const RecipientSelector: React.FC<RecipientSelectorProps> = ({
         <Separator />
 
         {/* Bulk Selection Actions */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
           <Button
             variant="outline"
             size="sm"
             onClick={() => {
-              const allHODs = recipientGroups.find(g => g.id === 'hods')?.recipients.map(r => r.id) || [];
-              selectAllInGroup({ id: 'hods', title: 'HODs', icon: Building, recipients: recipientGroups.find(g => g.id === 'hods')?.recipients || [] });
+              // Add Hierarchy functionality (non-expandable)
+              console.log('Add Hierarchy clicked');
             }}
-            disabled={!recipientGroups.find(g => g.id === 'hods')?.recipients.length}
           >
-            <Check className="h-4 w-4 mr-1" />
-            Select All HODs
+            <Plus className="h-4 w-4 mr-1" />
+            Add Hierarchy
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const programHeads = recipientGroups.find(g => g.id === 'program-heads')?.recipients || [];
-              selectAllInGroup({ id: 'program-heads', title: 'Program Heads', icon: UserCheck, recipients: programHeads });
-            }}
-            disabled={!recipientGroups.find(g => g.id === 'program-heads')?.recipients.length}
-          >
-            <Check className="h-4 w-4 mr-1" />
-            Select All Program Heads
-          </Button>
+          <span className="text-sm font-medium text-green-600">(Optional)</span>
         </div>
 
         <Separator />

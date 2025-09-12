@@ -207,7 +207,7 @@ export const DocumentApprovalCard: React.FC<DocumentApprovalCardProps> = ({
                     className="border-orange-500 text-orange-600 hover:bg-orange-50 flex items-center gap-1"
                     size="sm"
                   >
-                    🔴 Request Live Meeting
+                    🔴 LiveConnect+
                   </Button>
                 </>
               )}
@@ -337,7 +337,7 @@ Emily Rodriguez`,
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Document Approval Workflow</h2>
         <p className="text-gray-600">
-          Review and approve pending documents. Use "Request Live Meeting" for immediate clarification.
+          Review and approve pending documents. Use "LiveConnect+" for immediate clarification.
         </p>
       </div>
 

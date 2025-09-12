@@ -3,16 +3,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Workflow, GitBranch, Clock, CheckCircle2, XCircle, Users, Settings } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Workflow, GitBranch, Clock, CheckCircle2, XCircle, Users, Settings, Plus, ChevronDown, FileText, AlertTriangle, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { WorkflowBuilder } from "@/components/WorkflowBuilder";
 import { useAuth } from "@/contexts/AuthContext";
+import { useState, useEffect } from "react";
 
 const WorkflowManagement = () => {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [expandedHierarchy, setExpandedHierarchy] = useState<number | null>(null);
 
   const handleLogout = () => {
     logout();
@@ -22,6 +25,35 @@ const WorkflowManagement = () => {
     });
     navigate("/");
   };
+
+  const handleHierarchyAction = (action: string) => {
+    toast({
+      title: "Feature Access",
+      description: `${action} functionality accessed`,
+    });
+  };
+
+  const toggleHierarchy = (workflowId: number) => {
+    setExpandedHierarchy(expandedHierarchy === workflowId ? null : workflowId);
+  };
+
+  // Close expanded hierarchy when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (expandedHierarchy && !target.closest('.hierarchy-expandable')) {
+        setExpandedHierarchy(null);
+      }
+    };
+
+    if (expandedHierarchy) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [expandedHierarchy]);
 
   if (!user) {
     return null; // This should be handled by ProtectedRoute, but adding as safety
@@ -65,7 +97,7 @@ const WorkflowManagement = () => {
         <Tabs defaultValue="templates" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="templates">Workflow Templates</TabsTrigger>
-            <TabsTrigger value="builder">Visual Builder</TabsTrigger>
+            <TabsTrigger value="builder">Visual Hierarchy Builder</TabsTrigger>
           </TabsList>
 
           <TabsContent value="templates" className="space-y-6">
@@ -154,7 +186,82 @@ const WorkflowManagement = () => {
                       </div>
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm">Edit Workflow</Button>
-                        <Button variant="outline" size="sm">View Analytics</Button>
+                        
+                        {/* Expandable Add Hierarchy Button */}
+                        <div className="relative hierarchy-expandable">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleHierarchy(workflow.id)}
+                            className={`transition-all duration-300 ease-in-out hierarchy-button-text ${
+                              expandedHierarchy === workflow.id 
+                                ? 'bg-primary/10 border-primary/30' 
+                                : 'hover:bg-primary/5'
+                            }`}
+                          >
+                            <Plus className={`h-4 w-4 hierarchy-plus-icon ${
+                              expandedHierarchy === workflow.id ? 'rotate-45' : ''
+                            }`} />
+                            <span className="ml-1">Add Hierarchy</span>
+                          </Button>
+                          
+                          {/* Expandable Options */}
+                          <div className={`absolute top-full left-0 mt-2 hierarchy-options z-20 ${
+                            expandedHierarchy === workflow.id
+                              ? 'opacity-100 translate-y-0 pointer-events-auto'
+                              : 'opacity-0 -translate-y-2 pointer-events-none'
+                          } transition-all duration-500 ease-in-out`}>
+                            <div className="flex gap-2 bg-white border rounded-lg shadow-lg p-2 min-w-max">
+                              {/* Document Management Recipients */}
+                              <button
+                                onClick={() => {
+                                  handleHierarchyAction("Document Management Recipients");
+                                  setExpandedHierarchy(null);
+                                }}
+                                className="hierarchy-option group flex items-center gap-2 px-3 py-2 rounded-md transition-all duration-200 hover:bg-blue-50 hover:border-blue-200 border border-transparent"
+                              >
+                                <div className="p-1 bg-blue-500 rounded group-hover:scale-110 transition-transform duration-200">
+                                  <FileText className="h-3 w-3 text-white" />
+                                </div>
+                                <span className="text-sm font-medium text-blue-800 whitespace-nowrap">
+                                  Document Management Recipients
+                                </span>
+                              </button>
+                              
+                              {/* Emergency Management Recipients */}
+                              <button
+                                onClick={() => {
+                                  handleHierarchyAction("Emergency Management Recipients");
+                                  setExpandedHierarchy(null);
+                                }}
+                                className="hierarchy-option group flex items-center gap-2 px-3 py-2 rounded-md transition-all duration-200 hover:bg-red-50 hover:border-red-200 border border-transparent"
+                              >
+                                <div className="p-1 bg-red-500 rounded group-hover:scale-110 transition-transform duration-200">
+                                  <AlertTriangle className="h-3 w-3 text-white" />
+                                </div>
+                                <span className="text-sm font-medium text-red-800 whitespace-nowrap">
+                                  Emergency Management Recipients
+                                </span>
+                              </button>
+                              
+                              {/* Approval Chain with Bypass */}
+                              <button
+                                onClick={() => {
+                                  handleHierarchyAction("Approval Chain with Bypass");
+                                  setExpandedHierarchy(null);
+                                }}
+                                className="hierarchy-option group flex items-center gap-2 px-3 py-2 rounded-md transition-all duration-200 hover:bg-green-50 hover:border-green-200 border border-transparent"
+                              >
+                                <div className="p-1 bg-green-500 rounded group-hover:scale-110 transition-transform duration-200">
+                                  <Shield className="h-3 w-3 text-white" />
+                                </div>
+                                <span className="text-sm font-medium text-green-800 whitespace-nowrap">
+                                  Approval Chain with Bypass
+                                </span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -168,7 +275,7 @@ const WorkflowManagement = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-5 w-5" />
-                  Visual Workflow Builder
+                  Visual Workflow Hierarchy Builder
                 </CardTitle>
                 <CardDescription>
                   Drag and drop to create custom approval workflows with role-based nodes and smart routing

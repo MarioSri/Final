@@ -34,7 +34,9 @@ import {
   Bell,
   AlertTriangle,
   Search,
-  ArrowRightLeft
+  ArrowRightLeft,
+  FileSearch,
+  Eye
 } from "lucide-react";
 import { AdvancedSignatureIcon } from "@/components/ui/signature-icon";
 import { cn } from "@/lib/utils";
@@ -106,18 +108,19 @@ export function DashboardSidebar({ userRole }: DashboardSidebarProps) {
     const commonItems = [
       { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
       { title: "Search", url: "/search", icon: Search },
-      { title: "Documents", url: "/documents", icon: FileText },
+      { title: "Document Management", url: "/documents", icon: FileText },
+      { title: "Track Documents", url: "/track-documents", icon: Eye },
       { title: "Calendar", url: "/calendar", icon: Calendar },
       { title: "Messages", url: "/messages", icon: MessageSquare },
       { title: "Advanced Signature", url: "/advanced-signature", icon: AdvancedSignatureIcon },
-      { title: "Emergency", url: "/emergency", icon: AlertTriangle },
+      { title: "Emergency Management", url: "/emergency", icon: AlertTriangle },
     ];
 
     const adminItems = [
       { title: "Workflow Management", url: "/workflow", icon: GitBranch },
-      { title: "Approvals", url: "/approvals", icon: CheckSquare },
+      { title: "Approval Center", url: "/approvals", icon: CheckSquare },
       { title: "Bi-Directional Routing", url: "/approval-routing", icon: ArrowRightLeft },
-      { title: "Analytics", url: "/analytics", icon: BarChart3 },
+      { title: "Analytics Dashboard", url: "/analytics", icon: BarChart3 },
     ];
 
     const roleSpecificItems = {
@@ -128,7 +131,7 @@ export function DashboardSidebar({ userRole }: DashboardSidebarProps) {
       employee: [...commonItems, 
         { title: "Workflow Management", url: "/workflow", icon: GitBranch },
         { title: "Bi-Directional Routing", url: "/approval-routing", icon: ArrowRightLeft },
-        { title: "Analytics", url: "/analytics", icon: BarChart3 }
+        { title: "Analytics Dashboard", url: "/analytics", icon: BarChart3 }
       ],
     };
 

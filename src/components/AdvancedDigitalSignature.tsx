@@ -18,7 +18,8 @@ import {
   RotateCcw,
   Crop,
   Palette,
-  Layers
+  Layers,
+  XCircle
 } from "lucide-react";
 import { AdvancedSignatureIcon } from "@/components/ui/signature-icon";
 import { useToast } from "@/hooks/use-toast";
@@ -214,6 +215,16 @@ export const AdvancedDigitalSignature: React.FC<AdvancedDigitalSignatureProps> =
 
   const startCamera = async () => {
     try {
+      // Check if browser supports getUserMedia
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast({
+          title: "Camera Not Supported",
+          description: "Your browser doesn't support camera access",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: 'environment',
@@ -225,11 +236,27 @@ export const AdvancedDigitalSignature: React.FC<AdvancedDigitalSignatureProps> =
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setCameraActive(true);
+        
+        toast({
+          title: "Camera Started",
+          description: "Camera is ready for signature capture",
+          variant: "default"
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
+      let errorMessage = "Unable to access camera";
+      
+      if (error.name === 'NotAllowedError') {
+        errorMessage = "Camera access denied. Please allow camera permissions and try again.";
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = "No camera found on this device";
+      } else if (error.name === 'NotReadableError') {
+        errorMessage = "Camera is already in use by another application";
+      }
+      
       toast({
         title: "Camera Error",
-        description: "Unable to access camera",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -239,28 +266,60 @@ export const AdvancedDigitalSignature: React.FC<AdvancedDigitalSignatureProps> =
     const video = videoRef.current;
     const canvas = canvasRef.current;
     
-    if (!video || !canvas) return;
+    if (!video || !canvas) {
+      toast({
+        title: "Capture Error",
+        description: "Camera or canvas not ready",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (video.readyState !== video.HAVE_ENOUGH_DATA) {
+      toast({
+        title: "Camera Not Ready",
+        description: "Please wait for camera to load completely",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     // Clear canvas and draw video frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     
+    // Auto-stop camera after capture
     stopCamera();
     
     toast({
       title: "Signature Captured",
-      description: "Signature captured from camera. You can now save it.",
+      description: "Signature captured from camera successfully. You can now save it or make adjustments.",
+      variant: "default"
     });
   };
 
   const stopCamera = () => {
     if (videoRef.current?.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach(track => {
+        track.stop();
+        console.log(`Stopped ${track.kind} track:`, track.label);
+      });
+      
+      // Clear the video source
+      videoRef.current.srcObject = null;
       setCameraActive(false);
+      
+      toast({
+        title: "Camera Stopped",
+        description: "Camera has been turned off",
+        variant: "default"
+      });
     }
   };
 
@@ -473,19 +532,32 @@ export const AdvancedDigitalSignature: React.FC<AdvancedDigitalSignatureProps> =
 
             <TabsContent value="camera" className="space-y-4">
               <div className="space-y-4">
-                <div className="flex gap-2">
+                {/* Camera Status Alert */}
+                {cameraActive && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm font-medium text-green-800">Camera Active</span>
+                    </div>
+                    <p className="text-xs text-green-700 mt-1">Position your signature in view and click "Capture Signature" when ready.</p>
+                  </div>
+                )}
+                
+                <div className="flex gap-2 flex-wrap">
                   <Button 
                     onClick={startCamera} 
                     disabled={cameraActive}
-                    variant="default"
+                    variant={cameraActive ? "secondary" : "default"}
+                    className={cameraActive ? "opacity-50 cursor-not-allowed" : ""}
                   >
                     <Camera className="w-4 h-4 mr-2" />
-                    Start Camera
+                    {cameraActive ? "Camera Active" : "Start Camera"}
                   </Button>
                   <Button 
                     onClick={captureFromCamera} 
                     disabled={!cameraActive}
                     variant="outline"
+                    className={!cameraActive ? "opacity-50 cursor-not-allowed" : "bg-blue-50 hover:bg-blue-100 border-blue-300"}
                   >
                     <Scan className="w-4 h-4 mr-2" />
                     Capture Signature
@@ -494,18 +566,21 @@ export const AdvancedDigitalSignature: React.FC<AdvancedDigitalSignatureProps> =
                     onClick={stopCamera} 
                     disabled={!cameraActive}
                     variant="outline"
+                    className={!cameraActive ? "opacity-50 cursor-not-allowed" : "bg-red-50 hover:bg-red-100 border-red-300 text-red-700 hover:text-red-800"}
                   >
+                    <XCircle className="w-4 h-4 mr-2" />
                     Stop Camera
                   </Button>
                 </div>
                 
                 {cameraActive && (
-                  <div className="flex justify-center">
+                  <div className="flex justify-center bg-gray-50 p-4 rounded-lg">
                     <video 
                       ref={videoRef} 
                       autoPlay 
                       muted 
-                      className="max-w-full h-64 border rounded-lg"
+                      playsInline
+                      className="max-w-full h-64 border-2 border-dashed border-gray-300 rounded-lg shadow-sm"
                     />
                   </div>
                 )}

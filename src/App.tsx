@@ -11,6 +11,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Documents from "./pages/Documents";
+import TrackDocuments from "./pages/TrackDocuments";
 import Calendar from "./pages/Calendar";
 import Messages from "./pages/Messages";
 import WorkflowManagement from "./pages/Workflow";
@@ -45,6 +46,11 @@ const App = () => (
                 <Route path="/documents" element={
                   <ProtectedRoute>
                     <Documents />
+                  </ProtectedRoute>
+                } />
+                <Route path="/track-documents" element={
+                  <ProtectedRoute>
+                    <TrackDocuments />
                   </ProtectedRoute>
                 } />
                 <Route path="/calendar" element={
