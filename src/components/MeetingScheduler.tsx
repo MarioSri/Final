@@ -56,6 +56,7 @@ import {
   Mail,
   MessageSquare,
   Phone,
+  Smartphone,
   Wifi,
   Monitor,
   Calendar,
@@ -163,7 +164,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
   const [showAISuggestionsDialog, setShowAISuggestionsDialog] = useState(false);
   const [showLiveMeetingModal, setShowLiveMeetingModal] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
-  const [viewMode, setViewMode] = useState<'calendar' | 'list' | 'analytics' | 'live-requests'>('calendar');
+  const [viewMode, setViewMode] = useState<'calendar' | 'list' | 'live-requests'>('calendar');
   const [filterBy, setFilterBy] = useState<'all' | 'today' | 'week' | 'month'>('all');
   
   // New Meeting Form State
@@ -184,11 +185,12 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
     department: user?.department || "",
     notifications: {
       email: true,
-      dashboard: true,
-      teams: false,
+      push: true,
+      sms: false,
+      whatsapp: false,
       reminders: [
         { type: 'email', timing: 1440, enabled: true }, // 24h
-        { type: 'dashboard', timing: 60, enabled: true }, // 1h
+        { type: 'push', timing: 60, enabled: true }, // 1h
         { type: 'email', timing: 10, enabled: true } // 10m
       ],
       escalation: {
@@ -266,11 +268,12 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
           },
           notifications: {
             email: true,
-            dashboard: true,
-            teams: true,
+            push: true,
+            sms: false,
+            whatsapp: false,
             reminders: [
               { type: 'email', timing: 1440, enabled: true },
-              { type: 'dashboard', timing: 60, enabled: true },
+              { type: 'push', timing: 60, enabled: true },
               { type: 'email', timing: 10, enabled: true }
             ],
             escalation: {
@@ -346,11 +349,12 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
           },
           notifications: {
             email: true,
-            dashboard: true,
-            teams: false,
+            push: true,
+            sms: false,
+            whatsapp: false,
             reminders: [
               { type: 'email', timing: 2880, enabled: true }, // 48h
-              { type: 'dashboard', timing: 60, enabled: true }
+              { type: 'push', timing: 60, enabled: true }
             ],
             escalation: {
               enabled: false,
@@ -553,11 +557,12 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
       department: user?.department || "",
       notifications: {
         email: true,
-        dashboard: true,
-        teams: false,
+        push: true,
+        sms: false,
+        whatsapp: false,
         reminders: [
           { type: 'email', timing: 1440, enabled: true },
-          { type: 'dashboard', timing: 60, enabled: true },
+          { type: 'push', timing: 60, enabled: true },
           { type: 'email', timing: 10, enabled: true }
         ],
         escalation: {
@@ -669,7 +674,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
         {/* View Mode Tabs */}
         <Tabs value={viewMode} onValueChange={(value: any) => setViewMode(value)} className="w-full">
           <div className="flex items-center justify-between">
-            <TabsList className="grid w-fit grid-cols-3">
+            <TabsList className="grid w-fit grid-cols-2">
               <TabsTrigger value="calendar" className="gap-2">
                 <CalendarIcon className="w-4 h-4" />
                 Calendar
@@ -677,10 +682,6 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
               <TabsTrigger value="list" className="gap-2">
                 <Users className="w-4 h-4" />
                 List View
-              </TabsTrigger>
-              <TabsTrigger value="analytics" className="gap-2">
-                <BarChart3 className="w-4 h-4" />
-                Analytics
               </TabsTrigger>
             </TabsList>
             
@@ -824,6 +825,65 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
 
           {/* List View */}
           <TabsContent value="list" className="space-y-4">
+            {/* Meeting Statistics */}
+            <Card className="shadow-elegant">
+              <CardHeader>
+                <CardTitle>Meeting Statistics</CardTitle>
+                <CardDescription>Overview of your scheduled meetings</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Total Meetings</p>
+                          <p className="text-2xl font-bold">2</p>
+                        </div>
+                        <CalendarIcon className="w-8 h-8 text-muted-foreground" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">This Week</p>
+                          <p className="text-2xl font-bold">0</p>
+                        </div>
+                        <TrendingUp className="w-8 h-8 text-muted-foreground" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Online Meetings</p>
+                          <p className="text-2xl font-bold">2</p>
+                        </div>
+                        <Video className="w-8 h-8 text-muted-foreground" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Avg Duration</p>
+                          <p className="text-2xl font-bold">105m</p>
+                        </div>
+                        <Timer className="w-8 h-8 text-muted-foreground" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
+            
             <Card className="shadow-elegant">
               <CardHeader>
                 <CardTitle>All Meetings</CardTitle>
@@ -979,69 +1039,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
             </Card>
           </TabsContent>
 
-          {/* Analytics View */}
-          <TabsContent value="analytics" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total Meetings</p>
-                      <p className="text-2xl font-bold">{meetings.length}</p>
-                    </div>
-                    <CalendarIcon className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">This Week</p>
-                      <p className="text-2xl font-bold">
-                        {meetings.filter(m => {
-                          const meetingDate = new Date(m.date);
-                          const now = new Date();
-                          const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
-                          return meetingDate >= weekStart;
-                        }).length}
-                      </p>
-                    </div>
-                    <TrendingUp className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Online Meetings</p>
-                      <p className="text-2xl font-bold">
-                        {meetings.filter(m => m.type === 'online' || m.type === 'hybrid').length}
-                      </p>
-                    </div>
-                    <Video className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Avg Duration</p>
-                      <p className="text-2xl font-bold">
-                        {Math.round(meetings.reduce((acc, m) => acc + m.duration, 0) / meetings.length || 0)}m
-                      </p>
-                    </div>
-                    <Timer className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+
         </Tabs>
 
         {/* New Meeting Dialog */}
@@ -1281,18 +1279,6 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                     </ScrollArea>
                   </div>
                 </div>
-                
-                <Alert>
-                  <Lightbulb className="h-4 w-4" />
-                  <AlertTitle>AI Suggestion Available</AlertTitle>
-                  <AlertDescription>
-                    Click the AI button to get intelligent scheduling suggestions based on attendee availability.
-                    <Button variant="outline" size="sm" className="ml-2" onClick={handleGetAISuggestions}>
-                      <Brain className="w-3 h-3 mr-1" />
-                      Get AI Suggestions
-                    </Button>
-                  </AlertDescription>
-                </Alert>
               </TabsContent>
               
               {/* Settings Tab */}
@@ -1304,10 +1290,13 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                   </div>
                   
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-sm font-medium">Email Notifications</Label>
-                        <p className="text-xs text-muted-foreground">Send email invites to attendees</p>
+                    <div className="flex items-center justify-between py-2">
+                      <div className="flex items-center gap-3">
+                        <Mail className="w-5 h-5 text-muted-foreground" />
+                        <div>
+                          <Label className="text-sm font-medium">Email Notifications</Label>
+                          <p className="text-xs text-muted-foreground">Receive updates via email</p>
+                        </div>
                       </div>
                       <Switch 
                         checked={newMeeting.notifications?.email} 
@@ -1318,30 +1307,53 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                       />
                     </div>
                     
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-sm font-medium">Dashboard Notifications</Label>
-                        <p className="text-xs text-muted-foreground">Show notifications in IAOMS dashboard</p>
+                    <div className="flex items-center justify-between py-2">
+                      <div className="flex items-center gap-3">
+                        <Smartphone className="w-5 h-5 text-muted-foreground" />
+                        <div>
+                          <Label className="text-sm font-medium">Push Notifications</Label>
+                          <p className="text-xs text-muted-foreground">Browser and mobile notifications</p>
+                        </div>
                       </div>
                       <Switch 
-                        checked={newMeeting.notifications?.dashboard} 
+                        checked={newMeeting.notifications?.push} 
                         onCheckedChange={(checked) => setNewMeeting({
                           ...newMeeting, 
-                          notifications: {...newMeeting.notifications!, dashboard: checked}
+                          notifications: {...newMeeting.notifications!, push: checked}
                         })}
                       />
                     </div>
                     
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-sm font-medium">Teams Integration</Label>
-                        <p className="text-xs text-muted-foreground">Post meeting details to Microsoft Teams</p>
+                    <div className="flex items-center justify-between py-2">
+                      <div className="flex items-center gap-3">
+                        <Phone className="w-5 h-5 text-muted-foreground" />
+                        <div>
+                          <Label className="text-sm font-medium">SMS Alerts</Label>
+                          <p className="text-xs text-muted-foreground">Critical updates via SMS</p>
+                        </div>
                       </div>
                       <Switch 
-                        checked={newMeeting.notifications?.teams} 
+                        checked={newMeeting.notifications?.sms} 
                         onCheckedChange={(checked) => setNewMeeting({
                           ...newMeeting, 
-                          notifications: {...newMeeting.notifications!, teams: checked}
+                          notifications: {...newMeeting.notifications!, sms: checked}
+                        })}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between py-2">
+                      <div className="flex items-center gap-3">
+                        <MessageSquare className="w-5 h-5 text-green-600" />
+                        <div>
+                          <Label className="text-sm font-medium">WhatsApp Notifications</Label>
+                          <p className="text-xs text-muted-foreground">Receive updates via WhatsApp</p>
+                        </div>
+                      </div>
+                      <Switch 
+                        checked={newMeeting.notifications?.whatsapp} 
+                        onCheckedChange={(checked) => setNewMeeting({
+                          ...newMeeting, 
+                          notifications: {...newMeeting.notifications!, whatsapp: checked}
                         })}
                       />
                     </div>

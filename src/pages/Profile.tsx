@@ -27,7 +27,8 @@ import {
   Smartphone,
   Monitor,
   Sun,
-  Moon
+  Moon,
+  MessageCircle
 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -54,7 +55,7 @@ const Profile = () => {
     emailNotifications: true,
     pushNotifications: true,
     smsAlerts: false,
-    timezone: "Asia/Kolkata",
+    whatsappNotifications: false,
     autoSave: true,
     twoFactorAuth: false
   });
@@ -297,6 +298,20 @@ const Profile = () => {
                       onCheckedChange={(checked) => handlePreferenceChange('smsAlerts', checked)}
                     />
                   </div>
+                  
+                  <div className="flex items-center justify-between py-2">
+                    <div className="flex items-center gap-3">
+                      <MessageCircle className="w-5 h-5 text-green-600" />
+                      <div>
+                        <p className="font-medium">WhatsApp Notifications</p>
+                        <p className="text-sm text-muted-foreground">Receive updates via WhatsApp</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={preferences.whatsappNotifications}
+                      onCheckedChange={(checked) => handlePreferenceChange('whatsappNotifications', checked)}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -335,21 +350,6 @@ const Profile = () => {
                       />
                       <Moon className="w-4 h-4 text-muted-foreground" />
                     </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="timezone">Timezone</Label>
-                    <select
-                      id="timezone"
-                      title="Select timezone preference"
-                      value={preferences.timezone}
-                      onChange={(e) => handlePreferenceChange('timezone', e.target.value)}
-                      className="w-full h-12 px-3 py-2 border border-input bg-background rounded-md text-base"
-                    >
-                      <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
-                      <option value="UTC">UTC</option>
-                      <option value="America/New_York">America/New_York (EST)</option>
-                    </select>
                   </div>
                 </div>
               </CardContent>

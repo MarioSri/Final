@@ -136,35 +136,7 @@ export const RoleDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Feature Overview */}
-      <Card className="shadow-elegant">
-        <CardHeader>
-          <CardTitle className={cn(
-            "flex items-center gap-2",
-            isMobile ? "text-lg" : "text-xl"
-          )}>
-            <Zap className="w-5 h-5 text-primary" />
-            Available Features
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className={cn(
-            "grid gap-2",
-            isMobile ? "grid-cols-2" : "grid-cols-3 lg:grid-cols-4"
-          )}>
-            {enabledFeatures.map((feature, index) => (
-              <Badge 
-                key={feature} 
-                variant="outline" 
-                className="justify-center py-2 animate-scale-in transition-all hover:bg-primary hover:text-primary-foreground"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                {feature}
-              </Badge>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+
 
       {/* Dynamic Dashboard */}
       <DynamicDashboard />

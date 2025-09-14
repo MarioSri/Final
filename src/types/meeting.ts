@@ -118,14 +118,15 @@ export interface ApprovalComment {
 
 export interface NotificationSettings {
   email: boolean;
-  dashboard: boolean;
-  teams: boolean;
+  push: boolean;
+  sms: boolean;
+  whatsapp: boolean;
   reminders: ReminderSettings[];
   escalation: EscalationSettings;
 }
 
 export interface ReminderSettings {
-  type: 'email' | 'dashboard' | 'sms' | 'teams';
+  type: 'email' | 'push' | 'sms' | 'whatsapp';
   timing: number; // minutes before meeting
   enabled: boolean;
   customMessage?: string;

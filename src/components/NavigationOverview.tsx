@@ -77,7 +77,6 @@ export const NavigationOverview: React.FC = () => {
   const getNavigationItems = () => {
     const commonItems = [
       { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, category: "Main" },
-      { title: "Search", url: "/search", icon: Search, category: "Main" },
       { title: "Documents", url: "/documents", icon: FileText, category: "Core" },
       { title: "Calendar", url: "/calendar", icon: Calendar, category: "Core" },
       { title: "Messages", url: "/messages", icon: MessageSquare, category: "Communication" },

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,7 +16,8 @@ import {
   Clock,
   AlertCircle,
   Users,
-  Send
+  Send,
+  Eye
 } from "lucide-react";
 import { LoadingState } from "@/components/ui/loading-states";
 import { RecipientSelector } from "@/components/RecipientSelector";
@@ -41,6 +43,7 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("normal");
+  const [documentTitle, setDocumentTitle] = useState("");
 
   const documentTypeOptions = [
     { id: "letter", label: "Letter", icon: FileText },
@@ -65,10 +68,18 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
     setUploadedFiles(uploadedFiles.filter((_, i) => i !== index));
   };
 
+  const handleViewFile = (file: File) => {
+    // Create a temporary URL for the file
+    const fileUrl = URL.createObjectURL(file);
+    // Open the file in a new tab
+    window.open(fileUrl, '_blank');
+  };
+
   const handleSubmit = () => {
-    if (documentTypes.length === 0 || uploadedFiles.length === 0 || selectedRecipients.length === 0) {
+    if (!documentTitle.trim() || documentTypes.length === 0 || uploadedFiles.length === 0 || selectedRecipients.length === 0) {
       // Provide specific feedback on what's missing
       const missing = [];
+      if (!documentTitle.trim()) missing.push("Document Title");
       if (documentTypes.length === 0) missing.push("Document Type");
       if (uploadedFiles.length === 0) missing.push("Files to upload");  
       if (selectedRecipients.length === 0) missing.push("Recipients");
@@ -86,6 +97,7 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
     // Simulate upload process with loading animation
     setTimeout(() => {
       const data = {
+        title: documentTitle,
         documentTypes,
         files: uploadedFiles,
         recipients: selectedRecipients,
@@ -104,6 +116,7 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
       setIsUploading(false);
       
       // Reset form after successful submission
+      setDocumentTitle("");
       setDocumentTypes([]);
       setUploadedFiles([]);
       setSelectedRecipients([]);
@@ -112,7 +125,7 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
     }, 2000);
   };
 
-  const isSubmitDisabled = documentTypes.length === 0 || uploadedFiles.length === 0 || selectedRecipients.length === 0;
+  const isSubmitDisabled = !documentTitle.trim() || documentTypes.length === 0 || uploadedFiles.length === 0 || selectedRecipients.length === 0;
 
   return (
     <div className="space-y-6">
@@ -124,6 +137,19 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Document Title */}
+          <div className="space-y-3">
+            <Label htmlFor="documentTitle" className="text-base font-medium">Document Title</Label>
+            <Input
+              id="documentTitle"
+              type="text"
+              placeholder="Enter document title..."
+              value={documentTitle}
+              onChange={(e) => setDocumentTitle(e.target.value)}
+              className="w-full"
+            />
+          </div>
+
           {/* Document Type Selection */}
           <div className="space-y-3">
             <Label className="text-base font-medium">Document Type</Label>
@@ -181,6 +207,14 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
                       <span className="text-sm">{file.name}</span>
                       <Badge variant="secondary" className="text-xs">
                         {(file.size / 1024 / 1024).toFixed(1)} MB
+                      </Badge>
+                      <Badge 
+                        variant="outline" 
+                        className="text-xs cursor-pointer hover:bg-primary/10"
+                        onClick={() => handleViewFile(file)}
+                      >
+                        <Eye className="w-3 h-3 mr-1" />
+                        View
                       </Badge>
                     </div>
                     <Button
@@ -258,6 +292,7 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
               <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
                 <p className="font-medium mb-1">Required to submit:</p>
                 <ul className="space-y-1">
+                  {!documentTitle.trim() && <li>• Enter a document title</li>}
                   {documentTypes.length === 0 && <li>• Select at least one document type</li>}
                   {uploadedFiles.length === 0 && <li>• Upload at least one file</li>}
                   {selectedRecipients.length === 0 && <li>• Select at least one recipient</li>}

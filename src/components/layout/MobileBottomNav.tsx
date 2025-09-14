@@ -31,7 +31,6 @@ export const MobileBottomNav: React.FC = () => {
     const baseItems = [
       { path: '/dashboard', icon: LayoutDashboard, label: 'Home' },
       { path: '/messages', icon: MessageSquare, label: 'Chat' },
-      { path: '/search', icon: Search, label: 'Search' },
       { path: '/documents', icon: FileText, label: 'Docs' },
     ];
 

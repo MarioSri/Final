@@ -9,14 +9,11 @@ import { DashboardWidget } from '@/types/dashboard';
 import { cn } from '@/lib/utils';
 
 // Widget Components
-import { StatsWidget } from './widgets/StatsWidget';
 import { QuickActionsWidget } from './widgets/QuickActionsWidget';
 import { DocumentsWidget } from './widgets/DocumentsWidget';
 import { CalendarWidget } from './widgets/CalendarWidget';
 import { NotificationsWidget } from './widgets/NotificationsWidget';
 import { AnalyticsWidget } from './widgets/AnalyticsWidget';
-import { StickyNotesWidget } from './widgets/StickyNotesWidget';
-import { ChatWidget } from './widgets/ChatWidget';
 import { WorkflowWidget } from './widgets/WorkflowWidget';
 import { AIWidget } from './widgets/AIWidget';
 
@@ -61,18 +58,10 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ className })
   const getDefaultWidgets = (config: any): DashboardWidget[] => {
     const defaultWidgets: DashboardWidget[] = [
       {
-        id: 'stats',
-        type: 'stats',
-        title: 'Dashboard Statistics',
-        position: { x: 0, y: 0, w: isMobile ? 12 : 6, h: 2 },
-        visible: true,
-        permissions: []
-      },
-      {
         id: 'quickActions',
         type: 'quickActions',
         title: 'Quick Actions',
-        position: { x: isMobile ? 0 : 6, y: 0, w: isMobile ? 12 : 6, h: 2 },
+        position: { x: 0, y: 0, w: isMobile ? 12 : 6, h: 2 },
         visible: true,
         permissions: []
       },
@@ -80,7 +69,7 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ className })
         id: 'documents',
         type: 'documents',
         title: 'Recent Documents',
-        position: { x: 0, y: 2, w: isMobile ? 12 : 8, h: 3 },
+        position: { x: isMobile ? 0 : 6, y: 0, w: isMobile ? 12 : 6, h: 3 },
         visible: true,
         permissions: []
       },
@@ -88,7 +77,7 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ className })
         id: 'calendar',
         type: 'calendar',
         title: 'Calendar & Meetings',
-        position: { x: isMobile ? 0 : 8, y: 2, w: isMobile ? 12 : 4, h: 3 },
+        position: { x: 0, y: 2, w: isMobile ? 12 : 6, h: 3 },
         visible: true,
         permissions: []
       },
@@ -96,15 +85,7 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ className })
         id: 'notifications',
         type: 'notifications',
         title: 'Notifications',
-        position: { x: 0, y: 5, w: isMobile ? 12 : 4, h: 2 },
-        visible: true,
-        permissions: []
-      },
-      {
-        id: 'stickyNotes',
-        type: 'stickyNotes',
-        title: 'Sticky Notes',
-        position: { x: isMobile ? 0 : 4, y: 5, w: isMobile ? 12 : 4, h: 2 },
+        position: { x: isMobile ? 0 : 6, y: 2, w: isMobile ? 12 : 6, h: 2 },
         visible: true,
         permissions: []
       },
@@ -112,7 +93,7 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ className })
         id: 'analytics',
         type: 'analytics',
         title: 'Analytics Overview',
-        position: { x: isMobile ? 0 : 8, y: 5, w: isMobile ? 12 : 4, h: 2 },
+        position: { x: 0, y: 5, w: isMobile ? 12 : 6, h: 2 },
         visible: config.permissions.canViewAnalytics,
         permissions: ['canViewAnalytics']
       },
@@ -120,7 +101,7 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ className })
         id: 'workflow',
         type: 'workflow',
         title: 'Workflow Management',
-        position: { x: 0, y: 7, w: isMobile ? 12 : 6, h: 2 },
+        position: { x: isMobile ? 0 : 6, y: 5, w: isMobile ? 12 : 6, h: 2 },
         visible: config.permissions.canManageWorkflows,
         permissions: ['canManageWorkflows']
       },
@@ -128,17 +109,9 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ className })
         id: 'ai',
         type: 'ai',
         title: 'AI Assistant',
-        position: { x: isMobile ? 0 : 6, y: 7, w: isMobile ? 12 : 6, h: 2 },
+        position: { x: 0, y: 7, w: 12, h: 2 },
         visible: config.permissions.canAccessAI,
         permissions: ['canAccessAI']
-      },
-      {
-        id: 'chat',
-        type: 'chat',
-        title: 'Real-Time Communication',
-        position: { x: 0, y: 9, w: 12, h: 2 },
-        visible: config.features.realTimeChat,
-        permissions: []
       }
     ];
 
@@ -163,8 +136,6 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ className })
 
     const WidgetComponent = () => {
       switch (widget.type) {
-        case 'stats':
-          return <StatsWidget {...widgetProps} />;
         case 'quickActions':
           return <QuickActionsWidget {...widgetProps} />;
         case 'documents':
@@ -175,10 +146,6 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ className })
           return <NotificationsWidget {...widgetProps} />;
         case 'analytics':
           return <AnalyticsWidget {...widgetProps} />;
-        case 'stickyNotes':
-          return <StickyNotesWidget {...widgetProps} />;
-        case 'chat':
-          return <ChatWidget {...widgetProps} />;
         case 'workflow':
           return <WorkflowWidget {...widgetProps} />;
         case 'ai':

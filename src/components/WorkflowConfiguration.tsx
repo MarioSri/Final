@@ -6,10 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { RecipientSelector } from '@/components/RecipientSelector';
+import { LoadingState } from '@/components/ui/loading-states';
 import { BiDirectionalWorkflowEngine } from '@/services/BiDirectionalWorkflowEngine';
 import { WorkflowRoute, WorkflowStep } from '@/types/workflow';
 import { cn } from '@/lib/utils';
@@ -27,7 +30,14 @@ import {
   AlertTriangle,
   CheckCircle2,
   Copy,
-  RotateCcw
+  RotateCcw,
+  Upload,
+  FileText,
+  File,
+  X,
+  Send,
+  Eye,
+  AlertCircle
 } from 'lucide-react';
 
 interface WorkflowConfigurationProps {
@@ -58,11 +68,50 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
   const [stepDescription, setStepDescription] = useState('');
   const [stepRole, setStepRole] = useState('');
   const [stepRequiredApprovals, setStepRequiredApprovals] = useState(1);
+
+  // Document management states
+  const [documentTitle, setDocumentTitle] = useState('');
+  const [documentTypes, setDocumentTypes] = useState<string[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+  const [documentDescription, setDocumentDescription] = useState('');
+  const [documentPriority, setDocumentPriority] = useState('normal');
   const [stepTimeoutHours, setStepTimeoutHours] = useState(24);
   const [stepEscalationRoles, setStepEscalationRoles] = useState<string[]>([]);
   const [stepRequiresCounterApproval, setStepRequiresCounterApproval] = useState(false);
 
   const availableRoles = ['principal', 'registrar', 'program-head', 'hod', 'employee'];
+
+  // Document management constants
+  const documentTypeOptions = [
+    { id: "letter", label: "Letter", icon: FileText },
+    { id: "circular", label: "Circular", icon: File },
+    { id: "report", label: "Report", icon: FileText },
+  ];
+
+  // Document management functions
+  const handleDocumentTypeChange = (typeId: string, checked: boolean) => {
+    if (checked) {
+      setDocumentTypes([...documentTypes, typeId]);
+    } else {
+      setDocumentTypes(documentTypes.filter(id => id !== typeId));
+    }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    setUploadedFiles([...uploadedFiles, ...files]);
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles(uploadedFiles.filter((_, i) => i !== index));
+  };
+
+  const handleViewFile = (file: File) => {
+    const fileUrl = URL.createObjectURL(file);
+    window.open(fileUrl, '_blank');
+  };
 
   useEffect(() => {
     if (user) {
@@ -82,6 +131,13 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
     setRequiresCounterApproval(false);
     setAutoEscalation(false);
     setEscalationTimeout(24);
+    // Reset document management fields
+    setDocumentTitle('');
+    setDocumentTypes([]);
+    setUploadedFiles([]);
+    setSelectedRecipients([]);
+    setDocumentDescription('');
+    setDocumentPriority('normal');
     resetStepForm();
   };
 
@@ -528,14 +584,158 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
                     </div>
                   </div>
                   
-                  <div>
-                    <label className="text-sm font-medium">Description</label>
-                    <Textarea
-                      value={workflowDescription}
-                      onChange={(e) => setWorkflowDescription(e.target.value)}
-                      placeholder="Enter workflow description"
-                      className="mt-1"
-                    />
+                  {/* Submit Document Features */}
+                  <div className="border rounded-lg p-4 bg-muted/20 space-y-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Upload className="w-5 h-5 text-primary" />
+                      <label className="text-base font-medium">Submit Document</label>
+                    </div>
+
+                    {/* Document Title */}
+                    <div>
+                      <label className="text-sm font-medium">Document Title</label>
+                      <Input
+                        value={documentTitle}
+                        onChange={(e) => setDocumentTitle(e.target.value)}
+                        placeholder="Enter document title..."
+                        className="mt-1"
+                      />
+                    </div>
+
+                    {/* Document Type Selection */}
+                    <div>
+                      <label className="text-sm font-medium">Document Type</label>
+                      <div className="grid grid-cols-3 gap-3 mt-1">
+                        {documentTypeOptions.map((option) => (
+                          <div key={option.id} className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-accent transition-colors">
+                            <Checkbox
+                              id={`doc-${option.id}`}
+                              checked={documentTypes.includes(option.id)}
+                              onCheckedChange={(checked) => handleDocumentTypeChange(option.id, !!checked)}
+                            />
+                            <label htmlFor={`doc-${option.id}`} className="flex items-center gap-2 cursor-pointer text-sm">
+                              <option.icon className="w-4 h-4" />
+                              {option.label}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* File Upload */}
+                    <div>
+                      <label className="text-sm font-medium">Upload Documents</label>
+                      <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors mt-1">
+                        <input
+                          type="file"
+                          multiple
+                          accept=".pdf,.doc,.docx,.xlsx,.xls,.png,.jpg,.jpeg"
+                          onChange={handleFileUpload}
+                          className="hidden"
+                          id="workflow-file-upload"
+                          title="Upload document files"
+                        />
+                        <label htmlFor="workflow-file-upload" className="cursor-pointer">
+                          <div className="space-y-2">
+                            <Upload className="w-8 h-8 mx-auto text-muted-foreground" />
+                            <p className="text-sm text-muted-foreground">
+                              Drag and drop files here, or click to browse
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Supports: PDF, DOC, DOCX, XLS, XLSX, PNG, JPG, JPEG
+                            </p>
+                          </div>
+                        </label>
+                      </div>
+
+                      {/* Uploaded Files */}
+                      {uploadedFiles.length > 0 && (
+                        <div className="space-y-2 mt-3">
+                          <label className="text-sm font-medium">Uploaded Files</label>
+                          {uploadedFiles.map((file, index) => (
+                            <div key={index} className="flex items-center justify-between p-2 bg-accent rounded-md">
+                              <div className="flex items-center gap-2">
+                                <File className="w-4 h-4 text-primary" />
+                                <span className="text-sm">{file.name}</span>
+                                <Badge variant="secondary" className="text-xs">
+                                  {(file.size / 1024 / 1024).toFixed(1)} MB
+                                </Badge>
+                                <Badge 
+                                  variant="outline" 
+                                  className="text-xs cursor-pointer hover:bg-primary/10"
+                                  onClick={() => handleViewFile(file)}
+                                >
+                                  <Eye className="w-3 h-3 mr-1" />
+                                  View
+                                </Badge>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeFile(index)}
+                                className="h-6 w-6 p-0"
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Recipients */}
+                    <div>
+                      <label className="text-sm font-medium">Document Recipients</label>
+                      <div className="mt-1">
+                        <RecipientSelector
+                          userRole={user?.role || 'employee'}
+                          selectedRecipients={selectedRecipients}
+                          onRecipientsChange={setSelectedRecipients}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Priority */}
+                    <div>
+                      <label className="text-sm font-medium">Priority Level</label>
+                      <Select value={documentPriority} onValueChange={setDocumentPriority}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="normal">
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-blue-500" />
+                              Normal Priority
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="high">
+                            <div className="flex items-center gap-2">
+                              <AlertCircle className="w-4 h-4 text-yellow-500" />
+                              High Priority
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="urgent">
+                            <div className="flex items-center gap-2">
+                              <AlertCircle className="w-4 h-4 text-red-500" />
+                              Urgent
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Document Description */}
+                    <div>
+                      <label className="text-sm font-medium">Document Description / Comments</label>
+                      <Textarea
+                        value={documentDescription}
+                        onChange={(e) => setDocumentDescription(e.target.value)}
+                        placeholder="Provide additional context or instructions..."
+                        rows={3}
+                        className="mt-1"
+                      />
+                    </div>
                   </div>
                   
                   <div className="grid gap-4 md:grid-cols-2">

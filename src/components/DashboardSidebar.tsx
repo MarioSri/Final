@@ -105,36 +105,42 @@ export function DashboardSidebar({ userRole }: DashboardSidebarProps) {
 
   // Role-based menu items
   const getMenuItems = () => {
-    const commonItems = [
+    // Navigation order for Registrar, Program Department Heads, HODs, and Principal
+    const adminRoleItems = [
       { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-      { title: "Search", url: "/search", icon: Search },
+      { title: "Track Documents", url: "/track-documents", icon: Eye },
+      { title: "Approval Center", url: "/approvals", icon: CheckSquare },
+      { title: "Calendar", url: "/calendar", icon: Calendar },
+      { title: "Messages", url: "/messages", icon: MessageSquare },
+      { title: "Advanced Signature", url: "/advanced-signature", icon: AdvancedSignatureIcon },
       { title: "Document Management", url: "/documents", icon: FileText },
+      { title: "Emergency Management", url: "/emergency", icon: AlertTriangle },
+      { title: "Approval Chain with Bypass", url: "/approval-routing", icon: ArrowRightLeft },
+      { title: "Analytics Dashboard", url: "/analytics", icon: BarChart3 },
+    ];
+
+    // Navigation order for Employee role
+    const employeeRoleItems = [
+      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
       { title: "Track Documents", url: "/track-documents", icon: Eye },
       { title: "Calendar", url: "/calendar", icon: Calendar },
       { title: "Messages", url: "/messages", icon: MessageSquare },
       { title: "Advanced Signature", url: "/advanced-signature", icon: AdvancedSignatureIcon },
+      { title: "Document Management", url: "/documents", icon: FileText },
       { title: "Emergency Management", url: "/emergency", icon: AlertTriangle },
-    ];
-
-    const adminItems = [
-      { title: "Approval Center", url: "/approvals", icon: CheckSquare },
-      { title: "Bi-Directional Routing", url: "/approval-routing", icon: ArrowRightLeft },
+      { title: "Approval Chain with Bypass", url: "/approval-routing", icon: ArrowRightLeft },
       { title: "Analytics Dashboard", url: "/analytics", icon: BarChart3 },
     ];
 
     const roleSpecificItems = {
-      principal: [...commonItems, ...adminItems],
-      registrar: [...commonItems, ...adminItems],
-      "program-head": [...commonItems, ...adminItems],
-      hod: [...commonItems, ...adminItems],
-      employee: [...commonItems, 
-        { title: "Workflow Management", url: "/workflow", icon: GitBranch },
-        { title: "Bi-Directional Routing", url: "/approval-routing", icon: ArrowRightLeft },
-        { title: "Analytics Dashboard", url: "/analytics", icon: BarChart3 }
-      ],
+      principal: adminRoleItems,
+      registrar: adminRoleItems,
+      "program-head": adminRoleItems,
+      hod: adminRoleItems,
+      employee: employeeRoleItems,
     };
 
-    return roleSpecificItems[userRole as keyof typeof roleSpecificItems] || commonItems;
+    return roleSpecificItems[userRole as keyof typeof roleSpecificItems] || employeeRoleItems;
   };
 
   const menuItems = getMenuItems();

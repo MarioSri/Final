@@ -133,6 +133,15 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
     });
   };
 
+  const handleViewFile = (file: File) => {
+    // Create a URL for the file and open it in a new tab for viewing
+    const fileUrl = URL.createObjectURL(file);
+    window.open(fileUrl, '_blank');
+    
+    // Cleanup the URL after a delay to free memory
+    setTimeout(() => URL.revokeObjectURL(fileUrl), 1000);
+  };
+
   const handleEmergencySubmit = () => {
     if (!emergencyData.title || !emergencyData.description || selectedRecipients.length === 0) {
       toast({
@@ -420,6 +429,14 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
                             <span className="text-sm">{file.name}</span>
                             <Badge variant="outline" className="text-xs">
                               {(file.size / 1024 / 1024).toFixed(1)} MB
+                            </Badge>
+                            <Badge 
+                              variant="outline" 
+                              className="text-xs cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                              onClick={() => handleViewFile(file)}
+                            >
+                              <Eye className="w-3 h-3 mr-1" />
+                              View
                             </Badge>
                           </div>
                           <Button

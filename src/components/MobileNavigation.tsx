@@ -16,7 +16,8 @@ import {
   Search,
   GitBranch,
   FileSearch,
-  Eye
+  Eye,
+  ArrowRightLeft
 } from "lucide-react";
 import { AdvancedSignatureIcon } from "@/components/ui/signature-icon";
 import { cn } from "@/lib/utils";
@@ -31,47 +32,44 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({ userRole }) 
   const location = useLocation();
 
   const getMenuItems = () => {
-    const commonItems = [
+    // Navigation order for Registrar, Program Department Heads, HODs, and Principal
+    const adminRoleItems = [
       { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-      { title: "Search", url: "/search", icon: Search },
+      { title: "Track Documents", url: "/track-documents", icon: Eye },
+      { title: "Approval Center", url: "/approvals", icon: CheckSquare },
+      { title: "Calendar", url: "/calendar", icon: Calendar },
+      { title: "Messages", url: "/messages", icon: MessageSquare },
+      { title: "Signature", url: "/advanced-signature", icon: AdvancedSignatureIcon },
       { title: "Document Management", url: "/documents", icon: FileText },
+      { title: "Emergency Management", url: "/emergency", icon: AlertTriangle },
+      { title: "Approval Chain with Bypass", url: "/approval-routing", icon: ArrowRightLeft },
+      { title: "Analytics Dashboard", url: "/analytics", icon: BarChart3 },
+      { title: "Profile", url: "/profile", icon: User },
+    ];
+
+    // Navigation order for Employee role
+    const employeeRoleItems = [
+      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
       { title: "Track Documents", url: "/track-documents", icon: Eye },
       { title: "Calendar", url: "/calendar", icon: Calendar },
       { title: "Messages", url: "/messages", icon: MessageSquare },
       { title: "Signature", url: "/advanced-signature", icon: AdvancedSignatureIcon },
+      { title: "Document Management", url: "/documents", icon: FileText },
       { title: "Emergency Management", url: "/emergency", icon: AlertTriangle },
+      { title: "Approval Chain with Bypass", url: "/approval-routing", icon: ArrowRightLeft },
+      { title: "Analytics Dashboard", url: "/analytics", icon: BarChart3 },
       { title: "Profile", url: "/profile", icon: User },
     ];
 
     const roleSpecificItems = {
-      principal: [
-        ...commonItems,
-        { title: "Approval Center", url: "/approvals", icon: CheckSquare },
-        { title: "Analytics Dashboard", url: "/analytics", icon: BarChart3 },
-      ],
-      registrar: [
-        ...commonItems,
-        { title: "Approval Center", url: "/approvals", icon: CheckSquare },
-        { title: "Analytics Dashboard", url: "/analytics", icon: BarChart3 },
-      ],
-      "program-head": [
-        ...commonItems,
-        { title: "Approval Center", url: "/approvals", icon: CheckSquare },
-        { title: "Analytics Dashboard", url: "/analytics", icon: BarChart3 },
-      ],
-      hod: [
-        ...commonItems,
-        { title: "Approval Center", url: "/approvals", icon: CheckSquare },
-        { title: "Analytics Dashboard", url: "/analytics", icon: BarChart3 },
-      ],
-      employee: [
-        ...commonItems,
-        { title: "Bi-Directional Routing", url: "/approval-routing", icon: CheckSquare },
-        { title: "Analytics Dashboard", url: "/analytics", icon: BarChart3 },
-      ],
+      principal: adminRoleItems,
+      registrar: adminRoleItems,
+      "program-head": adminRoleItems,
+      hod: adminRoleItems,
+      employee: employeeRoleItems,
     };
 
-    return roleSpecificItems[userRole as keyof typeof roleSpecificItems] || commonItems;
+    return roleSpecificItems[userRole as keyof typeof roleSpecificItems] || employeeRoleItems;
   };
 
   const menuItems = getMenuItems();

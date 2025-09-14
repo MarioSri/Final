@@ -202,6 +202,8 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
     setShowSignatureDialog(false);
   };
 
+
+
   return (
     <div className="space-y-6">
       {/* Search and Filter Controls */}
@@ -458,6 +460,8 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
           </Card>
         )}
       </div>
+
+
     </div>
   );
 };
