@@ -43,6 +43,16 @@ interface SignatureData {
   };
 }
 
+// Helper function to safely format dates
+const formatDate = (date: Date | string): string => {
+  try {
+    const dateObj = date instanceof Date ? date : new Date(date);
+    return dateObj.toLocaleDateString();
+  } catch (error) {
+    return 'Invalid Date';
+  }
+};
+
 export const AdvancedDigitalSignature: React.FC<AdvancedDigitalSignatureProps> = ({ userRole }) => {
   const [signatures, setSignatures] = useState<SignatureData[]>([]);
   const [selectedSignature, setSelectedSignature] = useState<SignatureData | null>(null);
@@ -61,9 +71,21 @@ export const AdvancedDigitalSignature: React.FC<AdvancedDigitalSignatureProps> =
   const { toast } = useToast();
 
   useEffect(() => {
-    const savedSignatures = localStorage.getItem('advancedSignatures');
-    if (savedSignatures) {
-      setSignatures(JSON.parse(savedSignatures));
+    try {
+      const savedSignatures = localStorage.getItem('advancedSignatures');
+      if (savedSignatures) {
+        const parsed = JSON.parse(savedSignatures);
+        // Convert createdAt strings back to Date objects
+        const signatures = parsed.map((sig: any) => ({
+          ...sig,
+          createdAt: new Date(sig.createdAt)
+        }));
+        setSignatures(signatures);
+      }
+    } catch (error) {
+      console.error('Error loading signatures from localStorage:', error);
+      // Clear corrupted data
+      localStorage.removeItem('advancedSignatures');
     }
   }, []);
 
@@ -674,7 +696,7 @@ export const AdvancedDigitalSignature: React.FC<AdvancedDigitalSignatureProps> =
                           </div>
                           <div className="flex justify-between">
                             <span>Created:</span>
-                            <span>{signature.createdAt.toLocaleDateString()}</span>
+                            <span>{formatDate(signature.createdAt)}</span>
                           </div>
                         </div>
                         

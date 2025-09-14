@@ -27,6 +27,16 @@ import {
 import { AdvancedSignatureIcon } from "@/components/ui/signature-icon";
 import { useToast } from "@/hooks/use-toast";
 
+// Helper function to safely format dates
+const formatDate = (date: Date | string): string => {
+  try {
+    const dateObj = date instanceof Date ? date : new Date(date);
+    return dateObj.toLocaleDateString();
+  } catch (error) {
+    return 'Invalid Date';
+  }
+};
+
 interface SavedSignature {
   id: string;
   name: string;
@@ -90,9 +100,21 @@ export const DigitalSignature: React.FC<SignatureComponentProps> = ({
 
   // Load saved signatures from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('digitalSignatures');
-    if (saved) {
-      setSavedSignatures(JSON.parse(saved));
+    try {
+      const saved = localStorage.getItem('digitalSignatures');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Convert createdAt strings back to Date objects
+        const signatures = parsed.map((sig: any) => ({
+          ...sig,
+          createdAt: new Date(sig.createdAt)
+        }));
+        setSavedSignatures(signatures);
+      }
+    } catch (error) {
+      console.error('Error loading signatures from localStorage:', error);
+      // Clear corrupted data
+      localStorage.removeItem('digitalSignatures');
     }
   }, []);
 
@@ -386,7 +408,7 @@ export const DigitalSignature: React.FC<SignatureComponentProps> = ({
                           </div>
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {signature.createdAt.toLocaleDateString()}
+                            {formatDate(signature.createdAt)}
                           </div>
                           <Badge variant="outline" className="text-xs">
                             {signature.metadata.role}
