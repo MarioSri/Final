@@ -29,7 +29,7 @@ export const roleConfigs: Record<string, RoleConfig> = {
       years: years
     },
     defaultWidgets: [
-      'quickActions', 'documents', 'analytics', 'calendar', 
+      'quickActions', 'documents', 'calendar', 
       'notifications', 'workflow', 'ai'
     ],
     dashboardLayout: {
