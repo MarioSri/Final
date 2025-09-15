@@ -40,15 +40,39 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ className })
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [selectedWidget, setSelectedWidget] = useState<string | null>(null);
 
+  // Supported widget types - only these will be rendered
+  const supportedWidgetTypes = [
+    'quickActions', 'documents', 'calendar', 'notifications', 
+    'analytics', 'workflow', 'ai'
+  ];
+
   useEffect(() => {
     if (user) {
       const config = getDashboardConfig(user.role, user.department, user.branch);
       setDashboardConfig(config);
       
-      // Load saved widget configuration or use defaults
+      // Clean up any invalid widgets from localStorage
       const savedWidgets = localStorage.getItem(`dashboard-widgets-${user.role}`);
       if (savedWidgets) {
-        setWidgets(JSON.parse(savedWidgets));
+        try {
+          const parsed = JSON.parse(savedWidgets);
+          // Filter out unsupported widget types
+          const validWidgets = parsed.filter((widget: DashboardWidget) => 
+            supportedWidgetTypes.includes(widget.type)
+          );
+          
+          // If we filtered out invalid widgets, save the cleaned version
+          if (validWidgets.length !== parsed.length) {
+            localStorage.setItem(`dashboard-widgets-${user.role}`, JSON.stringify(validWidgets));
+          }
+          
+          setWidgets(validWidgets.length > 0 ? validWidgets : getDefaultWidgets(config));
+        } catch (error) {
+          console.error('Error parsing saved widgets:', error);
+          // Clear corrupted data and use defaults
+          localStorage.removeItem(`dashboard-widgets-${user.role}`);
+          setWidgets(getDefaultWidgets(config));
+        }
       } else {
         setWidgets(getDefaultWidgets(config));
       }
@@ -92,7 +116,7 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ className })
       {
         id: 'analytics',
         type: 'analytics',
-        title: 'Analytics Overview',
+        title: 'Analytics',
         position: { x: 0, y: 5, w: isMobile ? 12 : 6, h: 2 },
         visible: config.permissions.canViewAnalytics,
         permissions: ['canViewAnalytics']

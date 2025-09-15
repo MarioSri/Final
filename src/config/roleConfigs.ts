@@ -29,8 +29,8 @@ export const roleConfigs: Record<string, RoleConfig> = {
       years: years
     },
     defaultWidgets: [
-      'stats', 'quickActions', 'documents', 'analytics', 'calendar', 
-      'notifications', 'stickyNotes', 'workflow', 'ai', 'chat'
+      'quickActions', 'documents', 'analytics', 'calendar', 
+      'notifications', 'workflow', 'ai'
     ],
     dashboardLayout: {
       columns: 12,
@@ -81,8 +81,8 @@ export const roleConfigs: Record<string, RoleConfig> = {
       years: years
     },
     defaultWidgets: [
-      'stats', 'quickActions', 'documents', 'analytics', 'calendar',
-      'notifications', 'stickyNotes', 'workflow', 'ai'
+      'quickActions', 'documents', 'analytics', 'calendar',
+      'notifications', 'workflow', 'ai'
     ],
     dashboardLayout: {
       columns: 12,
@@ -133,8 +133,8 @@ export const roleConfigs: Record<string, RoleConfig> = {
       years: [] // Set based on user's year
     },
     defaultWidgets: [
-      'stats', 'quickActions', 'documents', 'calendar', 
-      'notifications', 'stickyNotes', 'ai'
+      'quickActions', 'documents', 'calendar', 
+      'notifications', 'ai'
     ],
     dashboardLayout: {
       columns: 12,
@@ -185,8 +185,8 @@ export const roleConfigs: Record<string, RoleConfig> = {
       years: years
     },
     defaultWidgets: [
-      'stats', 'quickActions', 'documents', 'calendar',
-      'notifications', 'stickyNotes', 'ai'
+      'quickActions', 'documents', 'calendar',
+      'notifications', 'ai'
     ],
     dashboardLayout: {
       columns: 12,
@@ -237,8 +237,8 @@ export const roleConfigs: Record<string, RoleConfig> = {
       years: []
     },
     defaultWidgets: [
-      'stats', 'quickActions', 'documents', 'calendar',
-      'notifications', 'stickyNotes', 'ai'
+      'quickActions', 'documents', 'calendar',
+      'notifications', 'ai'
     ],
     dashboardLayout: {
       columns: 12,
