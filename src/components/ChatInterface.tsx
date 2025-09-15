@@ -650,10 +650,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuItem onClick={handleCreateSignatureRequest}>
-                      <PenTool className="w-4 h-4 mr-2" />
-                      Request Signature
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleCreatePoll('Quick Poll', ['Yes', 'No'])}>
                       <BarChart3 className="w-4 h-4 mr-2" />
                       Create Poll
