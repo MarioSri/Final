@@ -51,14 +51,20 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ className })
       const config = getDashboardConfig(user.role, user.department, user.branch);
       setDashboardConfig(config);
       
+      // Define disallowed widgets for specific roles
+      const disallowedWidgetsForRole = user.role && ['employee', 'registrar', 'program-head', 'hod', 'principal'].includes(user.role)
+        ? ['analytics']
+        : [];
+      
       // Clean up any invalid widgets from localStorage
       const savedWidgets = localStorage.getItem(`dashboard-widgets-${user.role}`);
       if (savedWidgets) {
         try {
           const parsed = JSON.parse(savedWidgets);
-          // Filter out unsupported widget types
+          // Filter out unsupported widget types and disallowed widgets for role
           const validWidgets = parsed.filter((widget: DashboardWidget) => 
-            supportedWidgetTypes.includes(widget.type)
+            supportedWidgetTypes.includes(widget.type) && 
+            !disallowedWidgetsForRole.includes(widget.type)
           );
           
           // If we filtered out invalid widgets, save the cleaned version
@@ -118,7 +124,8 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ className })
         type: 'analytics',
         title: 'Analytics',
         position: { x: 0, y: 5, w: isMobile ? 12 : 6, h: 2 },
-        visible: config.permissions.canViewAnalytics,
+        visible: config.permissions.canViewAnalytics && 
+                !['employee', 'registrar', 'program-head', 'hod', 'principal'].includes(user?.role || ''),
         permissions: ['canViewAnalytics']
       },
       {
