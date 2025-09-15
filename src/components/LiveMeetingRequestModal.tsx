@@ -270,11 +270,11 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
               </div>
             )}
 
-            {/* Preferred Time */}
+            {/* Preferred Date & Time */}
             <div className="space-y-4">
               <Label className="text-base font-medium flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Preferred Time
+                Preferred Date & Time
               </Label>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
