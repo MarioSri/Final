@@ -217,7 +217,7 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="online" id="online" />
                   <Label htmlFor="online" className="flex items-center gap-2">
-                    💻 Online (Auto-generate meeting link)
+                    💻 Online
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -255,7 +255,7 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
             <div className="space-y-2">
               <Label htmlFor="requestedTime" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Preferred Time (Optional)
+                Preferred Time
               </Label>
               <Input
                 id="requestedTime"
