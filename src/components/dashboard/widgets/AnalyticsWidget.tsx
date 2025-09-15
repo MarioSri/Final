@@ -135,7 +135,7 @@ export const AnalyticsWidget: React.FC<AnalyticsWidgetProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-primary" />
-            Analytics Overview
+            Analytics
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -169,7 +169,7 @@ export const AnalyticsWidget: React.FC<AnalyticsWidgetProps> = ({
             isMobile ? "text-lg" : "text-xl"
           )}>
             <BarChart3 className="w-5 h-5 text-primary" />
-            Analytics Overview
+            Analytics
           </CardTitle>
           
           <div className="flex items-center gap-2">
