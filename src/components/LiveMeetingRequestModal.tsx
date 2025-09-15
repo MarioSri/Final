@@ -46,10 +46,27 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
   const [agenda, setAgenda] = useState('');
   const [location, setLocation] = useState('');
   const [requestedTime, setRequestedTime] = useState('');
+  const [requestedDate, setRequestedDate] = useState('');
+  const [requestedTimeSlot, setRequestedTimeSlot] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingParticipants, setLoadingParticipants] = useState(true);
 
   const { toast } = useToast();
+
+  // Time slots for meeting scheduling
+  const timeSlots = [
+    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+    "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
+    "15:00", "15:30", "16:00", "16:30", "17:00"
+  ];
+
+  const formatTime = (time: string) => {
+    const [hours, minutes] = time.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -105,7 +122,7 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
         meetingFormat,
         purpose,
         agenda: agenda.trim() || undefined,
-        requestedTime: requestedTime ? new Date(requestedTime) : undefined,
+        requestedTime: requestedDate && requestedTimeSlot ? new Date(`${requestedDate}T${requestedTimeSlot}:00`) : undefined,
         location: meetingFormat === 'in_person' ? location : undefined
       };
 
@@ -140,6 +157,8 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
     setAgenda('');
     setLocation('');
     setRequestedTime('');
+    setRequestedDate('');
+    setRequestedTimeSlot('');
     onClose();
   };
 
@@ -252,18 +271,36 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
             )}
 
             {/* Preferred Time */}
-            <div className="space-y-2">
-              <Label htmlFor="requestedTime" className="flex items-center gap-2">
+            <div className="space-y-4">
+              <Label className="text-base font-medium flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 Preferred Time
               </Label>
-              <Input
-                id="requestedTime"
-                type="datetime-local"
-                value={requestedTime}
-                onChange={(e) => setRequestedTime(e.target.value)}
-                min={new Date().toISOString().slice(0, 16)}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="requestedDate">Date</Label>
+                  <Input
+                    id="requestedDate"
+                    type="date"
+                    value={requestedDate}
+                    onChange={(e) => setRequestedDate(e.target.value)}
+                    min={new Date().toISOString().slice(0, 10)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="requestedTimeSlot">Time</Label>
+                  <Select value={requestedTimeSlot} onValueChange={setRequestedTimeSlot}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select time" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {timeSlots.map((time) => (
+                        <SelectItem key={time} value={time}>{formatTime(time)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
           </div>
 

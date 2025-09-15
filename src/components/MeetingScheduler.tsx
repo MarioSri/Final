@@ -1067,7 +1067,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
               <TabsContent value="basic" className="space-y-4 mt-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="title">Meeting Title *</Label>
+                    <Label htmlFor="title">Meeting Title</Label>
                     <Input
                       id="title"
                       placeholder="Enter meeting title"
@@ -1098,7 +1098,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="date">Date *</Label>
+                    <Label htmlFor="date">Date</Label>
                     <Input
                       id="date"
                       type="date"
@@ -1107,7 +1107,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="time">Time *</Label>
+                    <Label htmlFor="time">Time</Label>
                     <Select value={newMeeting.time} onValueChange={(value) => setNewMeeting({...newMeeting, time: value})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select time" />
