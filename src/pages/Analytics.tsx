@@ -243,6 +243,53 @@ const Analytics = () => {
           </TabsContent>
           
           <TabsContent value="trends" className="space-y-6">
+            {/* Today's Trends */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Today's Trends
+                </CardTitle>
+                <CardDescription>Real-time activity for today ({new Date().toLocaleDateString()})</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium text-muted-foreground">Documents Today</h4>
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    </div>
+                    <p className="text-2xl font-bold">8</p>
+                    <p className="text-xs text-muted-foreground">6 approved, 2 pending</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium text-muted-foreground">Active Sessions</h4>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    </div>
+                    <p className="text-2xl font-bold">24</p>
+                    <p className="text-xs text-muted-foreground">Currently online</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium text-muted-foreground">Completed Tasks</h4>
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    </div>
+                    <p className="text-2xl font-bold">15</p>
+                    <p className="text-xs text-muted-foreground">Tasks finished today</p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-medium text-muted-foreground">System Uptime</h4>
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    </div>
+                    <p className="text-2xl font-bold">99.8%</p>
+                    <p className="text-xs text-muted-foreground">Operational status</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Weekly Trends */}
             <Card>
               <CardHeader>
@@ -293,53 +340,6 @@ const Analytics = () => {
                     </div>
                     <p className="text-2xl font-bold">156</p>
                     <p className="text-xs text-muted-foreground">vs 139 last week</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Today's Trends */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Today's Trends
-                </CardTitle>
-                <CardDescription>Real-time activity for today ({new Date().toLocaleDateString()})</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-medium text-muted-foreground">Documents Today</h4>
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    </div>
-                    <p className="text-2xl font-bold">8</p>
-                    <p className="text-xs text-muted-foreground">6 approved, 2 pending</p>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-medium text-muted-foreground">Active Sessions</h4>
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                    </div>
-                    <p className="text-2xl font-bold">24</p>
-                    <p className="text-xs text-muted-foreground">Currently online</p>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-medium text-muted-foreground">Completed Tasks</h4>
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    </div>
-                    <p className="text-2xl font-bold">15</p>
-                    <p className="text-xs text-muted-foreground">Tasks finished today</p>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-medium text-muted-foreground">System Uptime</h4>
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    </div>
-                    <p className="text-2xl font-bold">99.8%</p>
-                    <p className="text-xs text-muted-foreground">Operational status</p>
                   </div>
                 </div>
               </CardContent>

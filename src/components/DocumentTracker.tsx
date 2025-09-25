@@ -78,8 +78,10 @@ const mockDocuments: Document[] = [
       ]
     },
     requiresSignature: true,
+    signedBy: ['Prof. Michael Chen', 'Ms. Lisa Wang'],
     comments: [
-      { author: 'Prof. Michael Chen', date: '2024-01-16', message: 'Minutes look comprehensive. Approved for next level.' }
+      { author: 'Prof. Michael Chen', date: '2024-01-16', message: 'Minutes look comprehensive. Approved for next level.' },
+      { author: 'Ms. Lisa Wang', date: '2024-01-18', message: 'Minutes are well-structured. Suggest adding attendance details for completeness.' }
     ]
   },
   {
@@ -120,9 +122,11 @@ const mockDocuments: Document[] = [
         { name: 'Principal Review', status: 'completed', assignee: 'Dr. Robert Smith', completedDate: '2024-01-15' },
       ]
     },
-    requiresSignature: false,
+    requiresSignature: true,
+    signedBy: ['Ms. Jennifer Lee'],
     comments: [
-      { author: 'Ms. Jennifer Lee', date: '2024-01-14', message: 'Budget allocation exceeded. Please revise and resubmit with detailed justification.' }
+      { author: 'Ms. Jennifer Lee', date: '2024-01-14', message: 'Budget allocation exceeded. Please revise and resubmit with detailed justification.' },
+      { author: 'Dr. Robert Smith', date: '2024-01-15', message: 'Consider phasing the purchase over two quarters to stay within the current budget.' }
     ]
   }
 ];
@@ -324,7 +328,7 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
                       <span>Digital Signature Required</span>
                       {document.signedBy && (
                         <Badge variant="outline">
-                          Signed by {document.signedBy.length} user(s)
+                          Signed by {document.signedBy.length} Recipients
                         </Badge>
                       )}
                     </div>

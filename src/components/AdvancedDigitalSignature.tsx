@@ -285,6 +285,15 @@ export const AdvancedDigitalSignature: React.FC<AdvancedDigitalSignatureProps> =
   };
 
   const captureFromCamera = () => {
+    if (!cameraActive) {
+      toast({
+        title: "Camera Not Active",
+        description: "Please start the camera first before capturing",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const video = videoRef.current;
     const canvas = canvasRef.current;
     
@@ -326,6 +335,15 @@ export const AdvancedDigitalSignature: React.FC<AdvancedDigitalSignatureProps> =
   };
 
   const stopCamera = () => {
+    if (!cameraActive) {
+      toast({
+        title: "Camera Not Active",
+        description: "Camera is already stopped",
+        variant: "default"
+      });
+      return;
+    }
+
     if (videoRef.current?.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach(track => {
@@ -577,18 +595,16 @@ export const AdvancedDigitalSignature: React.FC<AdvancedDigitalSignatureProps> =
                   </Button>
                   <Button 
                     onClick={captureFromCamera} 
-                    disabled={!cameraActive}
                     variant="outline"
-                    className={!cameraActive ? "opacity-50 cursor-not-allowed" : "bg-blue-50 hover:bg-blue-100 border-blue-300"}
+                    className="bg-blue-50 hover:bg-blue-100 border-blue-300"
                   >
                     <Scan className="w-4 h-4 mr-2" />
                     Capture Signature
                   </Button>
                   <Button 
                     onClick={stopCamera} 
-                    disabled={!cameraActive}
                     variant="outline"
-                    className={!cameraActive ? "opacity-50 cursor-not-allowed" : "bg-red-50 hover:bg-red-100 border-red-300 text-red-700 hover:text-red-800"}
+                    className="bg-red-50 hover:bg-red-100 border-red-300 text-red-700 hover:text-red-800"
                   >
                     <XCircle className="w-4 h-4 mr-2" />
                     Stop Camera

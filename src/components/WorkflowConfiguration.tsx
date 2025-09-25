@@ -42,9 +42,10 @@ import {
 
 interface WorkflowConfigurationProps {
   className?: string;
+  hideWorkflowsTab?: boolean;
 }
 
-export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ className }) => {
+export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ className, hideWorkflowsTab = false }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [workflowEngine] = useState(() => new BiDirectionalWorkflowEngine());
@@ -118,6 +119,14 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
       refreshWorkflows();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (hideWorkflowsTab && !selectedWorkflow && !isCreating) {
+      setIsCreating(true);
+      setIsEditing(true);
+      setActiveTab('designer');
+    }
+  }, [hideWorkflowsTab, selectedWorkflow, isCreating]);
 
   const refreshWorkflows = () => {
     const allWorkflows = workflowEngine.getAllWorkflowRoutes();
@@ -492,30 +501,35 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
             Configure bi-directional approval routing workflows
           </p>
         </div>
-        <Button
-          onClick={() => {
-            resetForms();
-            setIsCreating(true);
-            setIsEditing(true);
-            setSelectedWorkflow(null);
-            setActiveTab('designer');
-          }}
-          className="flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Create Workflow
-        </Button>
+        {!hideWorkflowsTab && (
+          <Button
+            onClick={() => {
+              resetForms();
+              setIsCreating(true);
+              setIsEditing(true);
+              setSelectedWorkflow(null);
+              setActiveTab('designer');
+            }}
+            className="flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Create Workflow
+          </Button>
+        )}
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="workflows">Workflows</TabsTrigger>
-          {(selectedWorkflow || isCreating) && (
-            <TabsTrigger value="designer">Workflow Designer</TabsTrigger>
-          )}
-        </TabsList>
+      <Tabs value={hideWorkflowsTab ? "designer" : activeTab} onValueChange={setActiveTab} className="space-y-4">
+        {!hideWorkflowsTab && (
+          <TabsList>
+            <TabsTrigger value="workflows">Workflows</TabsTrigger>
+            {(selectedWorkflow || isCreating) && (
+              <TabsTrigger value="designer">Workflow Designer</TabsTrigger>
+            )}
+          </TabsList>
+        )}
 
-        <TabsContent value="workflows" className="space-y-4">
+        {!hideWorkflowsTab && (
+          <TabsContent value="workflows" className="space-y-4">
           {workflows.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-8">
@@ -546,11 +560,11 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
               ))}
             </div>
           )}
-        </TabsContent>
+          </TabsContent>
+        )}
 
-        {(selectedWorkflow || isCreating) && (
-          <TabsContent value="designer" className="space-y-6">
-            {isEditing ? (
+        <TabsContent value="designer" className="space-y-6">
+            {(isEditing || hideWorkflowsTab) ? (
               /* Workflow Editor */
               <Card>
                 <CardHeader>
@@ -794,218 +808,221 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
               </Card>
             ) : (
               /* Workflow Display */
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle>{selectedWorkflow.name}</CardTitle>
-                      <p className="text-muted-foreground mt-1">
-                        {selectedWorkflow.description}
-                      </p>
+              selectedWorkflow && (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>{selectedWorkflow.name}</CardTitle>
+                        <p className="text-muted-foreground mt-1">
+                          {selectedWorkflow.description}
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={() => setIsEditing(true)}
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit
+                      </Button>
                     </div>
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsEditing(true)}
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      Edit
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-4 mb-6">
-                    <Badge variant="outline">{selectedWorkflow.type}</Badge>
-                    {selectedWorkflow.requiresCounterApproval && (
-                      <Badge variant="default">Counter-Approval</Badge>
-                    )}
-                    {selectedWorkflow.autoEscalation.enabled && (
-                      <Badge variant="secondary">Auto-Escalation</Badge>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center gap-4 mb-6">
+                      <Badge variant="outline">{selectedWorkflow.type}</Badge>
+                      {selectedWorkflow.requiresCounterApproval && (
+                        <Badge variant="default">Counter-Approval</Badge>
+                      )}
+                      {selectedWorkflow.autoEscalation.enabled && (
+                        <Badge variant="secondary">Auto-Escalation</Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )
             )}
 
             {/* Steps Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">Workflow Steps</h3>
-                {!editingStep && (
-                  <Button
-                    variant="outline"
-                    onClick={() => resetStepForm()}
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Step
-                  </Button>
-                )}
-              </div>
+            {!hideWorkflowsTab && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">Workflow Steps</h3>
+                  {!editingStep && (
+                    <Button
+                      variant="outline"
+                      onClick={() => resetStepForm()}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Step
+                    </Button>
+                  )}
+                </div>
 
-              {/* Step Editor */}
-              {(editingStep || (!editingStep && stepName)) && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>
-                      {editingStep ? 'Edit Step' : 'Add New Step'}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2">
+                {/* Step Editor */}
+                {(editingStep || (!editingStep && stepName)) && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>
+                        {editingStep ? 'Edit Step' : 'Add New Step'}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <label className="text-sm font-medium">Step Name</label>
+                          <Input
+                            value={stepName}
+                            onChange={(e) => setStepName(e.target.value)}
+                            placeholder="Enter step name"
+                            className="mt-1"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium">Approver Role</label>
+                          <Select value={stepRole} onValueChange={setStepRole}>
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableRoles.map(role => (
+                                <SelectItem key={role} value={role}>{role}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      
                       <div>
-                        <label className="text-sm font-medium">Step Name</label>
-                        <Input
-                          value={stepName}
-                          onChange={(e) => setStepName(e.target.value)}
-                          placeholder="Enter step name"
+                        <label className="text-sm font-medium">Description</label>
+                        <Textarea
+                          value={stepDescription}
+                          onChange={(e) => setStepDescription(e.target.value)}
+                          placeholder="Enter step description"
                           className="mt-1"
                         />
                       </div>
                       
+                      <div className="grid gap-4 md:grid-cols-3">
+                        <div>
+                          <label className="text-sm font-medium">Required Approvals</label>
+                          <Input
+                            type="number"
+                            value={stepRequiredApprovals}
+                            onChange={(e) => setStepRequiredApprovals(Number(e.target.value))}
+                            min={1}
+                            max={10}
+                            className="mt-1"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="text-sm font-medium">Timeout (hours)</label>
+                          <Input
+                            type="number"
+                            value={stepTimeoutHours}
+                            onChange={(e) => setStepTimeoutHours(Number(e.target.value))}
+                            min={1}
+                            max={168}
+                            className="mt-1"
+                          />
+                        </div>
+                        
+                        <div className="flex items-center space-x-2 pt-6">
+                          <Switch
+                            checked={stepRequiresCounterApproval}
+                            onCheckedChange={setStepRequiresCounterApproval}
+                          />
+                          <label className="text-sm font-medium">Counter-Approval</label>
+                        </div>
+                      </div>
+                      
                       <div>
-                        <label className="text-sm font-medium">Approver Role</label>
-                        <Select value={stepRole} onValueChange={setStepRole}>
+                        <label className="text-sm font-medium">Escalation Roles (Optional)</label>
+                        <Select
+                          value=""
+                          onValueChange={(role) => {
+                            if (!stepEscalationRoles.includes(role)) {
+                              setStepEscalationRoles([...stepEscalationRoles, role]);
+                            }
+                          }}
+                        >
                           <SelectTrigger className="mt-1">
-                            <SelectValue placeholder="Select role" />
+                            <SelectValue placeholder="Add escalation role" />
                           </SelectTrigger>
                           <SelectContent>
-                            {availableRoles.map(role => (
-                              <SelectItem key={role} value={role}>{role}</SelectItem>
-                            ))}
+                            {availableRoles
+                              .filter(role => role !== stepRole && !stepEscalationRoles.includes(role))
+                              .map(role => (
+                                <SelectItem key={role} value={role}>{role}</SelectItem>
+                              ))}
                           </SelectContent>
                         </Select>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium">Description</label>
-                      <Textarea
-                        value={stepDescription}
-                        onChange={(e) => setStepDescription(e.target.value)}
-                        placeholder="Enter step description"
-                        className="mt-1"
-                      />
-                    </div>
-                    
-                    <div className="grid gap-4 md:grid-cols-3">
-                      <div>
-                        <label className="text-sm font-medium">Required Approvals</label>
-                        <Input
-                          type="number"
-                          value={stepRequiredApprovals}
-                          onChange={(e) => setStepRequiredApprovals(Number(e.target.value))}
-                          min={1}
-                          max={10}
-                          className="mt-1"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="text-sm font-medium">Timeout (hours)</label>
-                        <Input
-                          type="number"
-                          value={stepTimeoutHours}
-                          onChange={(e) => setStepTimeoutHours(Number(e.target.value))}
-                          min={1}
-                          max={168}
-                          className="mt-1"
-                        />
-                      </div>
-                      
-                      <div className="flex items-center space-x-2 pt-6">
-                        <Switch
-                          checked={stepRequiresCounterApproval}
-                          onCheckedChange={setStepRequiresCounterApproval}
-                        />
-                        <label className="text-sm font-medium">Counter-Approval</label>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium">Escalation Roles (Optional)</label>
-                      <Select
-                        value=""
-                        onValueChange={(role) => {
-                          if (!stepEscalationRoles.includes(role)) {
-                            setStepEscalationRoles([...stepEscalationRoles, role]);
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder="Add escalation role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableRoles
-                            .filter(role => role !== stepRole && !stepEscalationRoles.includes(role))
-                            .map(role => (
-                              <SelectItem key={role} value={role}>{role}</SelectItem>
+                        
+                        {stepEscalationRoles.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {stepEscalationRoles.map(role => (
+                              <Badge key={role} variant="secondary" className="cursor-pointer">
+                                {role}
+                                <button
+                                  onClick={() => setStepEscalationRoles(stepEscalationRoles.filter(r => r !== role))}
+                                  className="ml-2 hover:text-destructive"
+                                >
+                                  ×
+                                </button>
+                              </Badge>
                             ))}
-                        </SelectContent>
-                      </Select>
+                          </div>
+                        )}
+                      </div>
                       
-                      {stepEscalationRoles.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {stepEscalationRoles.map(role => (
-                            <Badge key={role} variant="secondary" className="cursor-pointer">
-                              {role}
-                              <button
-                                onClick={() => setStepEscalationRoles(stepEscalationRoles.filter(r => r !== role))}
-                                className="ml-2 hover:text-destructive"
-                              >
-                                ×
-                              </button>
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex gap-2 pt-4">
-                      <Button onClick={handleSaveStep}>
-                        <Save className="w-4 h-4 mr-2" />
-                        {editingStep ? 'Update Step' : 'Add Step'}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setEditingStep(null);
-                          resetStepForm();
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                      <div className="flex gap-2 pt-4">
+                        <Button onClick={handleSaveStep}>
+                          <Save className="w-4 h-4 mr-2" />
+                          {editingStep ? 'Update Step' : 'Add Step'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setEditingStep(null);
+                            resetStepForm();
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
-              {/* Steps List */}
-              {selectedWorkflow?.steps && selectedWorkflow.steps.length > 0 && (
-                <div className="space-y-6">
-                  {selectedWorkflow.steps
-                    .sort((a, b) => a.order - b.order)
-                    .map((step, index) => (
-                      <StepCard key={step.id} step={step} index={index} />
-                    ))}
-                </div>
-              )}
-              
-              {(!selectedWorkflow?.steps || selectedWorkflow.steps.length === 0) && !editingStep && !stepName && (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-8">
-                    <ArrowRight className="w-12 h-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No Steps Configured</h3>
-                    <p className="text-muted-foreground text-center mb-4">
-                      Add workflow steps to define the approval process.
-                    </p>
-                    <Button onClick={() => resetStepForm()}>
-                      Add First Step
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </TabsContent>
-        )}
+                {/* Steps List */}
+                {selectedWorkflow?.steps && selectedWorkflow.steps.length > 0 && (
+                  <div className="space-y-6">
+                    {selectedWorkflow.steps
+                      .sort((a, b) => a.order - b.order)
+                      .map((step, index) => (
+                        <StepCard key={step.id} step={step} index={index} />
+                      ))}
+                  </div>
+                )}
+                
+                {(!selectedWorkflow?.steps || selectedWorkflow.steps.length === 0) && !editingStep && !stepName && (
+                  <Card>
+                    <CardContent className="flex flex-col items-center justify-center py-8">
+                      <ArrowRight className="w-12 h-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium mb-2">No Steps Configured</h3>
+                      <p className="text-muted-foreground text-center mb-4">
+                        Add workflow steps to define the approval process.
+                      </p>
+                      <Button onClick={() => resetStepForm()}>
+                        Add First Step
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+        </TabsContent>
       </Tabs>
     </div>
   );

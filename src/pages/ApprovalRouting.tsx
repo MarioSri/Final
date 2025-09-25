@@ -20,7 +20,9 @@ import {
   FileText,
   Users,
   Bell,
-  TrendingUp
+  TrendingUp,
+  AlertTriangle,
+  XCircle
 } from 'lucide-react';
 
 const ApprovalRouting: React.FC = () => {
@@ -28,6 +30,7 @@ const ApprovalRouting: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('configuration');
+  const [isBypassMode, setIsBypassMode] = useState(false);
 
   const handleLogout = () => {
     toast({
@@ -89,148 +92,171 @@ const ApprovalRouting: React.FC = () => {
 
   return (
     <DashboardLayout userRole={user?.role || 'employee'} onLogout={handleLogout}>
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="container mx-auto p-6 space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Bi-Directional Approval Routing</h1>
-          <p className="text-muted-foreground mt-2">
-            Bi-directional approval workflows with intelligent routing and escalation
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              {stats.pendingApprovals} Pending
-            </Badge>
-            <Badge variant="outline" className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" />
-              {stats.completedToday} Today
-            </Badge>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Pending</p>
-                <p className="text-2xl font-bold">{stats.pendingApprovals}</p>
-              </div>
-              <Clock className="w-8 h-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Completed</p>
-                <p className="text-2xl font-bold">{stats.completedToday}</p>
-              </div>
-              <CheckCircle2 className="w-8 h-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Avg. Time</p>
-                <p className="text-2xl font-bold">{stats.averageTime}</p>
-              </div>
-              <TrendingUp className="w-8 h-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Escalation Rate</p>
-                <p className="text-2xl font-bold">{stats.escalationRate}</p>
-              </div>
-              <Zap className="w-8 h-8 text-yellow-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Counter</p>
-                <p className="text-2xl font-bold">{stats.counterApprovals}</p>
-              </div>
-              <Shield className="w-8 h-8 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Features Overview */}
-      <Card>
+      <Card className={`shadow-elegant ${isBypassMode ? 'border-destructive bg-red-50' : ''}`}>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ArrowRightLeft className="w-5 h-5" />
-            System Features
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, index) => (
-              <div key={index} className="flex items-start gap-4">
-                <div className={cn("flex-shrink-0 p-2 rounded-lg bg-muted", feature.color)}>
-                  <feature.icon className="w-6 h-6" />
-                </div>
-                <div className="space-y-1">
-                  <h4 className="font-medium">{feature.title}</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {feature.description}
-                  </p>
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <ArrowRightLeft className={`w-6 h-6 ${isBypassMode ? 'text-destructive animate-pulse' : 'text-primary'}`} />
+              Approval Chain with Bypass
+            </CardTitle>
+            
+            <Button
+              onClick={() => setIsBypassMode(!isBypassMode)}
+              variant={isBypassMode ? "destructive" : "outline"}
+              size="lg"
+              className={`font-bold ${isBypassMode ? 'animate-pulse shadow-glow' : ''}`}
+            >
+              {isBypassMode ? (
+                <>
+                  <XCircle className="w-5 h-5 mr-2" />
+                  Cancel Bypass
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="w-5 h-5 mr-2" />
+                  ACTIVATE BYPASS
+                </>
+              )}
+            </Button>
           </div>
-        </CardContent>
+          
+          {isBypassMode && (
+            <div className="bg-red-100 border border-red-200 rounded-lg p-4 mt-4">
+              <div className="flex items-center gap-2 text-red-800 font-semibold mb-2">
+                <ArrowRightLeft className="w-5 h-5" />
+                BYPASS MODE ACTIVE
+              </div>
+              <p className="text-red-700 text-sm">
+                This will bypass normal approval workflows and send directly to all selected recipients.
+                Use only for genuine emergencies requiring immediate attention.
+              </p>
+            </div>
+          )}
+        </CardHeader>
       </Card>
 
-      {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-1">
-          <TabsTrigger 
-            value="configuration" 
-            className="flex items-center gap-2"
-          >
-            <Settings className="w-4 h-4" />
-            Configuration
-          </TabsTrigger>
-        </TabsList>
+      {/* Quick Stats - Only show when NOT in bypass mode */}
+      {!isBypassMode && (
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Pending</p>
+                  <p className="text-2xl font-bold">{stats.pendingApprovals}</p>
+                </div>
+                <Clock className="w-8 h-8 text-orange-500" />
+              </div>
+            </CardContent>
+          </Card>
 
-        <TabsContent value="configuration" className="space-y-4">
-          {isAdmin ? (
-            <WorkflowConfiguration />
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Completed</p>
+                  <p className="text-2xl font-bold">{stats.completedToday}</p>
+                </div>
+                <CheckCircle2 className="w-8 h-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Avg. Time</p>
+                  <p className="text-2xl font-bold">{stats.averageTime}</p>
+                </div>
+                <TrendingUp className="w-8 h-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Escalation Rate</p>
+                  <p className="text-2xl font-bold">{stats.escalationRate}</p>
+                </div>
+                <Zap className="w-8 h-8 text-yellow-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Counter</p>
+                  <p className="text-2xl font-bold">{stats.counterApprovals}</p>
+                </div>
+                <Shield className="w-8 h-8 text-purple-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Features Overview - Only show when NOT in bypass mode */}
+      {!isBypassMode && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ArrowRightLeft className="w-5 h-5" />
+              System Features
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {features.map((feature, index) => (
+                <div key={index} className="flex items-start gap-4">
+                  <div className={cn("flex-shrink-0 p-2 rounded-lg bg-muted", feature.color)}>
+                    <feature.icon className="w-6 h-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="font-medium">{feature.title}</h4>
+                    <p className="text-sm text-muted-foreground">
+                      {feature.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Bypass Configuration - Show when bypass mode is active */}
+      {isBypassMode && (
+        <Card className="shadow-elegant border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Bypass Workflow Configuration
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isAdmin ? (
+              <WorkflowConfiguration hideWorkflowsTab={true} />
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12">
                 <Users className="w-12 h-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-medium mb-2">Administrator Access Required</h3>
                 <p className="text-muted-foreground text-center">
                   You need administrator privileges to configure workflows and approval routing.
                 </p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-      </Tabs>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+
 
       </div>
     </DashboardLayout>

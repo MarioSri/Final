@@ -53,21 +53,6 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
 
   const { toast } = useToast();
 
-  // Time slots for meeting scheduling
-  const timeSlots = [
-    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-    "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
-    "15:00", "15:30", "16:00", "16:30", "17:00"
-  ];
-
-  const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
-  };
-
   useEffect(() => {
     if (isOpen) {
       loadAvailableParticipants();
@@ -289,16 +274,12 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="requestedTimeSlot">Time</Label>
-                  <Select value={requestedTimeSlot} onValueChange={setRequestedTimeSlot}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select time" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {timeSlots.map((time) => (
-                        <SelectItem key={time} value={time}>{formatTime(time)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    id="requestedTimeSlot"
+                    type="time"
+                    value={requestedTimeSlot}
+                    onChange={(e) => setRequestedTimeSlot(e.target.value)}
+                  />
                 </div>
               </div>
             </div>

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Filter, Search, TrendingUp, Clock, Users, AlertTriangle } from 'lucide-react';
+import { RefreshCw, Filter, Search, TrendingUp, Clock, Users, AlertTriangle, FileText, User, Calendar, CheckCircle, XCircle, Eye, Download } from 'lucide-react';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Input } from './ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
+import { Progress } from './ui/progress';
 import { useToast } from '../hooks/use-toast';
 import { LiveMeetingRequestCard } from './LiveMeetingRequestCard';
 import { liveMeetingService } from '../services/LiveMeetingService';
@@ -34,6 +35,116 @@ const StatsCard: React.FC<StatsCardProps> = ({ title, value, icon, color, descri
     </CardContent>
   </Card>
 );
+
+// Document cards from Track Documents page
+const trackDocuments = [
+  {
+    id: 'DOC-003',
+    title: 'Budget Request - Lab Equipment',
+    type: 'Letter',
+    submittedBy: 'Prof. David Brown',
+    submittedDate: '2024-01-13',
+    status: 'rejected',
+    priority: 'medium',
+    workflow: {
+      currentStep: 'Rejected',
+      progress: 50
+    }
+  },
+  {
+    id: 'DOC-001',
+    title: 'Faculty Meeting Minutes - Q4 2024',
+    type: 'Report',
+    submittedBy: 'Dr. Sarah Johnson',
+    submittedDate: '2024-01-15',
+    status: 'pending',
+    priority: 'high',
+    workflow: {
+      currentStep: 'Principal Approval',
+      progress: 75
+    }
+  }
+];
+
+const DocumentCard: React.FC<{ document: typeof trackDocuments[0] }> = ({ document }) => {
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'approved': return <CheckCircle className="h-4 w-4 text-green-600" />;
+      case 'rejected': return <XCircle className="h-4 w-4 text-red-600" />;
+      case 'pending': return <Clock className="h-4 w-4 text-yellow-600" />;
+      default: return <Clock className="h-4 w-4 text-gray-600" />;
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'approved': return 'default';
+      case 'rejected': return 'destructive';
+      case 'pending': return 'secondary';
+      default: return 'outline';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'text-orange-600 font-semibold';
+      case 'medium': return 'text-yellow-600';
+      default: return 'text-gray-600';
+    }
+  };
+
+  return (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardContent className="p-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+          <div className="flex-1 space-y-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="font-semibold text-lg">{document.title}</h3>
+                <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <FileText className="h-4 w-4" />
+                    {document.type}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <User className="h-4 w-4" />
+                    {document.submittedBy}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    {document.submittedDate}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {getStatusIcon(document.status)}
+                <Badge variant={getStatusBadge(document.status)}>
+                  {document.status.charAt(0).toUpperCase() + document.status.slice(1)}
+                </Badge>
+                <Badge variant="outline" className={getPriorityColor(document.priority)}>
+                  {document.priority.charAt(0).toUpperCase() + document.priority.slice(1)}
+                </Badge>
+              </div>
+            </div>
+
+
+          </div>
+
+          <div className="flex flex-col gap-2 min-w-[150px]">
+            <Button variant="outline" size="sm">
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Accept
+            </Button>
+            <Button variant="outline" size="sm">
+              <XCircle className="h-4 w-4 mr-2" />
+              Decline
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 export const LiveMeetingRequestManager: React.FC = () => {
   const [activeRequests, setActiveRequests] = useState<LiveMeetingRequest[]>([]);
@@ -296,8 +407,17 @@ export const LiveMeetingRequestManager: React.FC = () => {
         </div>
       </div>
 
+      {/* Track Documents Cards */}
+      <div className="space-y-4">
+        <h4 className="text-lg font-semibold text-gray-900">Related Documents</h4>
+        {trackDocuments.map(document => (
+          <DocumentCard key={document.id} document={document} />
+        ))}
+      </div>
+
       {/* Requests List */}
       <div className="space-y-4">
+        <h4 className="text-lg font-semibold text-gray-900">Live Meeting Requests</h4>
         {filteredRequests.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
@@ -324,27 +444,7 @@ export const LiveMeetingRequestManager: React.FC = () => {
         )}
       </div>
 
-      {/* Quick Actions */}
-      {filteredRequests.filter(r => r.status === 'pending').length > 0 && (
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-medium text-blue-900">Quick Actions</h4>
-              <p className="text-sm text-blue-700">
-                {filteredRequests.filter(r => r.status === 'pending').length} requests awaiting your response
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline">
-                Accept All Normal
-              </Button>
-              <Button size="sm" className="bg-orange-600 hover:bg-orange-700">
-                Review Urgent First
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };
