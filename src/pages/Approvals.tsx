@@ -4,8 +4,9 @@ import { LiveMeetingRequestModal } from "@/components/LiveMeetingRequestModal";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle2, XCircle, Clock, FileText, User, Calendar, MessageSquare, Video } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, FileText, User, Calendar, MessageSquare, Video, Eye, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -42,7 +43,7 @@ const Approvals = () => {
       description: "Request for attending international conference on AI"
     },
     {
-      id: 2,
+      id: 4,
       title: "Infrastructure Upgrade Proposal",
       submitter: "Prof. Anita Sharma", 
       department: "Electrical Engineering",
@@ -52,7 +53,7 @@ const Approvals = () => {
       description: "Proposal for upgrading laboratory equipment"
     },
     {
-      id: 3,
+      id: 5,
       title: "Student Exchange Program Circular",
       submitter: "Dr. Mohammed Ali",
       department: "Mechanical Engineering",
@@ -65,14 +66,14 @@ const Approvals = () => {
 
   const recentApprovals = [
     {
-      id: 4,
+      id: 6,
       title: "Research Grant Application",
       status: "approved",
       approvedBy: "Principal",
       approvedDate: "2024-01-12"
     },
     {
-      id: 5,
+      id: 7,
       title: "Event Permission Request",
       status: "rejected", 
       rejectedBy: "HOD - CSE",
@@ -148,6 +149,160 @@ const Approvals = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  {/* Faculty Meeting Minutes Card */}
+                  <Card className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col lg:flex-row gap-6">
+                        <div className="flex-1 space-y-4">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="font-semibold text-lg">Faculty Meeting Minutes – Q4 2024</h3>
+                              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <FileText className="h-4 w-4" />
+                                  Circular
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <User className="h-4 w-4" />
+                                  Dr. Sarah Johnson
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-4 w-4" />
+                                  2024-01-15
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-yellow-600" />
+                              <Badge variant="warning">Pending</Badge>
+                              <Badge variant="outline" className="text-orange-600 font-semibold">High Priority</Badge>
+                            </div>
+                          </div>
+                          
+                          {/* Description */}
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-1">
+                              <MessageSquare className="h-4 w-4" />
+                              <span className="text-sm font-medium">Description</span>
+                            </div>
+                            <div className="bg-muted p-3 rounded text-sm">
+                              <p>Add a risk-mitigation section to highlight potential delays or issues.</p>
+                            </div>
+                          </div>
+                          
+                          {/* Input Field */}
+                          <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors">
+                            <textarea
+                              className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none"
+                              placeholder="Add your comment..."
+                              rows={1}
+                              style={{ resize: 'none' }}
+                              onInput={(e) => {
+                                const target = e.target as HTMLTextAreaElement;
+                                target.style.height = 'auto';
+                                target.style.height = target.scrollHeight + 'px';
+                              }}
+                            />
+                            <button className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors">
+                              <ChevronRight className="h-4 w-4 text-gray-600" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 min-w-[150px]">
+                          <Button variant="outline" size="sm">
+                            <Eye className="h-4 w-4 mr-2" />
+                            View
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            Approve
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Reject
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Budget Request Card */}
+                  <Card className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col lg:flex-row gap-6">
+                        <div className="flex-1 space-y-4">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="font-semibold text-lg">Budget Request – Lab Equipment</h3>
+                              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <FileText className="h-4 w-4" />
+                                  Letter
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <User className="h-4 w-4" />
+                                  Prof. David Brown
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-4 w-4" />
+                                  2024-01-13
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-yellow-600" />
+                              <Badge variant="warning">Pending</Badge>
+                              <Badge variant="outline" className="text-yellow-600">Medium Priority</Badge>
+                            </div>
+                          </div>
+                          
+                          {/* Description */}
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-1">
+                              <MessageSquare className="h-4 w-4" />
+                              <span className="text-sm font-medium">Description</span>
+                            </div>
+                            <div className="bg-muted p-3 rounded text-sm">
+                              <p>Consider revising the scope to focus on priority items within this quarter's budget.</p>
+                            </div>
+                          </div>
+                          
+                          {/* Input Field */}
+                          <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors">
+                            <textarea
+                              className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none"
+                              placeholder="Add your comment..."
+                              rows={1}
+                              style={{ resize: 'none' }}
+                              onInput={(e) => {
+                                const target = e.target as HTMLTextAreaElement;
+                                target.style.height = 'auto';
+                                target.style.height = target.scrollHeight + 'px';
+                              }}
+                            />
+                            <button className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors">
+                              <ChevronRight className="h-4 w-4 text-gray-600" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 min-w-[150px]">
+                          <Button variant="outline" size="sm">
+                            <Eye className="h-4 w-4 mr-2" />
+                            View
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            Approve
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Reject
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
                   {pendingApprovals.map((doc) => (
                     <div key={doc.id} className="border rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
@@ -184,14 +339,13 @@ const Approvals = () => {
                           Reject
                         </Button>
                         <Button size="sm" variant="outline">View Document</Button>
-                        {/* NEW: LiveConnect+ Button */}
                         <Button 
                           size="sm" 
                           variant="outline" 
                           className="border-orange-500 text-orange-600 hover:bg-orange-50"
                           onClick={() => setShowLiveMeetingModal(true)}
                         >
-                          🔴 LiveConnect+
+                          🔴 LiveMeet+
                         </Button>
                       </div>
                     </div>

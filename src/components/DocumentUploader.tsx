@@ -255,6 +255,12 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
                     Normal Priority
                   </div>
                 </SelectItem>
+                <SelectItem value="medium">
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-yellow-500" />
+                    Medium Priority
+                  </div>
+                </SelectItem>
                 <SelectItem value="high">
                   <div className="flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 text-warning" />
@@ -264,7 +270,7 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
                 <SelectItem value="urgent">
                   <div className="flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 text-destructive" />
-                    Urgent
+                    Urgent Priority
                   </div>
                 </SelectItem>
               </SelectContent>
@@ -274,7 +280,7 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
           {/* Description */}
           <div className="space-y-3">
             <Label htmlFor="description" className="text-base font-medium">
-              Description / Comments
+              Document Description / Comments
             </Label>
             <Textarea
               id="description"
@@ -300,7 +306,7 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
               </div>
             )}
             
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
               {isUploading ? (
                 <LoadingState 
                   type="spinner" 
@@ -308,16 +314,31 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
                   className="py-4"
                 />
               ) : (
-              <Button
-                onClick={handleSubmit}
-                disabled={isSubmitDisabled}
-                variant={isSubmitDisabled ? "secondary" : "gradient"}
-                size="lg"
-                className="min-w-32"
-              >
-                <Send className="w-4 h-4 mr-2" />
-                {isSubmitDisabled ? "Complete Form to Submit" : "Submit Document"}
-              </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setDocumentTitle("");
+                      setDocumentTypes([]);
+                      setUploadedFiles([]);
+                      setSelectedRecipients([]);
+                      setDescription("");
+                      setPriority("normal");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isSubmitDisabled}
+                    variant={isSubmitDisabled ? "secondary" : "gradient"}
+                    size="lg"
+                    className="min-w-32"
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    {isSubmitDisabled ? "Complete Form to Submit" : "Submit Document"}
+                  </Button>
+                </>
               )}
             </div>
           </div>

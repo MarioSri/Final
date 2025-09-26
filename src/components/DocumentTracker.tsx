@@ -66,7 +66,7 @@ const mockDocuments: Document[] = [
     submittedBy: 'Dr. Sarah Johnson',
     submittedDate: '2024-01-15',
     status: 'pending',
-    priority: 'high',
+    priority: 'High Priority',
     workflow: {
       currentStep: 'Principal Approval',
       progress: 75,
@@ -91,7 +91,7 @@ const mockDocuments: Document[] = [
     submittedBy: 'Dr. Emily Davis',
     submittedDate: '2024-01-14',
     status: 'approved',
-    priority: 'medium',
+    priority: 'Urgent Priority',
     workflow: {
       currentStep: 'Complete',
       progress: 100,
@@ -103,7 +103,12 @@ const mockDocuments: Document[] = [
       ]
     },
     requiresSignature: true,
-    signedBy: ['Prof. James Wilson', 'Dr. Maria Garcia', 'Dr. Robert Smith']
+    signedBy: ['Prof. James Wilson', 'Dr. Maria Garcia', 'Dr. Robert Smith'],
+    comments: [
+      { author: 'Prof. James Wilson', date: '2024-01-15', message: 'Please attach vendor quotations for the requested equipment to justify costs.' },
+      { author: 'Dr. Maria Garcia', date: '2024-01-18', message: 'Follow-up tasks should include timelines for each item discussed.' },
+      { author: 'Dr. Robert Smith', date: '2024-01-15', message: 'Ensure the proposed purchase aligns with the department\'s annual procurement plan.' }
+    ]
   },
   {
     id: 'DOC-003',
@@ -112,7 +117,7 @@ const mockDocuments: Document[] = [
     submittedBy: 'Prof. David Brown',
     submittedDate: '2024-01-13',
     status: 'rejected',
-    priority: 'medium',
+    priority: 'Medium Priority',
     workflow: {
       currentStep: 'Rejected',
       progress: 50,
@@ -162,9 +167,15 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
 
   const getPriorityColor = (priority: string): string => {
     switch (priority) {
-      case 'urgent': return 'text-red-600 font-bold';
-      case 'high': return 'text-orange-600 font-semibold';
-      case 'medium': return 'text-yellow-600';
+      case 'urgent':
+      case 'urgent priority':
+      case 'Urgent Priority': return 'text-red-600 font-bold';
+      case 'high':
+      case 'high priority':
+      case 'High Priority': return 'text-orange-600 font-semibold';
+      case 'medium':
+      case 'medium priority':
+      case 'Medium Priority': return 'text-yellow-600';
       case 'low': return 'text-green-600';
       default: return 'text-gray-600';
     }

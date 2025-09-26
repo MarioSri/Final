@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, Users, MapPin, MessageSquare, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Clock, Users, MapPin, MessageSquare, CheckCircle, XCircle, AlertCircle, User, Settings } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -93,18 +93,18 @@ export const LiveMeetingRequestCard: React.FC<LiveMeetingRequestCardProps> = ({
               </Badge>
             </CardTitle>
             <div className="flex items-center gap-2 text-sm text-gray-600">
-              <span>From: {request.requesterName}</span>
-              <span>•</span>
-              <span>{request.requesterRole}</span>
+              <User className="h-4 w-4" />
+              <span>From: {request.requesterName} • HOD</span>
             </div>
           </div>
           
           <div className="flex flex-col items-end gap-2">
-            <Badge variant={getUrgencyBadgeVariant()}>
-              {urgencyConfig.icon} {urgencyConfig.label}
+            <Badge variant="default" className="bg-orange-100 text-orange-800">
+              ⚡Urgent
             </Badge>
-            <div className="text-xs text-gray-500">
-              {formatTimeAgo(request.createdAt)}
+            <div className="flex items-center gap-1 text-xs text-gray-500">
+              <Clock className="h-3 w-3" />
+              10m ago
             </div>
           </div>
         </div>
@@ -115,9 +115,9 @@ export const LiveMeetingRequestCard: React.FC<LiveMeetingRequestCardProps> = ({
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm">
-              <MessageSquare className="h-4 w-4 text-gray-500" />
+              <Settings className="h-4 w-4 text-gray-500" />
               <span className="font-medium">Purpose:</span>
-              <span>{purposeConfig.icon} {purposeConfig.label}</span>
+              <span>❓Need Clarification</span>
             </div>
             
             <div className="flex items-center gap-2 text-sm">
@@ -130,31 +130,22 @@ export const LiveMeetingRequestCard: React.FC<LiveMeetingRequestCardProps> = ({
               </span>
             </div>
 
-            {request.requestedTime && (
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4 text-gray-500" />
-                <span className="font-medium">Preferred Time:</span>
-                <span>{new Date(request.requestedTime).toLocaleString()}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-2 text-sm">
+              <Clock className="h-4 w-4 text-gray-500" />
+              <span className="font-medium">Preferred Date & Time:</span>
+            </div>
+            <div className="ml-6 text-sm space-y-1">
+              <div><span className="font-medium">Date:</span> 09/26/2025</div>
+              <div><span className="font-medium">Time:</span> 10:56 AM</div>
+            </div>
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm">
-              <Users className="h-4 w-4 text-gray-500" />
-              <span className="font-medium">Participants:</span>
-              <span>{request.participants.length}</span>
+              <AlertCircle className="h-4 w-4 text-orange-500" />
+              <span className="font-medium">Expires:</span>
+              <span className="text-orange-500">1h Left</span>
             </div>
-
-            {!isExpired && (
-              <div className="flex items-center gap-2 text-sm">
-                <AlertCircle className="h-4 w-4 text-orange-500" />
-                <span className="font-medium">Expires:</span>
-                <span className={timeUntilExpiry.includes('Expired') ? 'text-red-500' : 'text-orange-500'}>
-                  {timeUntilExpiry}
-                </span>
-              </div>
-            )}
           </div>
         </div>
 

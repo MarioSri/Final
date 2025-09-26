@@ -63,6 +63,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
   const [requiresCounterApproval, setRequiresCounterApproval] = useState(false);
   const [autoEscalation, setAutoEscalation] = useState(false);
   const [escalationTimeout, setEscalationTimeout] = useState(24);
+  const [escalationTimeUnit, setEscalationTimeUnit] = useState<'seconds' | 'minutes' | 'hours' | 'days' | 'weeks' | 'months'>('hours');
 
   // Step form states
   const [stepName, setStepName] = useState('');
@@ -140,6 +141,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
     setRequiresCounterApproval(false);
     setAutoEscalation(false);
     setEscalationTimeout(24);
+    setEscalationTimeUnit('hours');
     // Reset document management fields
     setDocumentTitle('');
     setDocumentTypes([]);
@@ -168,6 +170,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
     setRequiresCounterApproval(workflow.requiresCounterApproval);
     setAutoEscalation(workflow.autoEscalation.enabled);
     setEscalationTimeout(workflow.autoEscalation.timeoutHours);
+    setEscalationTimeUnit('hours');
   };
 
   const loadStep = (step: WorkflowStep) => {
@@ -496,9 +499,8 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Workflow Configuration</h2>
           <p className="text-muted-foreground">
-            Configure bi-directional approval routing workflows
+            Configure Bi-Directional Approval Routing Workflows
           </p>
         </div>
         {!hideWorkflowsTab && (
@@ -699,7 +701,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
 
                     {/* Recipients */}
                     <div>
-                      <label className="text-sm font-medium">Document Recipients</label>
+                      <label className="text-sm font-medium">Approval Chain with Bypass Recipients</label>
                       <div className="mt-1">
                         <RecipientSelector
                           userRole={user?.role || 'employee'}
@@ -723,16 +725,22 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
                               Normal Priority
                             </div>
                           </SelectItem>
+                          <SelectItem value="medium">
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-yellow-500" />
+                              Medium Priority
+                            </div>
+                          </SelectItem>
                           <SelectItem value="high">
                             <div className="flex items-center gap-2">
-                              <AlertCircle className="w-4 h-4 text-yellow-500" />
+                              <AlertCircle className="w-4 h-4 text-orange-500" />
                               High Priority
                             </div>
                           </SelectItem>
                           <SelectItem value="urgent">
                             <div className="flex items-center gap-2">
                               <AlertCircle className="w-4 h-4 text-red-500" />
-                              Urgent
+                              Urgent Priority
                             </div>
                           </SelectItem>
                         </SelectContent>
@@ -771,24 +779,40 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
                   </div>
                   
                   {autoEscalation && (
-                    <div>
-                      <label className="text-sm font-medium">Escalation Timeout (hours)</label>
-                      <Input
-                        type="number"
-                        value={escalationTimeout}
-                        onChange={(e) => setEscalationTimeout(Number(e.target.value))}
-                        min={1}
-                        max={168}
-                        className="mt-1"
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium">Escalation Timeout</label>
+                        <Input
+                          type="number"
+                          value={escalationTimeout}
+                          onChange={(e) => setEscalationTimeout(Number(e.target.value))}
+                          min={1}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Time Unit</label>
+                        <Select
+                          value={escalationTimeUnit}
+                          onValueChange={(value: any) => setEscalationTimeUnit(value)}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="seconds">Seconds</SelectItem>
+                            <SelectItem value="minutes">Minutes</SelectItem>
+                            <SelectItem value="hours">Hours</SelectItem>
+                            <SelectItem value="days">Days</SelectItem>
+                            <SelectItem value="weeks">Weeks</SelectItem>
+                            <SelectItem value="months">Months</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                   )}
                   
-                  <div className="flex gap-2 pt-4">
-                    <Button onClick={handleSaveWorkflow}>
-                      <Save className="w-4 h-4 mr-2" />
-                      Save Workflow
-                    </Button>
+                  <div className="flex justify-end gap-2 pt-4">
                     <Button
                       variant="outline"
                       onClick={() => {
@@ -802,6 +826,14 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
                       }}
                     >
                       Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSaveWorkflow}
+                      variant="default"
+                      className="font-bold animate-pulse bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      SUBMIT BYPASS
                     </Button>
                   </div>
                 </CardContent>

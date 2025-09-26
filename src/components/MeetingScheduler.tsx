@@ -1026,10 +1026,6 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                             <Bell className="w-4 h-4 mr-1" />
                             Remind
                           </Button>
-                          <Button variant="ghost" size="sm">
-                            <Share className="w-4 h-4 mr-1" />
-                            Share
-                          </Button>
                         </div>
                       </div>
                     </div>
@@ -1569,7 +1565,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
           onClose={() => setShowLiveMeetingModal(false)}
           documentId="meeting-scheduler"
           documentType="report"
-          documentTitle="LiveConnect+ Request"
+          documentTitle="LiveMeet+ Request"
         />
       </div>
     </TooltipProvider>

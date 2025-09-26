@@ -94,19 +94,20 @@ const ApprovalRouting: React.FC = () => {
     <DashboardLayout userRole={user?.role || 'employee'} onLogout={handleLogout}>
       <div className="container mx-auto p-6 space-y-6 animate-fade-in">
       {/* Header */}
-      <Card className={`shadow-elegant ${isBypassMode ? 'border-destructive bg-red-50' : ''}`}>
+      <Card className={`shadow-elegant ${isBypassMode ? 'border-green-500 bg-green-50' : ''}`}>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
-              <ArrowRightLeft className={`w-6 h-6 ${isBypassMode ? 'text-destructive animate-pulse' : 'text-primary'}`} />
+              <ArrowRightLeft className={`w-6 h-6 ${isBypassMode ? 'text-green-600 animate-pulse' : 'text-primary'}`} />
               Approval Chain with Bypass
             </CardTitle>
             
             <Button
               onClick={() => setIsBypassMode(!isBypassMode)}
-              variant={isBypassMode ? "destructive" : "outline"}
+              variant={isBypassMode ? "default" : "outline"}
+              className={`font-bold ${isBypassMode ? 'animate-pulse shadow-glow bg-green-600 hover:bg-green-700 text-white' : ''}`}
               size="lg"
-              className={`font-bold ${isBypassMode ? 'animate-pulse shadow-glow' : ''}`}
+
             >
               {isBypassMode ? (
                 <>
@@ -123,12 +124,12 @@ const ApprovalRouting: React.FC = () => {
           </div>
           
           {isBypassMode && (
-            <div className="bg-red-100 border border-red-200 rounded-lg p-4 mt-4">
-              <div className="flex items-center gap-2 text-red-800 font-semibold mb-2">
+            <div className="bg-green-100 border border-green-200 rounded-lg p-4 mt-4">
+              <div className="flex items-center gap-2 text-green-800 font-semibold mb-2">
                 <ArrowRightLeft className="w-5 h-5" />
                 BYPASS MODE ACTIVE
               </div>
-              <p className="text-red-700 text-sm">
+              <p className="text-green-700 text-sm">
                 This will bypass normal approval workflows and send directly to all selected recipients.
                 Use only for genuine emergencies requiring immediate attention.
               </p>
@@ -233,11 +234,11 @@ const ApprovalRouting: React.FC = () => {
 
       {/* Bypass Configuration - Show when bypass mode is active */}
       {isBypassMode && (
-        <Card className="shadow-elegant border-destructive">
+        <Card className="shadow-elegant border-green-500">
           <CardHeader>
-            <CardTitle className="text-destructive flex items-center gap-2">
+            <CardTitle className="text-green-600 flex items-center gap-2">
               <Settings className="w-5 h-5" />
-              Bypass Workflow Configuration
+              Workflow Configuration
             </CardTitle>
           </CardHeader>
           <CardContent>

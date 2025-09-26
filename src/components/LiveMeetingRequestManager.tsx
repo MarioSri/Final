@@ -381,17 +381,18 @@ export const LiveMeetingRequestManager: React.FC = () => {
       {/* Filters and Search */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex items-center gap-2 flex-1">
-          <Search className="h-4 w-4 text-gray-500" />
-          <Input
-            placeholder="Search requests by title, requester, or purpose..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1"
-          />
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+            <Input
+              placeholder="Search requests by title, requester, or purpose..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
         </div>
         
         <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-gray-500" />
           <Select value={filter} onValueChange={setFilter}>
             <SelectTrigger className="w-48">
               <SelectValue />
@@ -407,12 +408,10 @@ export const LiveMeetingRequestManager: React.FC = () => {
         </div>
       </div>
 
-      {/* Track Documents Cards */}
+      {/* Document Cards */}
       <div className="space-y-4">
-        <h4 className="text-lg font-semibold text-gray-900">Related Documents</h4>
-        {trackDocuments.map(document => (
-          <DocumentCard key={document.id} document={document} />
-        ))}
+        <DocumentCard document={trackDocuments[1]} />
+        <DocumentCard document={trackDocuments[0]} />
       </div>
 
       {/* Requests List */}

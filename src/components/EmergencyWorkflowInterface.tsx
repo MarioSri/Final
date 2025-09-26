@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RecipientSelector } from "@/components/RecipientSelector";
 import { 
   AlertTriangle, 
@@ -56,7 +58,10 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
     urgencyLevel: 'high' as const,
     documentTypes: [] as string[],
     uploadedFiles: [] as File[],
-    attachments: [] as File[]
+    attachments: [] as File[],
+    autoEscalation: false,
+    escalationTimeout: 24,
+    escalationTimeUnit: 'hours' as 'seconds' | 'minutes' | 'hours' | 'days' | 'weeks' | 'months'
   });
   const [emergencyHistory, setEmergencyHistory] = useState<EmergencySubmission[]>([
     {
@@ -175,7 +180,10 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
       urgencyLevel: 'high',
       documentTypes: [],
       uploadedFiles: [],
-      attachments: []
+      attachments: [],
+      autoEscalation: false,
+      escalationTimeout: 24,
+      escalationTimeUnit: 'hours' as 'seconds' | 'minutes' | 'hours' | 'days' | 'weeks' | 'months'
     });
     setSelectedRecipients([]);
     setIsEmergencyMode(false);
@@ -455,17 +463,50 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="emergency-description">Emergency Description</Label>
-              <Textarea
-                id="emergency-description"
-                value={emergencyData.description}
-                onChange={(e) => setEmergencyData({...emergencyData, description: e.target.value})}
-                placeholder="Detailed description of the emergency situation"
-                rows={4}
-                className="border-destructive focus:ring-destructive"
-              />
+            {/* Auto-Escalation Feature */}
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  checked={emergencyData.autoEscalation || false}
+                  onCheckedChange={(checked) => setEmergencyData({...emergencyData, autoEscalation: checked})}
+                />
+                <label className="text-sm font-medium">Auto-Escalation</label>
+              </div>
             </div>
+            
+            {emergencyData.autoEscalation && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Escalation Timeout</label>
+                  <Input
+                    type="number"
+                    value={emergencyData.escalationTimeout || 24}
+                    onChange={(e) => setEmergencyData({...emergencyData, escalationTimeout: Number(e.target.value)})}
+                    min={1}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Time Unit</label>
+                  <Select
+                    value={emergencyData.escalationTimeUnit}
+                    onValueChange={(value: any) => setEmergencyData({...emergencyData, escalationTimeUnit: value})}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="seconds">Seconds</SelectItem>
+                      <SelectItem value="minutes">Minutes</SelectItem>
+                      <SelectItem value="hours">Hours</SelectItem>
+                      <SelectItem value="days">Days</SelectItem>
+                      <SelectItem value="weeks">Weeks</SelectItem>
+                      <SelectItem value="months">Months</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
 
             {/* Expanded Recipient Selection */}
             <div className="space-y-4">
@@ -474,6 +515,18 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
                 userRole={userRole}
                 selectedRecipients={selectedRecipients}
                 onRecipientsChange={setSelectedRecipients}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="emergency-description">Emergency Description / Comments</Label>
+              <Textarea
+                id="emergency-description"
+                value={emergencyData.description}
+                onChange={(e) => setEmergencyData({...emergencyData, description: e.target.value})}
+                placeholder="Detailed description of the emergency situation"
+                rows={4}
+                className="border-destructive focus:ring-destructive"
               />
             </div>
 
