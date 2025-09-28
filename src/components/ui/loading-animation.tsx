@@ -21,9 +21,9 @@ export const HITAMTreeLoading: React.FC<LoadingAnimationProps> = ({
   }, []);
 
   const sizeClasses = {
-    sm: 'w-48 h-48',
-    md: 'w-72 h-72', 
-    lg: 'w-96 h-96'
+    sm: 'w-64 h-64',
+    md: 'w-96 h-96', 
+    lg: 'w-[32rem] h-[32rem]'
   };
 
   // Use the exact file path for the logo
@@ -34,7 +34,7 @@ export const HITAMTreeLoading: React.FC<LoadingAnimationProps> = ({
       {/* HITAM Tree Container with filling animation */}
       <div 
         key={`hitam-tree-${animationKey}`}
-        className={cn("relative overflow-hidden rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 shadow-lg", sizeClasses[size])}
+        className={cn("relative overflow-hidden", sizeClasses[size])}
       >
         {/* Base HITAM Tree Image */}
         <img 
@@ -52,32 +52,11 @@ export const HITAMTreeLoading: React.FC<LoadingAnimationProps> = ({
           />
         </div>
         
-        {/* Ripple Effect at the Base */}
-        <div 
-          key={`ripple-${animationKey}`}
-          className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-gradient-to-r from-transparent via-green-400 to-transparent rounded-full opacity-0 hitam-ripple"
-        >
-        </div>
+
         
-        {/* Glow Effect */}
-        <div 
-          key={`glow-${animationKey}`}
-          className="absolute inset-0 bg-gradient-to-t from-green-200/20 via-emerald-300/10 to-transparent opacity-0 rounded-lg hitam-glow"
-        >
-        </div>
+
         
-        {/* Sparkle Particles */}
-        <div className="absolute inset-0">
-          {[...Array(6)].map((_, i) => (
-            <div
-              key={`sparkle-${i}-${animationKey}`}
-              className={cn(
-                "absolute w-1 h-1 bg-green-400 rounded-full opacity-0 hitam-sparkle",
-                `hitam-sparkle-${i}`
-              )}
-            />
-          ))}
-        </div>
+
       </div>
       
       {showText && (
@@ -85,20 +64,10 @@ export const HITAMTreeLoading: React.FC<LoadingAnimationProps> = ({
           key={`text-${animationKey}`}
           className="mt-6 text-center space-y-2 hitam-text-fadeup"
         >
-          <p className="text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-            HITAM
+          <p className="text-xl font-bold text-foreground">
+            LOADING YOUR WORKSPACE...
           </p>
-          <p className="text-sm text-muted-foreground font-medium">
-            Loading your workspace...
-          </p>
-          <div className="flex justify-center space-x-1 mt-2">
-            {[...Array(3)].map((_, i) => (
-              <div
-                key={`dot-${i}-${animationKey}`}
-                className={cn("w-2 h-2 bg-green-500 rounded-full hitam-dot-pulse", `hitam-dot-${i}`)}
-              />
-            ))}
-          </div>
+
         </div>
       )}
     </div>

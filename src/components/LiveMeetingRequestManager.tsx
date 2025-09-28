@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Filter, Search, TrendingUp, Clock, Users, AlertTriangle, FileText, User, Calendar, CheckCircle, XCircle, Eye, Download } from 'lucide-react';
+import { RefreshCw, Filter, Search, TrendingUp, Clock, Users, AlertTriangle, FileText, User, Calendar, CheckCircle, XCircle, Eye, Download, ChevronRight } from 'lucide-react';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Input } from './ui/input';
@@ -36,115 +36,7 @@ const StatsCard: React.FC<StatsCardProps> = ({ title, value, icon, color, descri
   </Card>
 );
 
-// Document cards from Track Documents page
-const trackDocuments = [
-  {
-    id: 'DOC-003',
-    title: 'Budget Request - Lab Equipment',
-    type: 'Letter',
-    submittedBy: 'Prof. David Brown',
-    submittedDate: '2024-01-13',
-    status: 'rejected',
-    priority: 'medium',
-    workflow: {
-      currentStep: 'Rejected',
-      progress: 50
-    }
-  },
-  {
-    id: 'DOC-001',
-    title: 'Faculty Meeting Minutes - Q4 2024',
-    type: 'Report',
-    submittedBy: 'Dr. Sarah Johnson',
-    submittedDate: '2024-01-15',
-    status: 'pending',
-    priority: 'high',
-    workflow: {
-      currentStep: 'Principal Approval',
-      progress: 75
-    }
-  }
-];
 
-const DocumentCard: React.FC<{ document: typeof trackDocuments[0] }> = ({ document }) => {
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'approved': return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'rejected': return <XCircle className="h-4 w-4 text-red-600" />;
-      case 'pending': return <Clock className="h-4 w-4 text-yellow-600" />;
-      default: return <Clock className="h-4 w-4 text-gray-600" />;
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'approved': return 'default';
-      case 'rejected': return 'destructive';
-      case 'pending': return 'secondary';
-      default: return 'outline';
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'text-orange-600 font-semibold';
-      case 'medium': return 'text-yellow-600';
-      default: return 'text-gray-600';
-    }
-  };
-
-  return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex flex-col lg:flex-row gap-6">
-          <div className="flex-1 space-y-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <h3 className="font-semibold text-lg">{document.title}</h3>
-                <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <FileText className="h-4 w-4" />
-                    {document.type}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <User className="h-4 w-4" />
-                    {document.submittedBy}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    {document.submittedDate}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {getStatusIcon(document.status)}
-                <Badge variant={getStatusBadge(document.status)}>
-                  {document.status.charAt(0).toUpperCase() + document.status.slice(1)}
-                </Badge>
-                <Badge variant="outline" className={getPriorityColor(document.priority)}>
-                  {document.priority.charAt(0).toUpperCase() + document.priority.slice(1)}
-                </Badge>
-              </div>
-            </div>
-
-
-          </div>
-
-          <div className="flex flex-col gap-2 min-w-[150px]">
-            <Button variant="outline" size="sm">
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Accept
-            </Button>
-            <Button variant="outline" size="sm">
-              <XCircle className="h-4 w-4 mr-2" />
-              Decline
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
 
 export const LiveMeetingRequestManager: React.FC = () => {
   const [activeRequests, setActiveRequests] = useState<LiveMeetingRequest[]>([]);
@@ -329,7 +221,7 @@ export const LiveMeetingRequestManager: React.FC = () => {
             )}
           </h3>
           <p className="text-gray-600 mt-1">
-            Real-time communication requests for document workflows
+            Real-Time Communication Requests for Document Workflows
           </p>
         </div>
         
@@ -408,11 +300,7 @@ export const LiveMeetingRequestManager: React.FC = () => {
         </div>
       </div>
 
-      {/* Document Cards */}
-      <div className="space-y-4">
-        <DocumentCard document={trackDocuments[1]} />
-        <DocumentCard document={trackDocuments[0]} />
-      </div>
+
 
       {/* Requests List */}
       <div className="space-y-4">
@@ -432,14 +320,168 @@ export const LiveMeetingRequestManager: React.FC = () => {
             </CardContent>
           </Card>
         ) : (
-          filteredRequests.map(request => (
-            <LiveMeetingRequestCard
-              key={request.id}
-              request={request}
-              onAccept={handleAcceptRequest}
-              onDecline={handleDeclineRequest}
-            />
-          ))
+          <div className="space-y-4">
+            {/* Original Dynamic Live Meeting Request Cards */}
+            {filteredRequests.map(request => (
+              <LiveMeetingRequestCard
+                key={request.id}
+                request={request}
+                onAccept={handleAcceptRequest}
+                onDecline={handleDeclineRequest}
+              />
+            ))}
+            
+            {/* Additional Static Cards from Approval Center */}
+            {/* Faculty Meeting Minutes – Q4 2024 Card */}
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex flex-col lg:flex-row gap-6">
+                  <div className="flex-1 space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-semibold text-lg">Faculty Meeting Minutes – Q4 2024</h3>
+                        <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <FileText className="h-4 w-4" />
+                            Circular
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <User className="h-4 w-4" />
+                            Dr. Sarah Johnson
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            2024-01-15
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-yellow-600" />
+                        <Badge variant="warning">Pending</Badge>
+                        <Badge variant="outline" className="text-orange-600 font-semibold">High Priority</Badge>
+                      </div>
+                    </div>
+                    
+                    {/* Description */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        <span className="text-sm font-medium">LiveMeet+ Request</span>
+                      </div>
+                      <div className="bg-muted p-3 rounded text-sm">
+                        <p>Add a risk-mitigation section to highlight potential delays or issues.</p>
+                      </div>
+                    </div>
+                    
+                    {/* Input Field */}
+                    <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors">
+                      <textarea
+                        className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none"
+                        placeholder="Add your comment..."
+                        rows={1}
+                        onInput={(e) => {
+                          const target = e.target as HTMLTextAreaElement;
+                          target.style.height = 'auto';
+                          target.style.height = target.scrollHeight + 'px';
+                        }}
+                      />
+                      <button 
+                        className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors"
+                        title="Save comment"
+                      >
+                        <ChevronRight className="h-4 w-4 text-gray-600" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2 min-w-[150px]">
+                    <Button variant="outline" size="sm">
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Accept
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Decline
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Budget Request – Lab Equipment Card */}
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex flex-col lg:flex-row gap-6">
+                  <div className="flex-1 space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-semibold text-lg">Budget Request – Lab Equipment</h3>
+                        <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <FileText className="h-4 w-4" />
+                            Letter
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <User className="h-4 w-4" />
+                            Prof. David Brown
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            2024-01-13
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-yellow-600" />
+                        <Badge variant="warning">Pending</Badge>
+                        <Badge variant="outline" className="text-yellow-600">Medium Priority</Badge>
+                      </div>
+                    </div>
+                    
+                    {/* Description */}
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        <span className="text-sm font-medium">LiveMeet+ Request</span>
+                      </div>
+                      <div className="bg-muted p-3 rounded text-sm">
+                        <p>Consider revising the scope to focus on priority items within this quarter's budget.</p>
+                      </div>
+                    </div>
+                    
+                    {/* Input Field */}
+                    <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors">
+                      <textarea
+                        className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none"
+                        placeholder="Add your comment..."
+                        rows={1}
+                        onInput={(e) => {
+                          const target = e.target as HTMLTextAreaElement;
+                          target.style.height = 'auto';
+                          target.style.height = target.scrollHeight + 'px';
+                        }}
+                      />
+                      <button 
+                        className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors"
+                        title="Save comment"
+                      >
+                        <ChevronRight className="h-4 w-4 text-gray-600" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2 min-w-[150px]">
+                    <Button variant="outline" size="sm">
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Accept
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Decline
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
 

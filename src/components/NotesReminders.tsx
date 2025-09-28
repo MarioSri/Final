@@ -248,6 +248,7 @@ export function NotesReminders({ userRole, isMessagesPage = false }: NotesRemind
   });
 
   const [editingNote, setEditingNote] = useState<number | null>(null);
+  const [editNoteData, setEditNoteData] = useState({ title: "", content: "", color: "", category: "" });
   const [searchTerm, setSearchTerm] = useState("");
 
   const noteColors = [
@@ -304,6 +305,36 @@ export function NotesReminders({ userRole, isMessagesPage = false }: NotesRemind
 
   const toggleLock = () => {
     setIsLocked(!isLocked);
+  };
+
+  const startEditNote = (id: number) => {
+    const note = notes.find(n => n.id === id);
+    if (note) {
+      setEditNoteData({
+        title: note.title,
+        content: note.content,
+        color: note.color,
+        category: note.category
+      });
+      setEditingNote(id);
+    }
+  };
+
+  const saveEditNote = () => {
+    if (editingNote) {
+      setNotes(notes.map(note => 
+        note.id === editingNote 
+          ? { ...note, ...editNoteData }
+          : note
+      ));
+      setEditingNote(null);
+      setEditNoteData({ title: "", content: "", color: "", category: "" });
+    }
+  };
+
+  const cancelEditNote = () => {
+    setEditingNote(null);
+    setEditNoteData({ title: "", content: "", color: "", category: "" });
   };
 
   // Advanced mouse-based drag functionality (from Dashboard)
@@ -619,6 +650,72 @@ export function NotesReminders({ userRole, isMessagesPage = false }: NotesRemind
         </div>
       </div>
 
+      {/* Edit Note Dialog */}
+      <Dialog open={editingNote !== null} onOpenChange={(open) => !open && cancelEditNote()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Note</DialogTitle>
+            <DialogDescription>Update your sticky note</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Title</label>
+              <Input
+                placeholder="Note title"
+                value={editNoteData.title}
+                onChange={(e) => setEditNoteData({...editNoteData, title: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Content</label>
+              <Textarea
+                placeholder="Note content"
+                value={editNoteData.content}
+                onChange={(e) => setEditNoteData({...editNoteData, content: e.target.value})}
+                rows={4}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Color</label>
+                <div className="flex gap-2">
+                  {noteColors.map(color => (
+                    <button
+                      key={color.class}
+                      title={`Select ${color.name.toLowerCase()} color`}
+                      className={`w-8 h-8 rounded-full border-2 ${color.class} ${
+                        editNoteData.color === color.class ? 'border-primary' : 'border-border'
+                      }`}
+                      onClick={() => setEditNoteData({...editNoteData, color: color.class})}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Category</label>
+                <Select value={editNoteData.category} onValueChange={(value) => setEditNoteData({...editNoteData, category: value})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map(cat => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={cancelEditNote}>Cancel</Button>
+              <Button onClick={saveEditNote} variant="gradient">
+                <Save className="w-4 h-4 mr-2" />
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Notes Canvas */}
         <Card className="lg:col-span-2 shadow-elegant">
@@ -692,7 +789,7 @@ export function NotesReminders({ userRole, isMessagesPage = false }: NotesRemind
                   onMouseDown={handleMouseDown}
                   onTouchStart={handleTouchStart}
                   onTogglePin={togglePin}
-                  onEdit={setEditingNote}
+                  onEdit={startEditNote}
                   onDelete={deleteNote}
                 />
               ))}

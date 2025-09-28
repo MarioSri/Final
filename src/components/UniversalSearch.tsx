@@ -18,30 +18,35 @@ interface UniversalSearchProps {
 }
 
 export function UniversalSearch({ userRole, className = '' }: UniversalSearchProps) {
-  const searchHook = useUniversalSearch(userRole);
+  const userPermissions = {
+    role: userRole,
+    department: 'Computer Science & Engineering',
+    branch: 'CSE',
+    canViewUsers: true,
+    canViewAllDepartments: userRole === 'principal' || userRole === 'registrar'
+  };
   
-  // Safely destructure with defaults
   const {
-    searchTerm = '',
-    setSearchTerm = () => {},
-    filters = {
-      status: [],
-      departments: [],
-      roles: [],
-      priority: [],
-      dateRange: { from: null, to: null }
-    },
-    setFilters = () => {},
-    results = [],
-    loading = false,
-    error = null,
-    viewMode = 'grid',
-    setViewMode = () => {},
-    recentSearches = [],
-    clearRecentSearches = () => {},
-    performSearch = () => {},
-    resetFilters = () => {}
-  } = searchHook || {};
+    searchState,
+    search,
+    updateQuery,
+    updateFilters,
+    clearSearch,
+    resetFilters,
+    toggleViewMode,
+    loadRecentSearch,
+    activeFilterCount
+  } = useUniversalSearch(userPermissions);
+  
+  const {
+    query: searchTerm,
+    filters,
+    results,
+    isLoading: loading,
+    error,
+    viewMode,
+    recentSearches
+  } = searchState;
 
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -81,14 +86,14 @@ export function UniversalSearch({ userRole, className = '' }: UniversalSearchPro
 
   // Handle search input
   const handleSearchChange = (value: string) => {
-    setSearchTerm(value);
+    updateQuery(value);
     setShowSuggestions(value.length > 0);
   };
 
   // Handle search submission
   const handleSearch = () => {
     if (searchTerm.trim()) {
-      performSearch();
+      search();
       setShowSuggestions(false);
     }
   };
@@ -101,8 +106,8 @@ export function UniversalSearch({ userRole, className = '' }: UniversalSearchPro
   };
 
   // Clear search
-  const clearSearch = () => {
-    setSearchTerm('');
+  const handleClearSearch = () => {
+    clearSearch();
     setShowSuggestions(false);
   };
 
@@ -171,7 +176,7 @@ export function UniversalSearch({ userRole, className = '' }: UniversalSearchPro
                     performSearch();
                   }}
                 >
-                  <span>{recent}</span>
+                  <span>{recent.query}</span>
                   <Clock className="w-3 h-3 text-gray-400" />
                 </button>
               ))}
@@ -271,7 +276,7 @@ export function UniversalSearch({ userRole, className = '' }: UniversalSearchPro
             <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Search Error</h3>
             <p className="text-gray-600 mb-4">{error}</p>
-            <Button onClick={performSearch}>Try Again</Button>
+            <Button onClick={() => search()}>Try Again</Button>
           </CardContent>
         </Card>
       );
@@ -287,13 +292,13 @@ export function UniversalSearch({ userRole, className = '' }: UniversalSearchPro
               Try adjusting your search terms or filters
             </p>
             <div className="flex flex-wrap gap-2 justify-center">
-              <Button variant="outline" size="sm" onClick={() => setSearchTerm('letters')}>
+              <Button variant="outline" size="sm" onClick={() => search('letters')}>
                 Search Letters
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setSearchTerm('reports')}>
+              <Button variant="outline" size="sm" onClick={() => search('reports')}>
                 Search Reports
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setSearchTerm('meetings')}>
+              <Button variant="outline" size="sm" onClick={() => search('meetings')}>
                 Search Meetings
               </Button>
             </div>
@@ -325,7 +330,7 @@ export function UniversalSearch({ userRole, className = '' }: UniversalSearchPro
                         performSearch();
                       }}
                     >
-                      {recent}
+                      {recent.query}
                     </Button>
                   ))}
                 </div>
@@ -414,7 +419,7 @@ export function UniversalSearch({ userRole, className = '' }: UniversalSearchPro
           />
           {searchTerm && (
             <button
-              onClick={clearSearch}
+              onClick={handleClearSearch}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
               <X className="w-4 h-4" />
@@ -495,23 +500,7 @@ export function UniversalSearch({ userRole, className = '' }: UniversalSearchPro
           </div>
         </div>
 
-        {/* View Mode Toggle */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant={viewMode === 'grid' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('grid')}
-          >
-            <Grid className="w-4 h-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('list')}
-          >
-            <List className="w-4 h-4" />
-          </Button>
-        </div>
+
       </div>
 
       {/* Active Filters */}

@@ -155,6 +155,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
   
   // State Management
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(false);
   const [conflicts, setConflicts] = useState<ConflictCheck | null>(null);
@@ -166,6 +167,9 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [viewMode, setViewMode] = useState<'calendar' | 'list' | 'live-requests'>('calendar');
   const [filterBy, setFilterBy] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [showMeetingDetails, setShowMeetingDetails] = useState(false);
+  const [showEditMeeting, setShowEditMeeting] = useState(false);
+  const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
   
   // New Meeting Form State
   const [newMeeting, setNewMeeting] = useState<Partial<Meeting>>({
@@ -233,7 +237,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
         {
           id: "meeting-001",
           title: "Faculty Recruitment Board Meeting",
-          description: "Review applications for new faculty positions in Computer Science Department",
+          description: "",
           date: "2024-01-18",
           time: "10:00",
           duration: 90,
@@ -252,7 +256,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
           priority: "high",
           category: "recruitment",
           isRecurring: false,
-          tags: ["recruitment", "faculty", "urgent"],
+          tags: ["Category – Academic"],
           department: "Computer Science",
           meetingLinks: {
             googleMeet: {
@@ -308,7 +312,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
         {
           id: "meeting-002",
           title: "Budget Review - Q1 2024",
-          description: "Quarterly budget analysis and financial planning for upcoming semester",
+          description: "",
           date: "2024-01-19",
           time: "14:00",
           duration: 120,
@@ -333,7 +337,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
             endDate: new Date("2024-12-31"),
             exceptions: []
           },
-          tags: ["budget", "financial", "quarterly"],
+          tags: ["Category – Financial"],
           department: "Administration",
           meetingLinks: {
             zoom: {
@@ -417,11 +421,11 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
     return variants[status] || { variant: "default" as const, text: status, icon: <Clock className="w-3 h-3" /> };
   };
 
-  const getPriorityBadge = (priority: MeetingPriority) => {
+  const getPriorityBadge = (priority: MeetingPriority, meetingTitle?: string) => {
     const variants = {
       low: { variant: "secondary" as const, text: "Low Priority" },
       medium: { variant: "default" as const, text: "Medium Priority" },
-      high: { variant: "default" as const, text: "High Priority" },
+      high: { variant: "default" as const, text: meetingTitle === "Faculty Recruitment Board Meeting" ? "Urgent Priority" : "High Priority" },
       urgent: { variant: "destructive" as const, text: "Urgent" }
     };
     return variants[priority] || { variant: "default" as const, text: priority };
@@ -617,18 +621,101 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
     }
   };
 
+  const handleViewDetails = (meeting: Meeting) => {
+    setSelectedMeeting(meeting);
+    setShowMeetingDetails(true);
+  };
+
+  const handleEditMeeting = (meeting: Meeting) => {
+    setEditingMeeting(meeting);
+    setNewMeeting({
+      title: meeting.title,
+      description: meeting.description,
+      date: meeting.date,
+      time: meeting.time,
+      duration: meeting.duration,
+      attendees: meeting.attendees,
+      location: meeting.location,
+      type: meeting.type,
+      status: meeting.status,
+      priority: meeting.priority,
+      category: meeting.category,
+      isRecurring: meeting.isRecurring,
+      tags: meeting.tags,
+      department: meeting.department,
+      notifications: meeting.notifications
+    });
+    setShowEditMeeting(true);
+  };
+
+  const handleDuplicateMeeting = (meeting: Meeting) => {
+    const duplicatedMeeting = {
+      ...meeting,
+      id: `meeting-${Date.now()}`,
+      title: `${meeting.title} (Copy)`,
+      status: 'scheduled' as const,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    setMeetings(prev => [duplicatedMeeting, ...prev]);
+    toast({
+      title: "Meeting Duplicated",
+      description: `${meeting.title} has been duplicated`,
+      variant: "default"
+    });
+  };
+
+  const handleCancelMeeting = (meeting: Meeting) => {
+    setMeetings(prev => prev.map(m => 
+      m.id === meeting.id 
+        ? { ...m, status: 'cancelled' as const }
+        : m
+    ));
+    toast({
+      title: "Meeting Cancelled",
+      description: `${meeting.title} has been cancelled`,
+      variant: "destructive"
+    });
+  };
+
+  const handleSaveEditMeeting = () => {
+    if (editingMeeting && newMeeting.title && newMeeting.date && newMeeting.time) {
+      setMeetings(prev => prev.map(m => 
+        m.id === editingMeeting.id 
+          ? { ...m, ...newMeeting, updatedAt: new Date() }
+          : m
+      ));
+      setShowEditMeeting(false);
+      setEditingMeeting(null);
+      resetNewMeetingForm();
+      toast({
+        title: "Meeting Updated",
+        description: `${newMeeting.title} has been updated successfully`,
+        variant: "default"
+      });
+    }
+  };
+
+  const handleRemindMeeting = (meeting: Meeting) => {
+    toast({
+      title: "Reminder Sent",
+      description: `Reminder sent to all attendees for "${meeting.title}"`,
+      variant: "default"
+    });
+  };
+
   const generateCalendarDays = () => {
     const today = new Date();
-    const currentMonth = today.getMonth();
-    const currentYear = today.getFullYear();
+    const month = currentMonth.getMonth();
+    const year = currentMonth.getFullYear();
     
-    const firstDay = new Date(currentYear, currentMonth, 1);
-    const lastDay = new Date(currentYear, currentMonth + 1, 0);
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
     
     const days = [];
     for (let i = 1; i <= daysInMonth; i++) {
-      const date = new Date(currentYear, currentMonth, i);
+      const date = new Date(year, month, i);
       const dateStr = date.toISOString().split('T')[0];
       const dayMeetings = meetings.filter(m => m.date === dateStr);
       
@@ -636,7 +723,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
         date: i,
         fullDate: dateStr,
         meetings: dayMeetings,
-        isToday: i === today.getDate(),
+        isToday: i === today.getDate() && month === today.getMonth() && year === today.getFullYear(),
         isSelected: dateStr === selectedDate.toISOString().split('T')[0]
       });
     }
@@ -711,15 +798,31 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
               {/* Calendar Grid */}
               <Card className="lg:col-span-2 shadow-elegant">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CalendarIcon className="w-5 h-5 text-primary" />
-                    {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  <CardTitle className="flex items-center justify-between">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
+                    >
+                      <ChevronDown className="w-4 h-4 rotate-90 text-primary" />
+                    </Button>
+                    <div className="flex items-center gap-2">
+                      <CalendarIcon className="w-5 h-5 text-primary" />
+                      {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
+                    >
+                      <ChevronDown className="w-4 h-4 -rotate-90 text-primary" />
+                    </Button>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-7 gap-2 mb-4">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                      <div key={day} className="text-center text-sm font-medium text-muted-foreground p-2">
+                      <div key={day} className="flex items-center justify-center text-sm font-medium text-muted-foreground p-2 min-h-[2rem]">
                         {day}
                       </div>
                     ))}
@@ -728,13 +831,13 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                     {generateCalendarDays().map((day) => (
                       <div
                         key={day.date}
-                        className={`p-2 rounded-lg cursor-pointer transition-all hover:bg-accent ${
+                        className={`p-2 rounded-lg cursor-pointer transition-all hover:bg-accent flex flex-col items-center justify-start min-h-[3rem] ${
                           day.isToday ? 'bg-primary text-primary-foreground' :
                           day.isSelected ? 'bg-accent' : ''
                         }`}
                         onClick={() => setSelectedDate(new Date(day.fullDate))}
                       >
-                        <div className="text-sm font-medium">{day.date}</div>
+                        <div className="text-sm font-medium text-center">{day.date}</div>
                         {day.meetings.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1">
                             {day.meetings.slice(0, 2).map((meeting, idx) => (
@@ -897,8 +1000,8 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                         <div className="space-y-1 flex-1">
                           <div className="flex items-center gap-2">
                             <h3 className="font-semibold">{meeting.title}</h3>
-                            <Badge variant={getPriorityBadge(meeting.priority).variant} className="text-xs">
-                              {meeting.priority.toUpperCase()}
+                            <Badge variant={getPriorityBadge(meeting.priority, meeting.title).variant} className="text-xs">
+                              {getPriorityBadge(meeting.priority, meeting.title).text}
                             </Badge>
                             {meeting.isRecurring && (
                               <Badge variant="outline" className="text-xs gap-1">
@@ -908,6 +1011,26 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground line-clamp-2">{meeting.description}</p>
+                          
+                          {/* Comments */}
+                          {(meeting.title === "Faculty Recruitment Board Meeting" || meeting.title === "Budget Review - Q1 2024") && (
+                            <div className="mt-3">
+                              <div className="flex items-center gap-1 mb-2">
+                                <MessageSquare className="h-4 w-4" />
+                                <span className="text-sm font-medium">Description & Agenda</span>
+                              </div>
+                              <div className="bg-muted p-3 rounded text-sm">
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="font-medium">{meeting.attendees[0]?.name || "System"}</span>
+                                </div>
+                                <p>
+                                  {meeting.title === "Faculty Recruitment Board Meeting" 
+                                    ? "Review applications for new faculty positions in Computer Science Department."
+                                    : "Quarterly budget analysis and financial planning for upcoming semester."}
+                                </p>
+                              </div>
+                            </div>
+                          )}
                           
                           {/* Tags */}
                           {meeting.tags && meeting.tags.length > 0 && (
@@ -935,20 +1058,20 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem onClick={() => setSelectedMeeting(meeting)}>
+                              <DropdownMenuItem onClick={() => handleViewDetails(meeting)}>
                                 <Eye className="w-4 h-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditMeeting(meeting)}>
                                 <Edit className="w-4 h-4 mr-2" />
                                 Edit Meeting
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDuplicateMeeting(meeting)}>
                                 <Copy className="w-4 h-4 mr-2" />
                                 Duplicate
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600">
+                              <DropdownMenuItem className="text-red-600" onClick={() => handleCancelMeeting(meeting)}>
                                 <Trash2 className="w-4 h-4 mr-2" />
                                 Cancel Meeting
                               </DropdownMenuItem>
@@ -1022,7 +1145,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                         </div>
                         
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" onClick={() => handleRemindMeeting(meeting)}>
                             <Bell className="w-4 h-4 mr-1" />
                             Remind
                           </Button>
@@ -1141,8 +1264,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="online">Online Only</SelectItem>
-                        <SelectItem value="physical">Physical Only</SelectItem>
+                        <SelectItem value="online">Online</SelectItem>
                         <SelectItem value="hybrid">Hybrid</SelectItem>
                       </SelectContent>
                     </Select>
@@ -1555,6 +1677,128 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
               <Button variant="outline" onClick={() => setShowAISuggestionsDialog(false)}>
                 Close
               </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Meeting Details Dialog */}
+        <Dialog open={showMeetingDetails} onOpenChange={setShowMeetingDetails}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Meeting Details</DialogTitle>
+            </DialogHeader>
+            {selectedMeeting && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="font-medium">Title</Label>
+                    <p>{selectedMeeting.title}</p>
+                  </div>
+                  <div>
+                    <Label className="font-medium">Status</Label>
+                    <Badge variant={getStatusBadge(selectedMeeting.status).variant}>
+                      {getStatusBadge(selectedMeeting.status).text}
+                    </Badge>
+                  </div>
+                  <div>
+                    <Label className="font-medium">Date & Time</Label>
+                    <p>{selectedMeeting.date} at {formatTime(selectedMeeting.time)}</p>
+                  </div>
+                  <div>
+                    <Label className="font-medium">Duration</Label>
+                    <p>{selectedMeeting.duration} minutes</p>
+                  </div>
+                  <div>
+                    <Label className="font-medium">Type</Label>
+                    <p>{selectedMeeting.type}</p>
+                  </div>
+                  <div>
+                    <Label className="font-medium">Priority</Label>
+                    <Badge variant={getPriorityBadge(selectedMeeting.priority, selectedMeeting.title).variant}>
+                      {getPriorityBadge(selectedMeeting.priority, selectedMeeting.title).text}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <Label className="font-medium">Description</Label>
+                  <p className="text-sm text-muted-foreground">{selectedMeeting.description}</p>
+                </div>
+                <div>
+                  <Label className="font-medium">Attendees ({selectedMeeting.attendees.length})</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {selectedMeeting.attendees.map((attendee, idx) => (
+                      <Badge key={idx} variant="outline">{attendee.name}</Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Meeting Dialog */}
+        <Dialog open={showEditMeeting} onOpenChange={setShowEditMeeting}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit Meeting</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Title</Label>
+                  <Input
+                    value={newMeeting.title}
+                    onChange={(e) => setNewMeeting({...newMeeting, title: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Date</Label>
+                  <Input
+                    type="date"
+                    value={newMeeting.date}
+                    onChange={(e) => setNewMeeting({...newMeeting, date: e.target.value})}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Time</Label>
+                  <Select value={newMeeting.time} onValueChange={(value) => setNewMeeting({...newMeeting, time: value})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {timeSlots.map((time) => (
+                        <SelectItem key={time} value={time}>{formatTime(time)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Duration</Label>
+                  <Select value={newMeeting.duration?.toString()} onValueChange={(value) => setNewMeeting({...newMeeting, duration: parseInt(value)})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="30">30 minutes</SelectItem>
+                      <SelectItem value="60">1 hour</SelectItem>
+                      <SelectItem value="90">1.5 hours</SelectItem>
+                      <SelectItem value="120">2 hours</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Textarea
+                  value={newMeeting.description}
+                  onChange={(e) => setNewMeeting({...newMeeting, description: e.target.value})}
+                  rows={3}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowEditMeeting(false)}>Cancel</Button>
+              <Button onClick={handleSaveEditMeeting}>Save Changes</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

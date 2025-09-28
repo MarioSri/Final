@@ -31,54 +31,33 @@ const Approvals = () => {
     return null; // This should be handled by ProtectedRoute, but adding as safety
   }
 
-  const pendingApprovals = [
-    {
-      id: 1,
-      title: "Faculty Development Program Request",
-      submitter: "Dr. Rajesh Kumar",
-      department: "Computer Science",
-      type: "Letter",
-      submittedDate: "2024-01-15",
-      priority: "medium",
-      description: "Request for attending international conference on AI"
-    },
-    {
-      id: 4,
-      title: "Infrastructure Upgrade Proposal",
-      submitter: "Prof. Anita Sharma", 
-      department: "Electrical Engineering",
-      type: "Report",
-      submittedDate: "2024-01-14",
-      priority: "high",
-      description: "Proposal for upgrading laboratory equipment"
-    },
-    {
-      id: 5,
-      title: "Student Exchange Program Circular",
-      submitter: "Dr. Mohammed Ali",
-      department: "Mechanical Engineering",
-      type: "Circular",
-      submittedDate: "2024-01-13",
-      priority: "low",
-      description: "Information about new student exchange opportunities"
-    }
-  ];
+  const pendingApprovals = [];
 
   const recentApprovals = [
     {
       id: 6,
       title: "Research Grant Application",
+      type: "Report",
+      submitter: "Dr. Michael Anderson",
+      submittedDate: "2024-01-10",
       status: "approved",
+      priority: "high",
       approvedBy: "Principal",
-      approvedDate: "2024-01-12"
+      approvedDate: "2024-01-12",
+      description: "Application for NSF research funding for AI in education project"
     },
     {
       id: 7,
       title: "Event Permission Request",
+      type: "Letter",
+      submitter: "Prof. Lisa Thompson",
+      submittedDate: "2024-01-09",
       status: "rejected", 
       rejectedBy: "HOD - CSE",
       rejectedDate: "2024-01-11",
-      reason: "Insufficient documentation"
+      priority: "medium",
+      reason: "Insufficient documentation",
+      description: "Permission request for annual tech symposium with external speakers"
     }
   ];
 
@@ -203,7 +182,10 @@ const Approvals = () => {
                                 target.style.height = target.scrollHeight + 'px';
                               }}
                             />
-                            <button className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors">
+                            <button 
+                              className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors"
+                              title="Save comment"
+                            >
                               <ChevronRight className="h-4 w-4 text-gray-600" />
                             </button>
                           </div>
@@ -212,6 +194,14 @@ const Approvals = () => {
                           <Button variant="outline" size="sm">
                             <Eye className="h-4 w-4 mr-2" />
                             View
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="border-orange-500 text-orange-600 hover:bg-orange-50"
+                            onClick={() => setShowLiveMeetingModal(true)}
+                          >
+                            🔴 LiveMeet+
                           </Button>
                           <Button variant="outline" size="sm">
                             <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -280,7 +270,10 @@ const Approvals = () => {
                                 target.style.height = target.scrollHeight + 'px';
                               }}
                             />
-                            <button className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors">
+                            <button 
+                              className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors"
+                              title="Save comment"
+                            >
                               <ChevronRight className="h-4 w-4 text-gray-600" />
                             </button>
                           </div>
@@ -289,6 +282,14 @@ const Approvals = () => {
                           <Button variant="outline" size="sm">
                             <Eye className="h-4 w-4 mr-2" />
                             View
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="border-orange-500 text-orange-600 hover:bg-orange-50"
+                            onClick={() => setShowLiveMeetingModal(true)}
+                          >
+                            🔴 LiveMeet+
                           </Button>
                           <Button variant="outline" size="sm">
                             <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -303,53 +304,7 @@ const Approvals = () => {
                     </CardContent>
                   </Card>
 
-                  {pendingApprovals.map((doc) => (
-                    <div key={doc.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold">{doc.title}</h3>
-                        <Badge variant={doc.priority === "high" ? "destructive" : doc.priority === "medium" ? "default" : "secondary"}>
-                          {doc.priority} priority
-                        </Badge>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground mb-3">
-                        <div className="flex items-center gap-1">
-                          <User className="h-4 w-4" />
-                          {doc.submitter}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <FileText className="h-4 w-4" />
-                          {doc.department}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Badge variant="outline">{doc.type}</Badge>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          {doc.submittedDate}
-                        </div>
-                      </div>
-                      <p className="text-sm mb-4">{doc.description}</p>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="default">
-                          <CheckCircle2 className="h-4 w-4 mr-1" />
-                          Approve
-                        </Button>
-                        <Button size="sm" variant="destructive">
-                          <XCircle className="h-4 w-4 mr-1" />
-                          Reject
-                        </Button>
-                        <Button size="sm" variant="outline">View Document</Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="border-orange-500 text-orange-600 hover:bg-orange-50"
-                          onClick={() => setShowLiveMeetingModal(true)}
-                        >
-                          🔴 LiveMeet+
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+
                 </div>
               </CardContent>
             </Card>
@@ -368,21 +323,124 @@ const Approvals = () => {
               <CardContent>
                 <div className="space-y-4">
                   {recentApprovals.map((doc) => (
-                    <div key={doc.id} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold">{doc.title}</h3>
-                        <Badge variant={doc.status === "approved" ? "default" : "destructive"}>
-                          {doc.status}
-                        </Badge>
-                      </div>
-                      <div className="text-sm text-muted-foreground mt-2">
-                        {doc.status === "approved" ? (
-                          <p>Approved by {doc.approvedBy} on {doc.approvedDate}</p>
-                        ) : (
-                          <p>Rejected by {doc.rejectedBy} on {doc.rejectedDate} - {doc.reason}</p>
-                        )}
-                      </div>
-                    </div>
+                    <Card key={doc.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="flex flex-col lg:flex-row gap-6">
+                          <div className="flex-1 space-y-4">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h3 className="font-semibold text-lg">{doc.title}</h3>
+                                <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                                  <div className="flex items-center gap-1">
+                                    <FileText className="h-4 w-4" />
+                                    {doc.type}
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <User className="h-4 w-4" />
+                                    {doc.submitter}
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="h-4 w-4" />
+                                    {doc.submittedDate}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {doc.status === "approved" ? (
+                                  <>
+                                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                    <Badge variant="default" className="bg-green-100 text-green-800">Approved</Badge>
+                                  </>
+                                ) : (
+                                  <>
+                                    <XCircle className="h-4 w-4 text-red-600" />
+                                    <Badge variant="destructive">Rejected</Badge>
+                                  </>
+                                )}
+                                <Badge variant="outline" className={
+                                  doc.priority === "high" ? "text-orange-600 font-semibold" : 
+                                  doc.priority === "medium" ? "text-yellow-600" : 
+                                  "text-green-600"
+                                }>
+                                  {doc.priority.charAt(0).toUpperCase() + doc.priority.slice(1)} Priority
+                                </Badge>
+                              </div>
+                            </div>
+                            
+                            {/* Description */}
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-1">
+                                <MessageSquare className="h-4 w-4" />
+                                <span className="text-sm font-medium">Description</span>
+                              </div>
+                              <div className="bg-muted p-3 rounded text-sm">
+                                <p>{doc.description}</p>
+                              </div>
+                            </div>
+                            
+                            {/* Status Information */}
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-4 w-4" />
+                                <span className="text-sm font-medium">Status Details</span>
+                              </div>
+                              <div className="bg-muted p-3 rounded text-sm">
+                                {doc.status === "approved" ? (
+                                  <p>Approved by {doc.approvedBy} on {doc.approvedDate}</p>
+                                ) : (
+                                  <p>Rejected by {doc.rejectedBy} on {doc.rejectedDate} - {doc.reason}</p>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Comment Field for Historical Records */}
+                            <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors">
+                              <textarea
+                                className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none"
+                                placeholder="Add a note about this approval..."
+                                rows={1}
+                                style={{ resize: 'none' }}
+                                onInput={(e) => {
+                                  const target = e.target as HTMLTextAreaElement;
+                                  target.style.height = 'auto';
+                                  target.style.height = target.scrollHeight + 'px';
+                                }}
+                              />
+                              <button 
+                                className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors"
+                                title="Save note"
+                              >
+                                <ChevronRight className="h-4 w-4 text-gray-600" />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-2 min-w-[150px]">
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Details
+                            </Button>
+                            {doc.status === "approved" ? (
+                              <Button variant="outline" size="sm" className="bg-green-50 border-green-300 text-green-700 hover:bg-green-100">
+                                <CheckCircle2 className="h-4 w-4 mr-2" />
+                                Approved
+                              </Button>
+                            ) : (
+                              <Button variant="outline" size="sm" className="bg-red-50 border-red-300 text-red-700 hover:bg-red-100">
+                                <XCircle className="h-4 w-4 mr-2" />
+                                Rejected
+                              </Button>
+                            )}
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                            >
+                              📋 Archive
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
               </CardContent>

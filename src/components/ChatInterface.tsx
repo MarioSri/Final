@@ -93,6 +93,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
+  const [showMembers, setShowMembers] = useState(false);
 
   // Initialize chat service
   useEffect(() => {
@@ -614,6 +615,28 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
       <ChannelSidebar />
       
       <div className="flex-1 flex flex-col">
+        {/* Members Panel */}
+        {showMembers && activeChannel && (
+          <div className="p-4 border-b bg-muted/20">
+            <h3 className="font-semibold mb-3">Channel Members ({activeChannel.members.length})</h3>
+            <div className="flex flex-wrap gap-2">
+              {activeChannel.members.map(memberId => {
+                const member = users.find(u => u.id === memberId) || { id: memberId, fullName: 'Unknown User', role: 'member' };
+                return (
+                  <div key={memberId} className="flex items-center gap-2 p-2 bg-background rounded border">
+                    <Avatar className="w-6 h-6">
+                      <AvatarFallback className="text-xs">
+                        {member.fullName.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm">{member.fullName}</span>
+                    <Badge variant="outline" className="text-xs">{member.role}</Badge>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
         {/* Channel Header */}
         {activeChannel && (
           <div className="p-4 border-b bg-background">
@@ -640,7 +663,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
                 <Button size="sm" variant="ghost">
                   <Video className="w-4 h-4" />
                 </Button>
-                <Button size="sm" variant="ghost">
+                <Button size="sm" variant="ghost" onClick={() => setShowMembers(!showMembers)}>
                   <Users className="w-4 h-4" />
                 </Button>
                 <DropdownMenu>
@@ -729,6 +752,24 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
                 }}
                 className="min-h-[40px] max-h-[120px] resize-none"
               />
+              {showEmojiPicker && (
+                <div className="absolute bottom-full right-0 mb-2 p-3 bg-background border rounded-lg shadow-lg z-10">
+                  <div className="grid grid-cols-8 gap-1 w-64">
+                    {['👍','👎','😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾'].map(emoji => (
+                      <button
+                        key={emoji}
+                        onClick={() => {
+                          setMessageInput(prev => prev + emoji);
+                          setShowEmojiPicker(false);
+                        }}
+                        className="p-1 hover:bg-muted rounded text-lg"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             
             <Button

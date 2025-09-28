@@ -16,7 +16,9 @@ import {
   X,
   Settings,
   Mail,
-  Smartphone
+  Smartphone,
+  MessageCircle,
+  Phone
 } from "lucide-react";
 import {
   Popover,
@@ -85,6 +87,8 @@ export function NotificationCenter({ userRole }: NotificationCenterProps) {
   const [settings, setSettings] = useState({
     emailNotifications: true,
     pushNotifications: true,
+    smsAlerts: false,
+    whatsappNotifications: false,
     immediateAlerts: true,
     dailyDigest: false,
     weeklyReport: true
@@ -173,6 +177,32 @@ export function NotificationCenter({ userRole }: NotificationCenterProps) {
                             checked={settings.pushNotifications}
                             onCheckedChange={(checked) => 
                               setSettings(prev => ({ ...prev, pushNotifications: checked }))
+                            }
+                          />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Phone className="w-4 h-4" />
+                            <Label>SMS Alerts</Label>
+                          </div>
+                          <Switch
+                            checked={settings.smsAlerts}
+                            onCheckedChange={(checked) => 
+                              setSettings(prev => ({ ...prev, smsAlerts: checked }))
+                            }
+                          />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <MessageCircle className="w-4 h-4 text-green-600" />
+                            <Label>WhatsApp Notifications</Label>
+                          </div>
+                          <Switch
+                            checked={settings.whatsappNotifications}
+                            onCheckedChange={(checked) => 
+                              setSettings(prev => ({ ...prev, whatsappNotifications: checked }))
                             }
                           />
                         </div>

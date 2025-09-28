@@ -242,17 +242,7 @@ const ApprovalRouting: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {isAdmin ? (
-              <WorkflowConfiguration hideWorkflowsTab={true} />
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12">
-                <Users className="w-12 h-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Administrator Access Required</h3>
-                <p className="text-muted-foreground text-center">
-                  You need administrator privileges to configure workflows and approval routing.
-                </p>
-              </div>
-            )}
+            <WorkflowConfiguration hideWorkflowsTab={true} />
           </CardContent>
         </Card>
       )}

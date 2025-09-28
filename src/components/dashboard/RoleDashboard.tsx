@@ -105,23 +105,7 @@ export const RoleDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="text-right">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="w-5 h-5" />
-                <span className={cn(
-                  "font-bold",
-                  isMobile ? "text-lg" : "text-xl"
-                )}>
-                  {enabledFeatures.length}
-                </span>
-              </div>
-              <p className={cn(
-                "opacity-90",
-                isMobile ? "text-xs" : "text-sm"
-              )}>
-                Features Available
-              </p>
-            </div>
+
           </div>
           
           {/* Role Description */}
