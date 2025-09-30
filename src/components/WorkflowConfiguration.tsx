@@ -59,7 +59,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
   // Form states
   const [workflowName, setWorkflowName] = useState('');
   const [workflowDescription, setWorkflowDescription] = useState('');
-  const [workflowType, setWorkflowType] = useState<'sequential' | 'parallel'>('sequential');
+  const [workflowType, setWorkflowType] = useState<'sequential' | 'parallel' | 'reverse' | 'bidirectional'>('sequential');
   const [requiresCounterApproval, setRequiresCounterApproval] = useState(false);
   const [autoEscalation, setAutoEscalation] = useState(false);
   const [escalationTimeout, setEscalationTimeout] = useState(24);
@@ -587,14 +587,16 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
                     </div>
                     
                     <div>
-                      <label className="text-sm font-medium">Type</label>
-                      <Select value={workflowType} onValueChange={(value: 'sequential' | 'parallel') => setWorkflowType(value)}>
+                      <label className="text-sm font-medium">Routing Type</label>
+                      <Select value={workflowType} onValueChange={(value: 'sequential' | 'parallel' | 'reverse' | 'bidirectional') => setWorkflowType(value as any)}>
                         <SelectTrigger className="mt-1">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="sequential">Sequential</SelectItem>
-                          <SelectItem value="parallel">Parallel</SelectItem>
+                          <SelectItem value="sequential">Sequential Routing</SelectItem>
+                          <SelectItem value="parallel">Parallel Routing</SelectItem>
+                          <SelectItem value="reverse">Reverse Routing</SelectItem>
+                          <SelectItem value="bidirectional">Bi-Directional Routing</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

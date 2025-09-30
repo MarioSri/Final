@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle2, XCircle, Clock, FileText, User, Calendar, MessageSquare, Video, Eye, ChevronRight } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, FileText, User, Calendar, MessageSquare, Video, Eye, ChevronRight, CircleAlert } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -135,7 +135,9 @@ const Approvals = () => {
                         <div className="flex-1 space-y-4">
                           <div className="flex items-start justify-between">
                             <div>
-                              <h3 className="font-semibold text-lg">Faculty Meeting Minutes – Q4 2024</h3>
+                              <h3 className="font-semibold text-lg flex items-center gap-2">
+                                Faculty Meeting Minutes – Q4 2024
+                              </h3>
                               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                                 <div className="flex items-center gap-1">
                                   <FileText className="h-4 w-4" />
@@ -201,7 +203,13 @@ const Approvals = () => {
                             className="border-orange-500 text-orange-600 hover:bg-orange-50"
                             onClick={() => setShowLiveMeetingModal(true)}
                           >
-                            🔴 LiveMeet+
+                            <div className="flex items-center gap-2">
+                              <div className="relative w-4 h-4">
+                                <div className="absolute inset-0 w-4 h-4 bg-green-400 rounded-full"></div>
+                                <div className="absolute inset-1 w-2 h-2 bg-red-500 rounded-full"></div>
+                              </div>
+                              LiveMeet+
+                            </div>
                           </Button>
                           <Button variant="outline" size="sm">
                             <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -223,7 +231,9 @@ const Approvals = () => {
                         <div className="flex-1 space-y-4">
                           <div className="flex items-start justify-between">
                             <div>
-                              <h3 className="font-semibold text-lg">Budget Request – Lab Equipment</h3>
+                              <h3 className="font-semibold text-lg flex items-center gap-2">
+                                Budget Request – Lab Equipment
+                              </h3>
                               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                                 <div className="flex items-center gap-1">
                                   <FileText className="h-4 w-4" />
@@ -289,7 +299,13 @@ const Approvals = () => {
                             className="border-orange-500 text-orange-600 hover:bg-orange-50"
                             onClick={() => setShowLiveMeetingModal(true)}
                           >
-                            🔴 LiveMeet+
+                            <div className="flex items-center gap-2">
+                              <div className="relative w-4 h-4">
+                                <div className="absolute inset-0 w-4 h-4 bg-green-400 rounded-full"></div>
+                                <div className="absolute inset-1 w-2 h-2 bg-red-500 rounded-full"></div>
+                              </div>
+                              LiveMeet+
+                            </div>
                           </Button>
                           <Button variant="outline" size="sm">
                             <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -430,13 +446,7 @@ const Approvals = () => {
                                 Rejected
                               </Button>
                             )}
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              className="border-blue-500 text-blue-600 hover:bg-blue-50"
-                            >
-                              📋 Archive
-                            </Button>
+
                           </div>
                         </div>
                       </CardContent>

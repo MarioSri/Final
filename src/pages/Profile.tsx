@@ -471,17 +471,7 @@ const Profile = () => {
                       </Button>
                     </div>
                     
-                    <Separator />
-                    
-                    <div>
-                      <h5 className="font-medium">Export Data</h5>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Download a copy of your account data
-                      </p>
-                      <Button variant="outline" className="h-12 px-6">
-                        Export My Data
-                      </Button>
-                    </div>
+
                   </div>
                 </div>
               </CardContent>

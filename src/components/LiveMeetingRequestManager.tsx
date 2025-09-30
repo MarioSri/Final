@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Filter, Search, TrendingUp, Clock, Users, AlertTriangle, FileText, User, Calendar, CheckCircle, XCircle, Eye, Download, ChevronRight } from 'lucide-react';
+import { RefreshCw, Filter, Search, TrendingUp, Clock, Users, AlertTriangle, FileText, User, Calendar, CheckCircle, XCircle, Eye, Download, ChevronRight, Zap, Activity, MessageSquare, Settings, Monitor, MapPin, Globe, CircleAlert } from 'lucide-react';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Input } from './ui/input';
@@ -213,7 +213,11 @@ export const LiveMeetingRequestManager: React.FC = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            🔴 LiveMeet+
+            <div className="relative w-4 h-4">
+              <div className="absolute inset-0 w-4 h-4 bg-green-400 rounded-full"></div>
+              <div className="absolute inset-1 w-2 h-2 bg-red-500 rounded-full"></div>
+            </div>
+            LiveMeet+
             {filteredRequests.filter(r => r.status === 'pending').length > 0 && (
               <Badge variant="destructive" className="animate-pulse">
                 {filteredRequests.filter(r => r.status === 'pending').length} pending
@@ -291,10 +295,25 @@ export const LiveMeetingRequestManager: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Requests</SelectItem>
-              <SelectItem value="pending">Pending Only</SelectItem>
-              <SelectItem value="immediate">🔥 Immediate</SelectItem>
-              <SelectItem value="urgent">⚡ Urgent</SelectItem>
-              <SelectItem value="today">📅 Today</SelectItem>
+              <SelectItem value="pending">All Pendings</SelectItem>
+              <SelectItem value="normal">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-blue-600" />
+                  <span>Normal</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="urgent">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-orange-600" />
+                  <span>Urgent</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="immediate">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-red-600" />
+                  <span>Immediate</span>
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -304,42 +323,38 @@ export const LiveMeetingRequestManager: React.FC = () => {
 
       {/* Requests List */}
       <div className="space-y-4">
-        <h4 className="text-lg font-semibold text-gray-900">Live Meeting Requests</h4>
-        {filteredRequests.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <div className="space-y-2">
-                <div className="text-4xl">📭</div>
-                <h3 className="text-lg font-medium text-gray-900">No live meeting requests</h3>
-                <p className="text-gray-500">
-                  {searchTerm || filter !== 'all' 
-                    ? 'No requests match your current filters' 
-                    : 'No active live meeting requests at the moment'}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {/* Original Dynamic Live Meeting Request Cards */}
-            {filteredRequests.map(request => (
-              <LiveMeetingRequestCard
-                key={request.id}
-                request={request}
-                onAccept={handleAcceptRequest}
-                onDecline={handleDeclineRequest}
-              />
-            ))}
+        <div className="space-y-4">
+          {/* Original Dynamic Live Meeting Request Cards */}
+          {filteredRequests.map(request => (
+            <LiveMeetingRequestCard
+              key={request.id}
+              request={request}
+              onAccept={handleAcceptRequest}
+              onDecline={handleDeclineRequest}
+            />
+          ))}
             
             {/* Additional Static Cards from Approval Center */}
             {/* Faculty Meeting Minutes – Q4 2024 Card */}
+            {((!searchTerm || 
+              'Faculty Meeting Minutes – Q4 2024'.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              'Prof. Michael Chen'.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              'Need Clarification'.toLowerCase().includes(searchTerm.toLowerCase())
+            ) && (
+              filter === 'all' || 
+              filter === 'pending' || 
+              filter === 'immediate'
+            )) && (
             <Card className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row gap-6">
                   <div className="flex-1 space-y-4">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="font-semibold text-lg">Faculty Meeting Minutes – Q4 2024</h3>
+                        <h3 className="font-semibold text-lg flex items-center gap-2">
+                          <CircleAlert className="h-5 w-5 text-red-500" />
+                          Faculty Meeting Minutes – Q4 2024
+                        </h3>
                         <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <FileText className="h-4 w-4" />
@@ -358,39 +373,52 @@ export const LiveMeetingRequestManager: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-yellow-600" />
                         <Badge variant="warning">Pending</Badge>
-                        <Badge variant="outline" className="text-orange-600 font-semibold">High Priority</Badge>
+                        <Badge variant="outline" className="text-red-600 font-semibold flex items-center gap-1">
+                          <Zap className="w-3 h-3" />
+                          Immediate
+                        </Badge>
                       </div>
                     </div>
                     
                     {/* Description */}
                     <div className="space-y-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div className="flex items-center gap-1">
+                          <User className="h-4 w-4" />
+                          <span className="font-medium">From:</span> Prof. Michael Chen • HOD
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          <span className="font-medium">Date:</span> 09/26/2025
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Settings className="h-4 w-4" />
+                          <span className="font-medium">Meeting Purpose:</span> 
+                          <div className="flex items-center gap-1">
+                            <FileText className="h-4 w-4" />
+                            Need Clarification
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          <span className="font-medium">Time: From:</span> 10:56 AM — To: 11:56 AM
+                        </div>
+                        <div className="md:col-span-2 flex items-center gap-1">
+                          <Users className="h-4 w-4" />
+                          <span className="font-medium">Meeting Format:</span> 
+                          <div className="flex items-center gap-1">
+                            <Monitor className="h-4 w-4" />
+                            Online
+                          </div>
+                        </div>
+                      </div>
                       <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        <span className="text-sm font-medium">LiveMeet+ Request</span>
+                        <MessageSquare className="h-4 w-4" />
+                        <span className="text-sm font-medium">Description & Agenda</span>
                       </div>
                       <div className="bg-muted p-3 rounded text-sm">
                         <p>Add a risk-mitigation section to highlight potential delays or issues.</p>
                       </div>
-                    </div>
-                    
-                    {/* Input Field */}
-                    <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors">
-                      <textarea
-                        className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none"
-                        placeholder="Add your comment..."
-                        rows={1}
-                        onInput={(e) => {
-                          const target = e.target as HTMLTextAreaElement;
-                          target.style.height = 'auto';
-                          target.style.height = target.scrollHeight + 'px';
-                        }}
-                      />
-                      <button 
-                        className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors"
-                        title="Save comment"
-                      >
-                        <ChevronRight className="h-4 w-4 text-gray-600" />
-                      </button>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2 min-w-[150px]">
@@ -406,15 +434,28 @@ export const LiveMeetingRequestManager: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+            )}
 
             {/* Budget Request – Lab Equipment Card */}
+            {((!searchTerm || 
+              'Budget Request – Lab Equipment'.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              'Prof. David Brown'.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              'Need Clarification'.toLowerCase().includes(searchTerm.toLowerCase())
+            ) && (
+              filter === 'all' || 
+              filter === 'pending' || 
+              filter === 'urgent'
+            )) && (
             <Card className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row gap-6">
                   <div className="flex-1 space-y-4">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="font-semibold text-lg">Budget Request – Lab Equipment</h3>
+                        <h3 className="font-semibold text-lg flex items-center gap-2">
+                          <CircleAlert className="h-5 w-5 text-red-500" />
+                          Budget Request – Lab Equipment
+                        </h3>
                         <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <FileText className="h-4 w-4" />
@@ -433,40 +474,59 @@ export const LiveMeetingRequestManager: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-yellow-600" />
                         <Badge variant="warning">Pending</Badge>
-                        <Badge variant="outline" className="text-yellow-600">Medium Priority</Badge>
+                        <Badge variant="outline" className="text-orange-600 flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" />
+                          Urgent
+                        </Badge>
                       </div>
                     </div>
                     
                     {/* Description */}
                     <div className="space-y-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div className="flex items-center gap-1">
+                          <User className="h-4 w-4" />
+                          <span className="font-medium">From:</span> Prof. Michael Chen • HOD
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          <span className="font-medium">Date:</span> 09/26/2025
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Settings className="h-4 w-4" />
+                          <span className="font-medium">Meeting Purpose:</span> 
+                          <div className="flex items-center gap-1">
+                            <FileText className="h-4 w-4" />
+                            Need Clarification
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          <span className="font-medium">Time: From:</span> 10:56 AM — To: 11:56 AM
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Users className="h-4 w-4" />
+                          <span className="font-medium">Meeting Format:</span> In-Person
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <MapPin className="h-4 w-4" />
+                          <span className="font-medium">Meeting Location:</span> 
+                          <div className="flex items-center gap-1">
+                            <Globe className="h-4 w-4" />
+                            Conference Room A
+                          </div>
+                        </div>
+                      </div>
                       <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        <span className="text-sm font-medium">LiveMeet+ Request</span>
+                        <MessageSquare className="h-4 w-4" />
+                        <span className="text-sm font-medium">Description & Agenda</span>
                       </div>
                       <div className="bg-muted p-3 rounded text-sm">
                         <p>Consider revising the scope to focus on priority items within this quarter's budget.</p>
                       </div>
                     </div>
                     
-                    {/* Input Field */}
-                    <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors">
-                      <textarea
-                        className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none"
-                        placeholder="Add your comment..."
-                        rows={1}
-                        onInput={(e) => {
-                          const target = e.target as HTMLTextAreaElement;
-                          target.style.height = 'auto';
-                          target.style.height = target.scrollHeight + 'px';
-                        }}
-                      />
-                      <button 
-                        className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors"
-                        title="Save comment"
-                      >
-                        <ChevronRight className="h-4 w-4 text-gray-600" />
-                      </button>
-                    </div>
+
                   </div>
                   <div className="flex flex-col gap-2 min-w-[150px]">
                     <Button variant="outline" size="sm">
@@ -481,8 +541,8 @@ export const LiveMeetingRequestManager: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-          </div>
-        )}
+            )}
+        </div>
       </div>
 
 

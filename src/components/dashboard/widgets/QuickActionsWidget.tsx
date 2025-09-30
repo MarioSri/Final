@@ -48,22 +48,23 @@ export const QuickActionsWidget: React.FC<QuickActionsWidgetProps> = ({
   const { isMobile } = useResponsive();
 
   const getActionsForRole = () => {
-    const baseActions = [
+    // Actions based on actual navigation items available for admin roles (principal, registrar, program-head, hod)
+    const adminRoleActions = [
       {
-        label: "Universal Search",
-        icon: Search,
-        path: "/search",
-        color: "text-primary",
-        bgColor: "bg-primary/10",
-        description: "Search documents, users, departments"
+        label: "Track Documents",
+        icon: FileText,
+        path: "/track-documents",
+        color: "text-blue-600",
+        bgColor: "bg-blue-50",
+        description: "Track document status"
       },
       {
-        label: "Submit Document",
-        icon: Plus,
-        path: "/documents",
-        color: "text-success",
-        bgColor: "bg-success/10",
-        description: "Upload new documents"
+        label: "Approval Center",
+        icon: CheckSquare,
+        path: "/approvals",
+        color: "text-warning",
+        bgColor: "bg-yellow-50",
+        description: "Review pending approvals"
       },
       {
         label: "Calendar",
@@ -74,7 +75,23 @@ export const QuickActionsWidget: React.FC<QuickActionsWidgetProps> = ({
         description: "Schedule meetings and events"
       },
       {
-        label: "Emergency",
+        label: "Messages",
+        icon: MessageSquare,
+        path: "/messages",
+        color: "text-indigo-500",
+        bgColor: "bg-indigo-50",
+        description: "Communication center"
+      },
+      {
+        label: "Document Management",
+        icon: Plus,
+        path: "/documents",
+        color: "text-success",
+        bgColor: "bg-success/10",
+        description: "Manage documents"
+      },
+      {
+        label: "Emergency Management",
         icon: AlertTriangle,
         path: "/emergency",
         color: "text-destructive",
@@ -82,12 +99,40 @@ export const QuickActionsWidget: React.FC<QuickActionsWidgetProps> = ({
         description: "Emergency submissions"
       },
       {
-        label: "Reminders",
-        icon: Bell,
-        path: "/reminders",
-        color: "text-purple-500",
+        label: "Approval Chain with Bypass",
+        icon: ArrowRightLeft,
+        path: "/approval-routing",
+        color: "text-purple-600",
         bgColor: "bg-purple-50",
-        description: "Personal reminders"
+        description: "Approval routing management"
+      },
+      {
+        label: "Analytics Dashboard",
+        icon: BarChart3,
+        path: "/analytics",
+        color: "text-green-600",
+        bgColor: "bg-green-50",
+        description: "View analytics"
+      }
+    ];
+
+    // Actions based on actual navigation items available for employee role
+    const employeeRoleActions = [
+      {
+        label: "Track Documents",
+        icon: FileText,
+        path: "/track-documents",
+        color: "text-blue-600",
+        bgColor: "bg-blue-50",
+        description: "Track document status"
+      },
+      {
+        label: "Calendar",
+        icon: Calendar,
+        path: "/calendar",
+        color: "text-blue-500",
+        bgColor: "bg-blue-50",
+        description: "Schedule meetings and events"
       },
       {
         label: "Messages",
@@ -96,180 +141,50 @@ export const QuickActionsWidget: React.FC<QuickActionsWidgetProps> = ({
         color: "text-indigo-500",
         bgColor: "bg-indigo-50",
         description: "Communication center"
+      },
+      {
+        label: "Document Management",
+        icon: Plus,
+        path: "/documents",
+        color: "text-success",
+        bgColor: "bg-success/10",
+        description: "Manage documents"
+      },
+      {
+        label: "Emergency Management",
+        icon: AlertTriangle,
+        path: "/emergency",
+        color: "text-destructive",
+        bgColor: "bg-destructive/10",
+        description: "Emergency submissions"
+      },
+      {
+        label: "Approval Chain with Bypass",
+        icon: ArrowRightLeft,
+        path: "/approval-routing",
+        color: "text-purple-600",
+        bgColor: "bg-purple-50",
+        description: "Approval routing management"
+      },
+      {
+        label: "Analytics Dashboard",
+        icon: BarChart3,
+        path: "/analytics",
+        color: "text-green-600",
+        bgColor: "bg-green-50",
+        description: "View analytics"
       }
     ];
 
     const roleSpecificActions = {
-      principal: [
-        ...baseActions,
-        {
-          label: "Mass Distribution",
-          icon: Share,
-          path: "/mass-distribution",
-          color: "text-orange-500",
-          bgColor: "bg-orange-50",
-          description: "Distribute to multiple recipients"
-        },
-        {
-          label: "Role Management",
-          icon: Users,
-          path: "/role-management",
-          color: "text-cyan-500",
-          bgColor: "bg-cyan-50",
-          description: "Manage user roles and permissions"
-        },
-        {
-          label: "Workflow Builder",
-          icon: GitBranch,
-          path: "/workflow",
-          color: "text-pink-500",
-          bgColor: "bg-pink-50",
-          description: "Design approval workflows"
-        },
-        {
-          label: "Analytics",
-          icon: BarChart3,
-          path: "/analytics",
-          color: "text-green-600",
-          bgColor: "bg-green-50",
-          description: "System analytics and reports"
-        },
-        {
-          label: "Approvals",
-          icon: CheckSquare,
-          path: "/approvals",
-          color: "text-warning",
-          bgColor: "bg-yellow-50",
-          description: "Review pending approvals"
-        },
-        {
-          label: "System Settings",
-          icon: Settings,
-          path: "/settings",
-          color: "text-gray-600",
-          bgColor: "bg-gray-50",
-          description: "System configuration"
-        }
-      ],
-      registrar: [
-        ...baseActions,
-        {
-          label: "Approvals",
-          icon: CheckSquare,
-          path: "/approvals",
-          color: "text-warning",
-          bgColor: "bg-yellow-50",
-          description: "Review pending approvals"
-        },
-        {
-          label: "Analytics",
-          icon: BarChart3,
-          path: "/analytics",
-          color: "text-green-600",
-          bgColor: "bg-green-50",
-          description: "Department analytics"
-        },
-        {
-          label: "Workflow Management",
-          icon: GitBranch,
-          path: "/workflow",
-          color: "text-pink-500",
-          bgColor: "bg-pink-50",
-          description: "Manage approval workflows"
-        },
-        {
-          label: "Archive",
-          icon: Archive,
-          path: "/archive",
-          color: "text-gray-600",
-          bgColor: "bg-gray-50",
-          description: "Document archive"
-        }
-      ],
-      'program-head': [
-        ...baseActions,
-        {
-          label: "Approvals",
-          icon: CheckSquare,
-          path: "/approvals",
-          color: "text-warning",
-          bgColor: "bg-yellow-50",
-          description: "Review program documents"
-        },
-        {
-          label: "Analytics",
-          icon: BarChart3,
-          path: "/analytics",
-          color: "text-green-600",
-          bgColor: "bg-green-50",
-          description: "Program analytics"
-        },
-        {
-          label: "Department Chat",
-          icon: Users,
-          path: "/department-chat",
-          color: "text-blue-600",
-          bgColor: "bg-blue-50",
-          description: "Department communication"
-        }
-      ],
-      hod: [
-        ...baseActions,
-        {
-          label: "Approvals",
-          icon: CheckSquare,
-          path: "/approvals",
-          color: "text-warning",
-          bgColor: "bg-yellow-50",
-          description: "Review department documents"
-        },
-        {
-          label: "Analytics",
-          icon: BarChart3,
-          path: "/analytics",
-          color: "text-green-600",
-          bgColor: "bg-green-50",
-          description: "Department analytics"
-        },
-        {
-          label: "Faculty Management",
-          icon: Users,
-          path: "/faculty",
-          color: "text-purple-600",
-          bgColor: "bg-purple-50",
-          description: "Manage faculty activities"
-        }
-      ],
-      employee: [
-        ...baseActions.slice(0, 6), // Remove some actions for employees
-        {
-          label: "Track Documents",
-          icon: FileText,
-          path: "/documents",
-          color: "text-blue-600",
-          bgColor: "bg-blue-50",
-          description: "Track your submissions"
-        },
-        {
-          label: "Bi-Directional Routing",
-          icon: ArrowRightLeft,
-          path: "/approval-routing",
-          color: "text-purple-600",
-          bgColor: "bg-purple-50",
-          description: "Approval routing management"
-        },
-        {
-          label: "Analytics",
-          icon: BarChart3,
-          path: "/analytics",
-          color: "text-green-600",
-          bgColor: "bg-green-50",
-          description: "View analytics dashboard"
-        }
-      ]
+      principal: adminRoleActions,
+      registrar: adminRoleActions,
+      'program-head': adminRoleActions,
+      hod: adminRoleActions,
+      employee: employeeRoleActions
     };
 
-    return roleSpecificActions[userRole as keyof typeof roleSpecificActions] || baseActions;
+    return roleSpecificActions[userRole as keyof typeof roleSpecificActions] || employeeRoleActions;
   };
 
   const actions = getActionsForRole();

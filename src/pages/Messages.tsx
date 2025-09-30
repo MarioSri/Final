@@ -90,7 +90,13 @@ const Messages = () => {
               )}
             </TabsTrigger>
             <TabsTrigger value="live-requests" className="relative">
-              🔴 LiveMeet+
+              <div className="flex items-center space-x-2">
+                <div className="relative w-4 h-4">
+                  <div className="absolute inset-0 w-4 h-4 bg-green-400 rounded-full"></div>
+                  <div className="absolute inset-1 w-2 h-2 bg-red-500 rounded-full"></div>
+                </div>
+                <span>LiveMeet+</span>
+              </div>
               {stats.liveMeetingRequests > 0 && (
                 <Badge variant="destructive" className="ml-2 px-1 py-0 text-xs animate-pulse">
                   {stats.liveMeetingRequests}

@@ -1058,10 +1058,6 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem onClick={() => handleViewDetails(meeting)}>
-                                <Eye className="w-4 h-4 mr-2" />
-                                View Details
-                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleEditMeeting(meeting)}>
                                 <Edit className="w-4 h-4 mr-2" />
                                 Edit Meeting
@@ -1163,7 +1159,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
 
         {/* New Meeting Dialog */}
         <Dialog open={showNewMeetingDialog} onOpenChange={setShowNewMeetingDialog}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh]">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <CalendarIcon className="w-5 h-5" />
@@ -1285,26 +1281,42 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                   </div>
                 </div>
                 
-                {(newMeeting.type === 'online' || newMeeting.type === 'hybrid') && (
-                  <div className="space-y-2">
-                    <Label>Meeting Platform</Label>
-                    <Select value={newMeeting.location} onValueChange={(value) => setNewMeeting({...newMeeting, location: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select platform" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {meetingPlatforms.filter(p => p.value !== 'physical').map((platform) => (
-                          <SelectItem key={platform.value} value={platform.value}>
-                            <div className="flex items-center gap-2">
-                              {platform.icon}
-                              {platform.label}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+                <div className="space-y-4">
+                  {newMeeting.type === 'hybrid' && (
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4" />
+                        Meeting Location
+                      </Label>
+                      <Input
+                        placeholder="Enter physical meeting location"
+                        value={newMeeting.location}
+                        onChange={(e) => setNewMeeting({...newMeeting, location: e.target.value})}
+                      />
+                    </div>
+                  )}
+                  
+                  {(newMeeting.type === 'online' || newMeeting.type === 'hybrid') && (
+                    <div className="space-y-2">
+                      <Label>Meeting Platform</Label>
+                      <Select value={newMeeting.location} onValueChange={(value) => setNewMeeting({...newMeeting, location: value})}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select platform" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {meetingPlatforms.filter(p => p.value !== 'physical').map((platform) => (
+                            <SelectItem key={platform.value} value={platform.value}>
+                              <div className="flex items-center gap-2">
+                                {platform.icon}
+                                {platform.label}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="description">Description & Agenda</Label>

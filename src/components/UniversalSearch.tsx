@@ -165,7 +165,18 @@ export function UniversalSearch({ userRole, className = '' }: UniversalSearchPro
           {recentSearches.length > 0 && (
             <>
               <Separator className="my-2" />
-              <div className="px-3 py-1 text-xs text-gray-500 font-medium">Recent Searches</div>
+              <div className="flex items-center justify-between px-3 py-1">
+                <span className="text-xs text-gray-500 font-medium">Recent Searches</span>
+                <button
+                  onClick={() => {
+                    // Clear recent searches functionality would be implemented here
+                    setShowSuggestions(false);
+                  }}
+                  className="text-xs text-red-500 hover:text-red-700 font-medium"
+                >
+                  Clear All
+                </button>
+              </div>
               {recentSearches.map((recent, index) => (
                 <button
                   key={index}

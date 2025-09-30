@@ -13,7 +13,10 @@ import {
   Wifi, 
   ChevronDown,
   Send,
-  Plus
+  Plus,
+  Settings,
+  UserPlus,
+  FileText
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
@@ -64,12 +67,15 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
   const [requestedTime, setRequestedTime] = useState('');
   const [requestedDate, setRequestedDate] = useState('');
   const [requestedTimeSlot, setRequestedTimeSlot] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingParticipants, setLoadingParticipants] = useState(true);
   const [purposeDropdownOpen, setPurposeDropdownOpen] = useState(false);
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [newParticipantName, setNewParticipantName] = useState('');
   const [newParticipantEmail, setNewParticipantEmail] = useState('');
+  const [newParticipantRole, setNewParticipantRole] = useState('');
 
   const { toast } = useToast();
 
@@ -110,7 +116,7 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
       const newParticipant: Participant = {
         id: `custom_${Date.now()}`,
         name: newParticipantName.trim(),
-        role: 'external',
+        role: newParticipantRole.trim() || 'external',
         email: newParticipantEmail.trim(),
         department: 'External'
       };
@@ -119,6 +125,7 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
       setSelectedParticipants(prev => [...prev, newParticipant.id]);
       setNewParticipantName('');
       setNewParticipantEmail('');
+      setNewParticipantRole('');
       setShowAddParticipant(false);
       
       toast({
@@ -223,6 +230,8 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
     setRequestedTime('');
     setRequestedDate('');
     setRequestedTimeSlot('');
+    setStartTime('');
+    setEndTime('');
     onClose();
   };
 
@@ -243,8 +252,9 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
             <X className="w-6 h-6" />
           </button>
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-              <div className="w-6 h-6 bg-red-500 rounded-full"></div>
+            <div className="relative w-6 h-6">
+              <div className="absolute inset-0 w-6 h-6 bg-green-400 rounded-full"></div>
+              <div className="absolute inset-1 w-4 h-4 bg-red-500 rounded-full"></div>
             </div>
             <div>
               <h1 className="text-2xl font-bold">LiveMeet+</h1>
@@ -253,14 +263,13 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
           </div>
         </div>
 
-        <div className="flex bg-white shadow-xl h-[calc(75vh-100px)] overflow-hidden">
-
-          {/* Main Form Section */}
-          <div className="flex-1 p-4 overflow-y-auto">
+        <div className="bg-white shadow-xl h-[calc(75vh-100px)] overflow-hidden">
+          {/* Single Column Layout */}
+          <div className="p-4 overflow-y-auto h-full">
             {/* Meeting Purpose */}
             <div className="mb-4">
               <label className="flex items-center space-x-2 text-lg font-semibold text-gray-800 mb-4">
-                <MessageSquare className="w-5 h-5 text-indigo-600" />
+                <Settings className="w-5 h-5 text-indigo-600" />
                 <span>Meeting Purpose</span>
               </label>
               
@@ -271,7 +280,7 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
                 >
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                      <MessageSquare className="w-4 h-4 text-emerald-600" />
+                      <FileText className="w-4 h-4 text-emerald-600" />
                     </div>
                     <span className="font-medium text-gray-800">{purposeOptions.find(p => p.toLowerCase().replace(' ', '_') === purpose) || 'Need Clarification'}</span>
                   </div>
@@ -337,7 +346,7 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
             {/* Meeting Format */}
             <div className="mb-4">
               <label className="flex items-center space-x-2 text-lg font-semibold text-gray-800 mb-4">
-                <Monitor className="w-5 h-5 text-indigo-600" />
+                <Users className="w-5 h-5 text-indigo-600" />
                 <span>Meeting Format</span>
               </label>
               
@@ -400,50 +409,42 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
                       type="date"
                       value={requestedDate}
                       onChange={(e) => setRequestedDate(e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2"
                     />
                   </div>
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Time</label>
-                  <div className="relative">
-                    <input
-                      type="time"
-                      value={requestedTimeSlot}
-                      onChange={(e) => setRequestedTimeSlot(e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                    />
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-700">From:</span>
+                      <input
+                        type="time"
+                        value={startTime}
+                        onChange={(e) => setStartTime(e.target.value)}
+                        className="px-3 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 text-sm w-32"
+                      />
+                    </div>
+                    <span className="text-gray-400">—</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-700">To:</span>
+                      <input
+                        type="time"
+                        value={endTime}
+                        onChange={(e) => setEndTime(e.target.value)}
+                        className="px-3 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 text-sm w-32"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-            
-            {/* Action Buttons */}
-            <div className="flex justify-end space-x-4 mt-6">
-              <button 
-                className="px-6 py-3 text-gray-700 hover:text-gray-900 font-medium transition-colors"
-                onClick={handleClose}
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button 
-                className="px-8 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-red-600 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2 disabled:opacity-50"
-                onClick={handleSubmitRequest}
-                disabled={loading || selectedParticipants.length === 0}
-              >
-                <Send className="w-4 h-4" />
-                <span>{loading ? 'Sending...' : 'Send Live Request'}</span>
-              </button>
-            </div>
-          </div>
 
-          {/* Participants Section */}
-          <div className="w-72 bg-gray-50 p-4 border-l border-gray-200 overflow-y-auto">
+            {/* Select Participants Section */}
             <div className="mb-4">
               <label className="flex items-center space-x-2 text-lg font-semibold text-gray-800 mb-4">
-                <Users className="w-5 h-5 text-indigo-600" />
+                <UserPlus className="w-5 h-5 text-indigo-600" />
                 <span>Select Participants</span>
               </label>
               
@@ -508,6 +509,12 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
                       onChange={(e) => setNewParticipantEmail(e.target.value)}
                       className="text-sm"
                     />
+                    <Input
+                      placeholder="Designation Role"
+                      value={newParticipantRole}
+                      onChange={(e) => setNewParticipantRole(e.target.value)}
+                      className="text-sm"
+                    />
                     <div className="flex gap-2">
                       <Button
                         size="sm"
@@ -524,6 +531,7 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
                           setShowAddParticipant(false);
                           setNewParticipantName('');
                           setNewParticipantEmail('');
+                          setNewParticipantRole('');
                         }}
                       >
                         Cancel
@@ -534,20 +542,38 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
               )}
             </div>
 
-            {/* Agenda Section */}
+            {/* Description & Agenda Section */}
             <div className="mb-4">
               <label className="flex items-center space-x-2 text-lg font-semibold text-gray-800 mb-4">
                 <MessageSquare className="w-5 h-5 text-indigo-600" />
-                <span>Agenda/Context</span>
-                <span className="text-sm text-gray-500 font-normal">(Optional)</span>
+                <span>Description & Agenda</span>
               </label>
               
               <textarea
                 value={agenda}
                 onChange={(e) => setAgenda(e.target.value)}
                 placeholder="Brief description of what needs to be discussed..."
-                className="w-full h-16 px-3 py-2 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors text-sm"
+                className="w-full h-16 px-3 py-2 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2"
               />
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-4 mt-6">
+              <button 
+                className="px-6 py-3 text-gray-700 hover:text-gray-900 font-medium transition-colors"
+                onClick={handleClose}
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button 
+                className="px-8 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-red-600 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2 disabled:opacity-50"
+                onClick={handleSubmitRequest}
+                disabled={loading || selectedParticipants.length === 0}
+              >
+                <Send className="w-4 h-4" />
+                <span>{loading ? 'Sending...' : 'Send Live Request'}</span>
+              </button>
             </div>
           </div>
         </div>

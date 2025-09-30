@@ -35,7 +35,7 @@ interface EmergencySubmission {
   title: string;
   description: string;
   reason: string;
-  urgencyLevel: 'high' | 'critical' | 'disaster';
+  urgencyLevel: 'medium' | 'urgent' | 'high' | 'critical';
   recipients: string[];
   submittedBy: string;
   submittedAt: Date;
@@ -55,7 +55,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
     title: '',
     description: '',
     reason: '',
-    urgencyLevel: 'high' as const,
+    urgencyLevel: 'medium' as const,
     documentTypes: [] as string[],
     uploadedFiles: [] as File[],
     attachments: [] as File[],
@@ -95,20 +95,25 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
   const { toast } = useToast();
 
   const urgencyLevels = {
+    medium: {
+      color: 'bg-blue-100 text-blue-800 border-blue-200',
+      icon: Clock,
+      description: ''
+    },
+    urgent: {
+      color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      icon: AlertTriangle,
+      description: ''
+    },
     high: {
       color: 'bg-orange-100 text-orange-800 border-orange-200',
       icon: AlertTriangle,
-      description: 'Requires attention within 2 hours'
+      description: ''
     },
     critical: {
       color: 'bg-red-100 text-red-800 border-red-200',
       icon: Siren,
-      description: 'Requires immediate attention within 30 minutes'
-    },
-    disaster: {
-      color: 'bg-red-200 text-red-900 border-red-400',
-      icon: Zap,
-      description: 'Life-threatening situation - immediate response required'
+      description: ''
     }
   };
 
@@ -177,7 +182,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
       title: '',
       description: '',
       reason: '',
-      urgencyLevel: 'high',
+      urgencyLevel: 'medium',
       documentTypes: [],
       uploadedFiles: [],
       attachments: [],
@@ -228,7 +233,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <Siren className={`w-6 h-6 ${isEmergencyMode ? 'text-destructive animate-pulse' : 'text-primary'}`} />
-              Emergency Workflow Interface
+              Emergency Workflow
             </CardTitle>
             
             <Button
@@ -354,16 +359,16 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="urgency-level">Urgency Level</Label>
+                <Label htmlFor="priority-level">Priority Level</Label>
                 <select
-                  id="urgency-level"
+                  id="priority-level"
                   value={emergencyData.urgencyLevel}
                   onChange={(e) => setEmergencyData({...emergencyData, urgencyLevel: e.target.value as any})}
                   className="w-full h-10 px-3 py-2 border border-destructive bg-background rounded-md text-sm focus:ring-destructive"
                 >
                   {Object.entries(urgencyLevels).map(([level, config]) => (
                     <option key={level} value={level}>
-                      {level.toUpperCase()} - {config.description}
+                      {level.charAt(0).toUpperCase() + level.slice(1)} Priority
                     </option>
                   ))}
                 </select>

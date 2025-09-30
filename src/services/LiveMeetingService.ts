@@ -279,70 +279,7 @@ class LiveMeetingService {
 
   private async mockGetMyRequests(filter?: string): Promise<LiveMeetingRequest[]> {
     // Return mock data for development
-    const mockRequests: LiveMeetingRequest[] = [
-      {
-        id: 'live_req_1',
-        type: 'live_communication_request',
-        documentId: 'doc_123',
-        documentType: 'circular',
-        documentTitle: 'New Academic Policy Update',
-        requesterId: 'user_456',
-        requesterName: 'John Faculty',
-        requesterRole: 'faculty',
-        targetUserId: 'current_user',
-        targetUserName: 'Current User',
-        targetUserRole: 'principal',
-        urgency: 'urgent',
-        meetingFormat: 'online',
-        purpose: 'clarification',
-        agenda: 'Need clarification on new grading policy implementation',
-        status: 'pending',
-        participants: [
-          {
-            id: 'p1',
-            userId: 'current_user',
-            userName: 'Current User',
-            role: 'principal',
-            email: 'principal@institution.edu',
-            status: 'invited'
-          }
-        ],
-        createdAt: new Date(Date.now() - 10 * 60 * 1000), // 10 minutes ago
-        updatedAt: new Date(Date.now() - 10 * 60 * 1000),
-        expiresAt: new Date(Date.now() + 110 * 60 * 1000) // 110 minutes from now
-      },
-      {
-        id: 'live_req_2',
-        type: 'live_communication_request',
-        documentId: 'doc_456',
-        documentType: 'report',
-        documentTitle: 'Department Performance Report Q3',
-        requesterId: 'user_789',
-        requesterName: 'Sarah HOD',
-        requesterRole: 'hod_cse',
-        targetUserId: 'current_user',
-        targetUserName: 'Current User',
-        targetUserRole: 'principal',
-        urgency: 'immediate',
-        meetingFormat: 'in_person',
-        purpose: 'urgent_decision',
-        agenda: 'Urgent decision needed on budget allocation',
-        status: 'pending',
-        participants: [
-          {
-            id: 'p2',
-            userId: 'current_user',
-            userName: 'Current User',
-            role: 'principal',
-            email: 'principal@institution.edu',
-            status: 'invited'
-          }
-        ],
-        createdAt: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-        updatedAt: new Date(Date.now() - 5 * 60 * 1000),
-        expiresAt: new Date(Date.now() + 25 * 60 * 1000) // 25 minutes from now
-      }
-    ];
+    const mockRequests: LiveMeetingRequest[] = [];
 
     // Apply filter
     if (filter && filter !== 'all') {
