@@ -67,8 +67,6 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
   const [requestedTime, setRequestedTime] = useState('');
   const [requestedDate, setRequestedDate] = useState('');
   const [requestedTimeSlot, setRequestedTimeSlot] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingParticipants, setLoadingParticipants] = useState(true);
   const [purposeDropdownOpen, setPurposeDropdownOpen] = useState(false);
@@ -230,8 +228,6 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
     setRequestedTime('');
     setRequestedDate('');
     setRequestedTimeSlot('');
-    setStartTime('');
-    setEndTime('');
     onClose();
   };
 
@@ -263,7 +259,7 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
           </div>
         </div>
 
-        <div className="bg-white shadow-xl h-[calc(75vh-100px)] overflow-hidden">
+        <div className="bg-white shadow-xl h-[calc(75vh-100px)] overflow-hidden rounded-b-lg">
           {/* Single Column Layout */}
           <div className="p-4 overflow-y-auto h-full">
             {/* Meeting Purpose */}
@@ -409,33 +405,20 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
                       type="date"
                       value={requestedDate}
                       onChange={(e) => setRequestedDate(e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                     />
                   </div>
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Time</label>
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-gray-700">From:</span>
-                      <input
-                        type="time"
-                        value={startTime}
-                        onChange={(e) => setStartTime(e.target.value)}
-                        className="px-3 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 text-sm w-32"
-                      />
-                    </div>
-                    <span className="text-gray-400">—</span>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm font-medium text-gray-700">To:</span>
-                      <input
-                        type="time"
-                        value={endTime}
-                        onChange={(e) => setEndTime(e.target.value)}
-                        className="px-3 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 text-sm w-32"
-                      />
-                    </div>
+                  <div className="relative">
+                    <input
+                      type="time"
+                      value={requestedTimeSlot}
+                      onChange={(e) => setRequestedTimeSlot(e.target.value)}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    />
                   </div>
                 </div>
               </div>
@@ -553,7 +536,7 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
                 value={agenda}
                 onChange={(e) => setAgenda(e.target.value)}
                 placeholder="Brief description of what needs to be discussed..."
-                className="w-full h-16 px-3 py-2 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2"
+                className="w-full h-16 px-3 py-2 border-2 border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors text-sm"
               />
             </div>
             

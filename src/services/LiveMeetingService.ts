@@ -320,7 +320,8 @@ class LiveMeetingService {
       { id: 'user_2', name: 'Prof. Johnson', role: 'hod_cse', email: 'johnson@institution.edu', department: 'Computer Science' },
       { id: 'user_3', name: 'Dr. Williams', role: 'registrar', email: 'williams@institution.edu', department: 'Administration' },
       { id: 'user_4', name: 'Prof. Brown', role: 'hod_eee', email: 'brown@institution.edu', department: 'Electrical Engineering' },
-      { id: 'user_5', name: 'Dr. Davis', role: 'dean', email: 'davis@institution.edu', department: 'Academic Affairs' }
+      { id: 'user_5', name: 'Dr. Davis', role: 'dean', email: 'davis@institution.edu', department: 'Academic Affairs' },
+      { id: 'user_6', name: 'Dr. Sarah Johnson', role: 'employee', email: 'sarah.johnson@institution.edu', department: 'Mechanical Engineering' }
     ];
 
     return mockUsers.filter(user => 

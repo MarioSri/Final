@@ -78,6 +78,7 @@ export interface RolePermissions {
 export const LIVE_MEETING_PERMISSIONS: RolePermissions = {
   // Employees can request from these roles
   'employee': [
+    'employee',
     'program_head_eee', 'program_head_mech', 'program_head_cse', 'program_head_ece',
     'program_head_csm', 'program_head_cso', 'program_head_csd', 'program_head_csc',
     'hod_eee', 'hod_mech', 'hod_cse', 'hod_ece', 'hod_csm', 'hod_cso', 'hod_csd', 'hod_csc',

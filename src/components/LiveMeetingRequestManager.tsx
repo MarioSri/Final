@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Filter, Search, TrendingUp, Clock, Users, AlertTriangle, FileText, User, Calendar, CheckCircle, XCircle, Eye, Download, ChevronRight, Zap, Activity, MessageSquare, Settings, Monitor, MapPin, Globe, CircleAlert } from 'lucide-react';
+import { RefreshCw, Filter, Search, TrendingUp, Clock, Users, AlertTriangle, FileText, User, Calendar, CheckCircle, XCircle, Eye, Download, ChevronRight, Zap, Activity, MessageSquare, Settings, Monitor, MapPin, Globe, CircleAlert, Building } from 'lucide-react';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Input } from './ui/input';
@@ -351,22 +351,20 @@ export const LiveMeetingRequestManager: React.FC = () => {
                   <div className="flex-1 space-y-4">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="font-semibold text-lg flex items-center gap-2">
-                          <CircleAlert className="h-5 w-5 text-red-500" />
-                          Faculty Meeting Minutes – Q4 2024
-                        </h3>
-                        <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <FileText className="h-4 w-4" />
-                            Circular
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <User className="h-4 w-4" />
-                            Dr. Sarah Johnson
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            2024-01-15
+                        <div className="flex items-center gap-3 mb-0">
+                          <h3 className="font-semibold text-lg flex items-center gap-2">
+                            <CircleAlert className="h-5 w-5 text-red-500" />
+                            Faculty Meeting Minutes – Q4 2024
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                              <FileText className="h-3 w-3" />
+                              Circular
+                            </div>
+                            <div className="flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">
+                              <Calendar className="h-3 w-3" />
+                              2024-01-15
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -452,22 +450,20 @@ export const LiveMeetingRequestManager: React.FC = () => {
                   <div className="flex-1 space-y-4">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="font-semibold text-lg flex items-center gap-2">
-                          <CircleAlert className="h-5 w-5 text-red-500" />
-                          Budget Request – Lab Equipment
-                        </h3>
-                        <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <FileText className="h-4 w-4" />
-                            Letter
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <User className="h-4 w-4" />
-                            Prof. David Brown
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            2024-01-13
+                        <div className="flex items-center gap-3 mb-0">
+                          <h3 className="font-semibold text-lg flex items-center gap-2">
+                            <CircleAlert className="h-5 w-5 text-red-500" />
+                            Budget Request – Lab Equipment
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                              <FileText className="h-3 w-3" />
+                              Letter
+                            </div>
+                            <div className="flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">
+                              <Calendar className="h-3 w-3" />
+                              2024-01-13
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -506,7 +502,11 @@ export const LiveMeetingRequestManager: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-1">
                           <Users className="h-4 w-4" />
-                          <span className="font-medium">Meeting Format:</span> In-Person
+                          <span className="font-medium">Meeting Format:</span> 
+                          <div className="flex items-center gap-1">
+                            <Building className="h-4 w-4" />
+                            In-Person
+                          </div>
                         </div>
                         <div className="flex items-center gap-1">
                           <MapPin className="h-4 w-4" />
