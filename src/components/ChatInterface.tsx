@@ -53,9 +53,7 @@ import {
   Zap,
   Shield,
   Wifi,
-  WifiOff,
   CheckCircle2,
-  Clock,
   AlertTriangle,
   Mic,
   MicOff,
@@ -116,6 +114,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
   const [isPrivateChannel, setIsPrivateChannel] = useState(false);
   const [showAddRecipientsModal, setShowAddRecipientsModal] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+  const [deleteMode, setDeleteMode] = useState(false);
+  const [selectedChannelsToDelete, setSelectedChannelsToDelete] = useState<string[]>([]);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   // Initialize chat service
   useEffect(() => {
@@ -162,7 +163,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
     chatService.on('message-received', (message: ChatMessage) => {
       if (!activeChannel || message.channelId === activeChannel.id) {
         setMessages(prev => [...prev, message]);
-        scrollToBottom();
       }
       
       // Show notification if not in active channel
@@ -210,13 +210,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
   const loadMessages = async (channelId: string) => {
     const channelMessages = await chatService.getMessages(channelId);
     setMessages(channelMessages);
-    scrollToBottom();
+    scrollToBottom(true);
   };
 
-  const scrollToBottom = () => {
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+  const scrollToBottom = (force = false) => {
+    if (force) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      }, 50);
+    }
   };
 
   const handleSendMessage = async () => {
@@ -235,7 +237,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
       setMessages(prev => [...prev, message]);
       setMessageInput('');
       setReplyingTo(null);
-      scrollToBottom();
+      scrollToBottom(true);
     } catch (error) {
       toast({
         title: 'Error',
@@ -269,7 +271,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
 
       const message = await chatService.sendMessage(messageData);
       setMessages(prev => [...prev, message]);
-      scrollToBottom();
     } catch (error) {
       toast({
         title: 'Upload Failed',
@@ -352,7 +353,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
 
               const message = await chatService.sendMessage(messageData);
               setMessages(prev => [...prev, message]);
-              scrollToBottom();
               
               toast({
                 title: 'Voice message sent',
@@ -424,7 +424,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
 
       const message = await chatService.sendMessage(messageData);
       setMessages(prev => [...prev, message]);
-      scrollToBottom();
     } catch (error) {
       toast({
         title: 'Error',
@@ -464,7 +463,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
 
       const message = await chatService.sendMessage(messageData);
       setMessages(prev => [...prev, message]);
-      scrollToBottom();
     } catch (error) {
       toast({
         title: 'Error',
@@ -486,9 +484,29 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
   const getConnectionIcon = () => {
     switch (connectionStatus) {
       case 'connected': return <Wifi className="w-4 h-4 text-green-500" />;
-      case 'offline': return <WifiOff className="w-4 h-4 text-orange-500" />;
-      default: return <Lock className="w-4 h-4 text-yellow-500" />;
+      default: return null;
     }
+  };
+
+  const handleDeleteChannels = () => {
+    if (selectedChannelsToDelete.length === 0) return;
+    
+    setChannels(prev => prev.filter(channel => !selectedChannelsToDelete.includes(channel.id)));
+    
+    if (activeChannel && selectedChannelsToDelete.includes(activeChannel.id)) {
+      const remainingChannels = channels.filter(channel => !selectedChannelsToDelete.includes(channel.id));
+      setActiveChannel(remainingChannels.length > 0 ? remainingChannels[0] : null);
+    }
+    
+    toast({
+      title: 'Channels Deleted',
+      description: `${selectedChannelsToDelete.length} channel(s) deleted successfully`,
+      variant: 'default'
+    });
+    
+    setSelectedChannelsToDelete([]);
+    setDeleteMode(false);
+    setShowDeleteConfirmation(false);
   };
 
   const getMessageStatusIcon = (status: string) => {
@@ -496,7 +514,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
       case 'delivered': return <CheckCircle2 className="w-3 h-3 text-blue-500" />;
       case 'read': return <CheckCircle2 className="w-3 h-3 text-green-500" />;
       case 'failed': return <AlertTriangle className="w-3 h-3 text-red-500" />;
-      default: return <Clock className="w-3 h-3 text-gray-400" />;
+      default: return <Lock className="w-3 h-3 text-gray-400" />;
     }
   };
 
@@ -548,32 +566,40 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
             </div>
           )}
           
-          <div className={cn(
-            "inline-block p-3 rounded-lg",
-            message.metadata.pollId ? "max-w-full" : "max-w-[80%]",
-            isOwnMessage 
-              ? "bg-gray-200 text-gray-900" 
-              : "bg-muted"
-          )}>
-            {editingMessage?.id === message.id ? (
+          {editingMessage?.id === message.id ? (
+            <div className={cn(
+              "inline-block p-3 rounded-lg w-full",
+              message.metadata.pollId ? "max-w-full" : "max-w-[80%]",
+              isOwnMessage 
+                ? "bg-gray-200 text-gray-900" 
+                : "bg-muted"
+            )}>
               <div className="space-y-2">
                 <Textarea
                   value={editingMessage.content}
                   onChange={(e) => setEditingMessage({...editingMessage, content: e.target.value})}
-                  className="min-h-[60px]"
+                  className="min-h-[60px] w-full resize-none"
+                  autoFocus
                 />
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => handleEditMessage(message.id, editingMessage.content)}>
-                    Save
-                  </Button>
+                <div className="flex gap-2 justify-end">
                   <Button size="sm" variant="outline" onClick={() => setEditingMessage(null)}>
                     Cancel
                   </Button>
+                  <Button size="sm" onClick={() => handleEditMessage(message.id, editingMessage.content)}>
+                    Save
+                  </Button>
                 </div>
               </div>
-            ) : (
-              <>
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+            </div>
+          ) : (
+            <div className={cn(
+              "inline-block p-3 rounded-lg",
+              message.metadata.pollId ? "max-w-full" : "max-w-[80%]",
+              isOwnMessage 
+                ? "bg-gray-200 text-gray-900" 
+                : "bg-muted"
+            )}>
+              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                 
                 {message.attachments.length > 0 && (
                   <div className="mt-2 space-y-2">
@@ -646,9 +672,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
                     </div>
                   </div>
                 )}
-              </>
-            )}
-          </div>
+            </div>
+          )}
           
           {message.reactions.length > 0 && (
             <div className="flex gap-1 mt-1">
@@ -709,11 +734,48 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
       "border-r bg-muted/20 flex flex-col transition-all duration-300 ease-in-out",
       showSidebar ? "w-64" : "w-0 overflow-hidden"
     )}>
-      <div className="p-4 border-b">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold">Channels</h3>
+      <div className="px-4 py-4 border-b">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            {getConnectionIcon()}
+            <Lock className="w-4 h-4 text-yellow-500" />
+            <h3 className="font-semibold flex-shrink-0">Channels</h3>
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {deleteMode ? (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setDeleteMode(false);
+                    setSelectedChannelsToDelete([]);
+                  }}
+                  className="whitespace-nowrap"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => setShowDeleteConfirmation(true)}
+                  disabled={selectedChannelsToDelete.length === 0}
+                  className="whitespace-nowrap"
+                >
+                  Delete ({selectedChannelsToDelete.length})
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setDeleteMode(true)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+                {getConnectionIcon()}
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -721,22 +783,38 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
           {channels.map(channel => (
-            <Button
-              key={channel.id}
-              variant={activeChannel?.id === channel.id ? "secondary" : "ghost"}
-              className="w-full justify-start"
-              onClick={() => setActiveChannel(channel)}
-            >
-              <div className="flex items-center gap-2">
-                {channel.isPrivate ? <Lock className="w-4 h-4" /> : <Hash className="w-4 h-4" />}
-                <span className="truncate">{channel.name}</span>
-                {notifications.filter(n => n.channelId === channel.id && !n.read).length > 0 && (
-                  <Badge variant="destructive" className="ml-auto">
-                    {notifications.filter(n => n.channelId === channel.id && !n.read).length}
-                  </Badge>
-                )}
-              </div>
-            </Button>
+            <div key={channel.id} className="flex items-center gap-2">
+              {deleteMode && (
+                <input
+                  type="checkbox"
+                  checked={selectedChannelsToDelete.includes(channel.id)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedChannelsToDelete(prev => [...prev, channel.id]);
+                    } else {
+                      setSelectedChannelsToDelete(prev => prev.filter(id => id !== channel.id));
+                    }
+                  }}
+                  className="w-4 h-4 rounded"
+                />
+              )}
+              <Button
+                variant={activeChannel?.id === channel.id ? "secondary" : "ghost"}
+                className="flex-1 justify-start"
+                onClick={() => !deleteMode && setActiveChannel(channel)}
+                disabled={deleteMode}
+              >
+                <div className="flex items-center gap-2">
+                  {channel.isPrivate ? <Lock className="w-4 h-4" /> : <Hash className="w-4 h-4" />}
+                  <span className="truncate">{channel.name}</span>
+                  {notifications.filter(n => n.channelId === channel.id && !n.read).length > 0 && (
+                    <Badge variant="destructive" className="ml-auto">
+                      {notifications.filter(n => n.channelId === channel.id && !n.read).length}
+                    </Badge>
+                  )}
+                </div>
+              </Button>
+            </div>
           ))}
         </div>
       </ScrollArea>
@@ -1238,6 +1316,27 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
               disabled={!pollTitle.trim() || pollOptions.filter(opt => opt.trim()).length < 2}
             >
               Create Poll
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Confirmation Modal */}
+      <AlertDialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Channels</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedChannelsToDelete.length} channel(s)? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteChannels}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
