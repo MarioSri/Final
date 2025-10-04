@@ -152,9 +152,9 @@ export function UniversalSearch({ userRole, className = '' }: UniversalSearchPro
               key={index}
               className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm"
               onClick={() => {
-                setSearchTerm(suggestion);
+                updateQuery(suggestion);
                 setShowSuggestions(false);
-                performSearch();
+                search();
               }}
             >
               <span dangerouslySetInnerHTML={{ 
@@ -182,9 +182,9 @@ export function UniversalSearch({ userRole, className = '' }: UniversalSearchPro
                   key={index}
                   className="w-full text-left px-3 py-2 hover:bg-gray-100 rounded text-sm flex items-center justify-between"
                   onClick={() => {
-                    setSearchTerm(recent);
+                    updateQuery(recent.query);
                     setShowSuggestions(false);
-                    performSearch();
+                    search();
                   }}
                 >
                   <span>{recent.query}</span>
@@ -237,7 +237,7 @@ export function UniversalSearch({ userRole, className = '' }: UniversalSearchPro
                 newFilters[filter.type as keyof SearchFilters] = 
                   (newFilters[filter.type as keyof SearchFilters] as string[])
                     .filter(item => item !== filter.value);
-                setFilters(newFilters);
+                updateFilters(newFilters);
               }}
               className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
             >
@@ -337,8 +337,8 @@ export function UniversalSearch({ userRole, className = '' }: UniversalSearchPro
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        setSearchTerm(recent);
-                        performSearch();
+                        updateQuery(recent.query);
+                        search();
                       }}
                     >
                       {recent.query}

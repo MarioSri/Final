@@ -61,7 +61,11 @@ import {
   MicOff,
   Menu,
   PanelRightOpen,
-  PanelLeftOpen
+  PanelLeftOpen,
+  X,
+  Plus,
+  UserPlus,
+  UserRoundPlus
 } from 'lucide-react';
 
 interface ChatInterfaceProps {
@@ -106,6 +110,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
   const [showPollModal, setShowPollModal] = useState(false);
   const [pollTitle, setPollTitle] = useState('');
   const [pollOptions, setPollOptions] = useState(['', '']);
+  const [showNewChannelModal, setShowNewChannelModal] = useState(false);
+  const [newChannelName, setNewChannelName] = useState('');
+  const [newChannelRecipients, setNewChannelRecipients] = useState<string[]>([]);
+  const [isPrivateChannel, setIsPrivateChannel] = useState(false);
+  const [showAddRecipientsModal, setShowAddRecipientsModal] = useState(false);
+  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
 
   // Initialize chat service
   useEffect(() => {
@@ -808,8 +818,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
                 <Button size="sm" variant="ghost">
                   <Video className="w-4 h-4" />
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => setShowMembers(!showMembers)}>
-                  <Users className="w-4 h-4" />
+                <Button size="sm" variant="ghost" onClick={() => setShowNewChannelModal(true)}>
+                  <Plus className="w-4 h-4" />
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setShowAddRecipientsModal(true)}>
+                  <UserPlus className="w-4 h-4" />
                 </Button>
               </div>
             </div>
@@ -945,9 +958,218 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
         </div>
       </div>
       
+      {/* New Channel Modal */}
+      <AlertDialog open={showNewChannelModal} onOpenChange={setShowNewChannelModal}>
+        <AlertDialogContent className="max-w-2xl">
+          <button
+            onClick={() => setShowNewChannelModal(false)}
+            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-yellow-500" />
+              Create New Channel
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Create a new chat channel and add recipients.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Channel Name</label>
+              <Input
+                placeholder="Enter channel name"
+                value={newChannelName}
+                onChange={(e) => setNewChannelName(e.target.value)}
+                className="px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Add Recipients</label>
+              <ScrollArea className="h-64 border rounded-md p-2">
+                {[{id: 'principal', name: 'Dr. Principal', role: 'Principal'}, {id: 'registrar', name: 'Prof. Registrar', role: 'Registrar'}, {id: 'hod-cse', name: 'Dr. HOD-CSE', role: 'HOD'}].map((person) => (
+                  <div key={person.id} className="flex items-center justify-between p-2 hover:bg-accent rounded-md">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="w-8 h-8">
+                        <AvatarFallback className="text-xs">
+                          {person.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-medium">{person.name}</p>
+                        <p className="text-xs text-muted-foreground">{person.role}</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (newChannelRecipients.includes(person.id)) {
+                          setNewChannelRecipients(newChannelRecipients.filter(id => id !== person.id));
+                        } else {
+                          setNewChannelRecipients([...newChannelRecipients, person.id]);
+                        }
+                      }}
+                    >
+                      {newChannelRecipients.includes(person.id) ? 'Remove' : 'Add'}
+                    </Button>
+                  </div>
+                ))}
+              </ScrollArea>
+            </div>
+            {newChannelRecipients.length > 0 && (
+              <div>
+                <label className="text-sm font-medium mb-2 block">Selected Recipients ({newChannelRecipients.length})</label>
+                <div className="flex flex-wrap gap-2">
+                  {newChannelRecipients.map(id => (
+                    <div key={id} className="flex items-center gap-1 px-3 py-1.5 bg-secondary text-secondary-foreground rounded-full">
+                      <UserRoundPlus className="w-4 h-4" />
+                      <span className="text-sm font-medium">{id.toUpperCase()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setNewChannelName('');
+              setNewChannelRecipients([]);
+              setIsPrivateChannel(false);
+            }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (newChannelName.trim() && newChannelRecipients.length > 0) {
+                  toast({
+                    title: 'Channel Created',
+                    description: `${newChannelName} has been created successfully`,
+                    variant: 'default'
+                  });
+                  setNewChannelName('');
+                  setNewChannelRecipients([]);
+                  setIsPrivateChannel(false);
+                  setShowNewChannelModal(false);
+                }
+              }}
+              disabled={!newChannelName.trim() || newChannelRecipients.length === 0}
+            >
+              Create Channel
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Add Recipients Modal */}
+      <AlertDialog open={showAddRecipientsModal} onOpenChange={setShowAddRecipientsModal}>
+        <AlertDialogContent className="max-w-2xl">
+          <button
+            onClick={() => setShowAddRecipientsModal(false)}
+            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-blue-500" />
+              Add Recipients
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Select recipients to start a direct chat.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Available Staff</label>
+              <ScrollArea className="h-64 border rounded-md p-2">
+                {[{id: 'principal', name: 'Dr. Principal', role: 'Principal'}, {id: 'registrar', name: 'Prof. Registrar', role: 'Registrar'}, {id: 'hod-cse', name: 'Dr. HOD-CSE', role: 'HOD'}, {id: 'hod-eee', name: 'Dr. HOD-EEE', role: 'HOD'}, {id: 'dean', name: 'Dr. Dean', role: 'Dean'}].map((person) => (
+                  <div key={person.id} className="flex items-center justify-between p-2 hover:bg-accent rounded-md">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="w-8 h-8">
+                        <AvatarFallback className="text-xs">
+                          {person.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-medium">{person.name}</p>
+                        <p className="text-xs text-muted-foreground">{person.role}</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (selectedRecipients.includes(person.id)) {
+                          setSelectedRecipients(selectedRecipients.filter(id => id !== person.id));
+                        } else {
+                          setSelectedRecipients([...selectedRecipients, person.id]);
+                        }
+                      }}
+                    >
+                      {selectedRecipients.includes(person.id) ? 'Remove' : 'Add'}
+                    </Button>
+                  </div>
+                ))}
+              </ScrollArea>
+            </div>
+            {selectedRecipients.length > 0 && (
+              <div>
+                <label className="text-sm font-medium mb-2 block">Selected Recipients ({selectedRecipients.length})</label>
+                <div className="flex flex-wrap gap-2">
+                  {selectedRecipients.map(id => (
+                    <div key={id} className="flex items-center gap-1 px-3 py-1.5 bg-secondary text-secondary-foreground rounded-full">
+                      <UserRoundPlus className="w-4 h-4" />
+                      <span className="text-sm font-medium">{id.toUpperCase()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setSelectedRecipients([]);
+            }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (selectedRecipients.length > 0 && user) {
+                  const newChannel: ChatChannel = {
+                    id: `dm-${Date.now()}`,
+                    name: selectedRecipients.map(id => id.toUpperCase()).join(', '),
+                    members: [user.id, ...selectedRecipients],
+                    isPrivate: true,
+                    createdAt: new Date(),
+                    createdBy: user.id
+                  };
+                  setChannels(prev => [newChannel, ...prev]);
+                  setActiveChannel(newChannel);
+                  toast({
+                    title: 'Chat Started',
+                    description: `Started chat with ${selectedRecipients.length} recipient(s)`,
+                    variant: 'default'
+                  });
+                  setSelectedRecipients([]);
+                  setShowAddRecipientsModal(false);
+                }
+              }}
+              disabled={selectedRecipients.length === 0}
+            >
+              Start Chat
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Poll Creation Modal */}
       <AlertDialog open={showPollModal} onOpenChange={setShowPollModal}>
         <AlertDialogContent>
+          <button
+            onClick={() => setShowPollModal(false)}
+            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100"
+          >
+            <X className="h-4 w-4" />
+          </button>
           <AlertDialogHeader>
             <AlertDialogTitle>Create Poll</AlertDialogTitle>
             <AlertDialogDescription>
