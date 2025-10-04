@@ -22,7 +22,8 @@ import {
   User,
   PenTool,
   Signature,
-  Shield
+  Shield,
+  FileClock
 } from "lucide-react";
 import { DigitalSignature } from "./DigitalSignature";
 import { useToast } from "@/hooks/use-toast";
@@ -244,11 +245,36 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="in-review">In Review</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
+                <SelectItem value="all">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    All Status
+                  </div>
+                </SelectItem>
+                <SelectItem value="pending">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-yellow-600" />
+                    Pending
+                  </div>
+                </SelectItem>
+                <SelectItem value="in-review">
+                  <div className="flex items-center gap-2">
+                    <FileClock className="h-4 w-4 text-blue-600" />
+                    In Review
+                  </div>
+                </SelectItem>
+                <SelectItem value="approved">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    Approved
+                  </div>
+                </SelectItem>
+                <SelectItem value="rejected">
+                  <div className="flex items-center gap-2">
+                    <XCircle className="h-4 w-4 text-red-600" />
+                    Rejected
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
             <Select value={typeFilter} onValueChange={setTypeFilter}>

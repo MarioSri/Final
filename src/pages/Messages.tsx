@@ -14,7 +14,9 @@ import {
   PenTool, 
   Zap, 
   MessageSquare,
-  Hash
+  Hash,
+  Lock,
+  Video
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -147,7 +149,7 @@ const Messages = () => {
                       <p className="text-sm text-muted-foreground">Channels</p>
                       <p className="text-2xl font-bold">{stats.totalChannels}</p>
                     </div>
-                    <Hash className="w-8 h-8 text-indigo-500" />
+                    <Lock className="w-8 h-8 text-indigo-500" />
                   </div>
                 </CardContent>
               </Card>
@@ -156,10 +158,10 @@ const Messages = () => {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-muted-foreground">Signatures</p>
+                      <p className="text-sm text-muted-foreground">Video Call</p>
                       <p className="text-2xl font-bold">{stats.pendingSignatures}</p>
                     </div>
-                    <PenTool className="w-8 h-8 text-purple-500" />
+                    <Video className="w-8 h-8 text-purple-500" />
                   </div>
                 </CardContent>
               </Card>

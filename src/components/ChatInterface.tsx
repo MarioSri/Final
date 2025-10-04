@@ -25,6 +25,7 @@ import {
 import { cn } from '@/lib/utils';
 import {
   Send,
+  SendHorizontal,
   Paperclip,
   Smile,
   Phone,
@@ -55,7 +56,12 @@ import {
   WifiOff,
   CheckCircle2,
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  Mic,
+  MicOff,
+  Menu,
+  PanelRightOpen,
+  PanelLeftOpen
 } from 'lucide-react';
 
 interface ChatInterfaceProps {
@@ -94,6 +100,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
   const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
   const [showMembers, setShowMembers] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [showPollModal, setShowPollModal] = useState(false);
+  const [pollTitle, setPollTitle] = useState('');
+  const [pollOptions, setPollOptions] = useState(['', '']);
 
   // Initialize chat service
   useEffect(() => {
@@ -294,6 +306,86 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
     }
   };
 
+  const handleVoiceRecording = async () => {
+    if (!isRecording) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const recorder = new MediaRecorder(stream);
+        const audioChunks: Blob[] = [];
+
+        recorder.ondataavailable = (event) => {
+          audioChunks.push(event.data);
+        };
+
+        recorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+          const audioFile = new File([audioBlob], `voice-${Date.now()}.wav`, { type: 'audio/wav' });
+          
+          if (activeChannel && user) {
+            try {
+              const fileUrl = await chatService.uploadFile(audioFile, activeChannel.id);
+              
+              const messageData = {
+                channelId: activeChannel.id,
+                senderId: user.id,
+                type: 'audio' as MessageType,
+                content: 'Voice message',
+                attachments: [{
+                  id: Date.now().toString(),
+                  name: audioFile.name,
+                  url: fileUrl,
+                  type: 'audio' as MessageType,
+                  size: audioFile.size,
+                  mimeType: audioFile.type
+                }]
+              };
+
+              const message = await chatService.sendMessage(messageData);
+              setMessages(prev => [...prev, message]);
+              scrollToBottom();
+              
+              toast({
+                title: 'Voice message sent',
+                description: 'Your voice message has been sent successfully',
+                variant: 'default'
+              });
+            } catch (error) {
+              toast({
+                title: 'Upload Failed',
+                description: 'Failed to send voice message',
+                variant: 'destructive'
+              });
+            }
+          }
+          
+          stream.getTracks().forEach(track => track.stop());
+        };
+
+        setMediaRecorder(recorder);
+        recorder.start();
+        setIsRecording(true);
+        
+        toast({
+          title: 'Recording started',
+          description: 'Click the mic again to stop recording',
+          variant: 'default'
+        });
+      } catch (error) {
+        toast({
+          title: 'Recording failed',
+          description: 'Could not access microphone',
+          variant: 'destructive'
+        });
+      }
+    } else {
+      if (mediaRecorder) {
+        mediaRecorder.stop();
+        setIsRecording(false);
+        setMediaRecorder(null);
+      }
+    }
+  };
+
   const handleCreateSignatureRequest = async () => {
     if (!activeChannel || !user) return;
 
@@ -385,7 +477,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
     switch (connectionStatus) {
       case 'connected': return <Wifi className="w-4 h-4 text-green-500" />;
       case 'offline': return <WifiOff className="w-4 h-4 text-orange-500" />;
-      default: return <Clock className="w-4 h-4 text-yellow-500" />;
+      default: return <Lock className="w-4 h-4 text-yellow-500" />;
     }
   };
 
@@ -447,9 +539,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
           )}
           
           <div className={cn(
-            "inline-block max-w-[80%] p-3 rounded-lg",
+            "inline-block p-3 rounded-lg",
+            message.metadata.pollId ? "max-w-full" : "max-w-[80%]",
             isOwnMessage 
-              ? "bg-primary text-primary-foreground" 
+              ? "bg-gray-200 text-gray-900" 
               : "bg-muted"
           )}>
             {editingMessage?.id === message.id ? (
@@ -506,14 +599,41 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
                 )}
                 
                 {message.metadata.pollId && (
-                  <div className="mt-2 p-3 bg-green-50 dark:bg-green-900/20 rounded border">
-                    <div className="flex items-center gap-2">
-                      <BarChart3 className="w-4 h-4" />
-                      <span className="text-sm font-medium">Poll Created</span>
+                  <div className="mt-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4 text-blue-600" />
+                        <h4 className="font-semibold text-base">{message.content.replace('Poll created: ', '')}</h4>
+                      </div>
+                      <p className="text-xs text-muted-foreground">Select one</p>
+                      
+                      <div className="space-y-2">
+                        {['Option 1', 'Option 2', 'Option 3'].map((option, idx) => {
+                          const voteCount = Math.floor(Math.random() * 10);
+                          const percentage = Math.floor(Math.random() * 100);
+                          return (
+                            <div key={idx} className="space-y-1">
+                              <div className="flex items-center gap-2 cursor-pointer hover:bg-white/50 p-2 rounded">
+                                <div className="w-4 h-4 border-2 border-blue-600 rounded-full flex items-center justify-center">
+                                  {idx === 0 && <div className="w-2 h-2 bg-blue-600 rounded-full" />}
+                                </div>
+                                <span className="text-sm flex-1">{option}</span>
+                                <span className="text-xs text-muted-foreground">{voteCount}</span>
+                              </div>
+                              <div className="ml-6">
+                                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                  <div className="bg-blue-600 h-1.5 rounded-full" style={{width: `${percentage}%`}}></div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      <Button size="sm" variant="outline" className="w-full mt-3">
+                        View votes
+                      </Button>
                     </div>
-                    <Button size="sm" className="mt-2">
-                      Vote Now
-                    </Button>
                   </div>
                 )}
               </>
@@ -575,7 +695,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
   };
 
   const ChannelSidebar: React.FC = () => (
-    <div className="w-64 border-r bg-muted/20 flex flex-col">
+    <div className={cn(
+      "border-r bg-muted/20 flex flex-col transition-all duration-300 ease-in-out",
+      showSidebar ? "w-64" : "w-0 overflow-hidden"
+    )}>
       <div className="p-4 border-b">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold">Channels</h3>
@@ -607,6 +730,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
           ))}
         </div>
       </ScrollArea>
+      
+      <div className="p-2 border-t">
+        <Button
+          size="sm"
+          variant="ghost"
+          className="w-full justify-center"
+          onClick={() => setShowSidebar(false)}
+        >
+          <PanelLeftOpen className="w-5 h-5" />
+        </Button>
+      </div>
     </div>
   );
 
@@ -642,7 +776,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
           <div className="p-4 border-b bg-background">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                {activeChannel.isPrivate ? <Lock className="w-5 h-5" /> : <Hash className="w-5 h-5" />}
+                {activeChannel.isPrivate ? (
+                  <>
+                    {!showSidebar && (
+                      <Button size="sm" variant="ghost" onClick={() => setShowSidebar(true)}>
+                        <PanelRightOpen className="w-5 h-5" />
+                      </Button>
+                    )}
+                    <Lock className="w-5 h-5" />
+                  </>
+                ) : (
+                  <Hash className="w-5 h-5" />
+                )}
                 <div>
                   <h2 className="font-semibold">{activeChannel.name}</h2>
                   <p className="text-sm text-muted-foreground">
@@ -666,19 +811,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
                 <Button size="sm" variant="ghost" onClick={() => setShowMembers(!showMembers)}>
                   <Users className="w-4 h-4" />
                 </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="sm" variant="ghost">
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => handleCreatePoll('Quick Poll', ['Yes', 'No'])}>
-                      <BarChart3 className="w-4 h-4 mr-2" />
-                      Create Poll
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </div>
             </div>
           </div>
@@ -699,9 +831,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
         {/* Messages Area */}
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-2">
-            {messages.map(message => (
-              <MessageComponent key={message.id} message={message} />
-            ))}
+            {messages
+              .filter(message => 
+                !searchQuery || 
+                message.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (users.find(u => u.id === message.senderId)?.fullName || '').toLowerCase().includes(searchQuery.toLowerCase())
+              )
+              .map(message => (
+                <MessageComponent key={message.id} message={message} />
+              ))}
             <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
@@ -739,6 +877,22 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
               <Paperclip className="w-4 h-4" />
             </Button>
             
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowPollModal(true)}
+            >
+              <BarChart3 className="w-4 h-4" />
+            </Button>
+            
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            >
+              <Smile className="w-4 h-4" />
+            </Button>
+            
             <div className="flex-1 relative">
               <Textarea
                 placeholder={`Message ${activeChannel?.name || 'channel'}...`}
@@ -750,10 +904,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
                     handleSendMessage();
                   }
                 }}
-                className="min-h-[40px] max-h-[120px] resize-none"
+                className="min-h-[40px] max-h-[120px] resize-none pr-10"
               />
+              <Button
+                size="sm"
+                variant={isRecording ? "destructive" : "ghost"}
+                onClick={handleVoiceRecording}
+                className={`absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 ${isRecording ? "animate-pulse" : ""}`}
+              >
+                {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </Button>
               {showEmojiPicker && (
-                <div className="absolute bottom-full right-0 mb-2 p-3 bg-background border rounded-lg shadow-lg z-10">
+                <div className="absolute bottom-full left-0 mb-2 p-3 bg-background border rounded-lg shadow-lg z-10">
                   <div className="grid grid-cols-8 gap-1 w-64">
                     {['👍','👎','😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾'].map(emoji => (
                       <button
@@ -774,22 +936,90 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
             
             <Button
               size="sm"
-              variant="ghost"
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            >
-              <Smile className="w-4 h-4" />
-            </Button>
-            
-            <Button
-              size="sm"
               onClick={handleSendMessage}
               disabled={!messageInput.trim()}
             >
-              <Send className="w-4 h-4" />
+              <SendHorizontal className="w-4 h-4" />
             </Button>
           </div>
         </div>
       </div>
+      
+      {/* Poll Creation Modal */}
+      <AlertDialog open={showPollModal} onOpenChange={setShowPollModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Create Poll</AlertDialogTitle>
+            <AlertDialogDescription>
+              Create a poll for the channel members to vote on.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Poll Question</label>
+              <Input
+                placeholder="What's your question?"
+                value={pollTitle}
+                onChange={(e) => setPollTitle(e.target.value)}
+                className="px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Options</label>
+              {pollOptions.map((option, index) => (
+                <div key={index} className="flex gap-2 mt-2">
+                  <Input
+                    placeholder={`Option ${index + 1}`}
+                    value={option}
+                    onChange={(e) => {
+                      const newOptions = [...pollOptions];
+                      newOptions[index] = e.target.value;
+                      setPollOptions(newOptions);
+                    }}
+                  />
+                  {pollOptions.length > 2 && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setPollOptions(pollOptions.filter((_, i) => i !== index))}
+                    >
+                      ×
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setPollOptions([...pollOptions, ''])}
+                className="mt-2"
+              >
+                + Add Option
+              </Button>
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setPollTitle('');
+              setPollOptions(['', '']);
+            }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const validOptions = pollOptions.filter(opt => opt.trim());
+                if (pollTitle.trim() && validOptions.length >= 2) {
+                  handleCreatePoll(pollTitle.trim(), validOptions);
+                  setPollTitle('');
+                  setPollOptions(['', '']);
+                  setShowPollModal(false);
+                }
+              }}
+              disabled={!pollTitle.trim() || pollOptions.filter(opt => opt.trim()).length < 2}
+            >
+              Create Poll
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

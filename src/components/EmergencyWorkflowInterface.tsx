@@ -26,7 +26,8 @@ import {
   History,
   Upload,
   X,
-  File
+  File,
+  AlertCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -360,18 +361,40 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
               
               <div className="space-y-2">
                 <Label htmlFor="priority-level">Priority Level</Label>
-                <select
-                  id="priority-level"
+                <Select
                   value={emergencyData.urgencyLevel}
-                  onChange={(e) => setEmergencyData({...emergencyData, urgencyLevel: e.target.value as any})}
-                  className="w-full h-10 px-3 py-2 border border-destructive bg-background rounded-md text-sm focus:ring-destructive"
+                  onValueChange={(value: any) => setEmergencyData({...emergencyData, urgencyLevel: value})}
                 >
-                  {Object.entries(urgencyLevels).map(([level, config]) => (
-                    <option key={level} value={level}>
-                      {level.charAt(0).toUpperCase() + level.slice(1)} Priority
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="border-destructive focus:ring-destructive">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="critical">
+                      <div className="flex items-center gap-2">
+                        <Siren className="w-4 h-4 text-red-600" />
+                        Critical Priority
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="high">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-orange-600" />
+                        High Priority
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="urgent">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-yellow-600" />
+                        Urgent Priority
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="medium">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-blue-600" />
+                        Medium Priority
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -555,104 +578,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
         </Card>
       )}
 
-      {/* EMERGENCY DIRECTIVE - Only show when not in emergency mode */}
-      {!isEmergencyMode && (
-        <Card className="shadow-elegant">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <History className="w-5 h-5 text-primary" />
-            EMERGENCY DIRECTIVE
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-96">
-            <div className="space-y-4">
-              {emergencyHistory.map((emergency) => {
-                const urgencyConfig = urgencyLevels[emergency.urgencyLevel];
-                const statusConfig = getStatusBadge(emergency.status);
-                const StatusIcon = statusConfig.icon;
-                const UrgencyIcon = urgencyConfig.icon;
 
-                return (
-                  <div
-                    key={emergency.id}
-                    className={`border-l-4 p-4 rounded-lg ${
-                      emergency.urgencyLevel === 'disaster' ? 'border-l-red-600 bg-red-50' :
-                      emergency.urgencyLevel === 'critical' ? 'border-l-red-400 bg-red-25' :
-                      'border-l-orange-400 bg-orange-25'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-lg">{emergency.title}</h4>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {emergency.description}
-                        </p>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Badge className={urgencyConfig.color}>
-                          <UrgencyIcon className="w-3 h-3 mr-1" />
-                          {emergency.urgencyLevel.toUpperCase()}
-                        </Badge>
-                        <Badge variant={statusConfig.variant}>
-                          <StatusIcon className="w-3 h-3 mr-1" />
-                          {statusConfig.text}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
-                      <div>
-                        <p className="text-muted-foreground">Submitted by</p>
-                        <p className="font-medium">{emergency.submittedBy}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Submitted at</p>
-                        <p className="font-medium">{emergency.submittedAt.toLocaleString()}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Recipients</p>
-                        <p className="font-medium">{emergency.recipients.length} selected</p>
-                      </div>
-                      {emergency.responseTime && (
-                        <div>
-                          <p className="text-muted-foreground">Response time</p>
-                          <p className={`font-medium ${getResponseTimeColor(emergency.responseTime)}`}>
-                            {emergency.responseTime} minutes
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    {emergency.reason && (
-                      <div className="mb-3">
-                        <p className="text-sm text-muted-foreground">Reason: {emergency.reason}</p>
-                      </div>
-                    )}
-
-                    {emergency.escalationLevel > 0 && (
-                      <div className="flex items-center gap-2 text-sm text-warning">
-                        <Bell className="w-4 h-4" />
-                        <span>Escalated {emergency.escalationLevel} time(s)</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-              {emergencyHistory.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Siren className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No emergency submissions yet</p>
-                  <p className="text-sm">Emergency submissions will appear here</p>
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
-      )}
 
       {/* Emergency Contacts - Only show when not in emergency mode */}
       {!isEmergencyMode && (

@@ -471,44 +471,7 @@ export function UniversalSearch({ userRole, className = '' }: UniversalSearchPro
             </SheetContent>
           </Sheet>
 
-          {/* Desktop Filters */}
-          <div className="hidden md:flex items-center gap-2">
-            <Select>
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="in-progress">In Progress</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-                <SelectItem value="approved">Approved</SelectItem>
-              </SelectContent>
-            </Select>
 
-            <Select>
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Department" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cse">CSE</SelectItem>
-                <SelectItem value="ece">ECE</SelectItem>
-                <SelectItem value="eee">EEE</SelectItem>
-                <SelectItem value="mech">Mechanical</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select>
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="Priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="emergency">Emergency</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
 

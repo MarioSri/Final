@@ -16,7 +16,9 @@ import {
   Plus,
   Settings,
   UserPlus,
-  FileText
+  FileText,
+  Building,
+  Globe
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
@@ -67,6 +69,8 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
   const [requestedTime, setRequestedTime] = useState('');
   const [requestedDate, setRequestedDate] = useState('');
   const [requestedTimeSlot, setRequestedTimeSlot] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingParticipants, setLoadingParticipants] = useState(true);
   const [purposeDropdownOpen, setPurposeDropdownOpen] = useState(false);
@@ -163,7 +167,7 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
   const getFormatIcon = (format: string) => {
     switch (format) {
       case 'online': return <Monitor className="w-4 h-4" />;
-      case 'in_person': return <MapPin className="w-4 h-4" />;
+      case 'in_person': return <Building className="w-4 h-4" />;
       case 'hybrid': return <Wifi className="w-4 h-4" />;
       default: return <Monitor className="w-4 h-4" />;
     }
@@ -228,6 +232,8 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
     setRequestedTime('');
     setRequestedDate('');
     setRequestedTimeSlot('');
+    setStartTime('');
+    setEndTime('');
     onClose();
   };
 
@@ -381,12 +387,16 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
                   <MapPin className="h-4 w-4" />
                   Meeting Location
                 </Label>
-                <Input
-                  id="location"
-                  placeholder="e.g., Principal's Office, Conference Room A"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                />
+                <div className="relative">
+                  <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="location"
+                    placeholder="E.g: Principal's Office, Conference Room A"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
               </div>
             )}
 
@@ -412,13 +422,25 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Time</label>
-                  <div className="relative">
-                    <input
-                      type="time"
-                      value={requestedTimeSlot}
-                      onChange={(e) => setRequestedTimeSlot(e.target.value)}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                    />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium text-gray-700 whitespace-nowrap">From:</label>
+                      <input
+                        type="time"
+                        value={startTime}
+                        onChange={(e) => setStartTime(e.target.value)}
+                        className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium text-gray-700 whitespace-nowrap">To:</label>
+                      <input
+                        type="time"
+                        value={endTime}
+                        onChange={(e) => setEndTime(e.target.value)}
+                        className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -555,7 +577,7 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
                 disabled={loading || selectedParticipants.length === 0}
               >
                 <Send className="w-4 h-4" />
-                <span>{loading ? 'Sending...' : 'Send Live Request'}</span>
+                <span>{loading ? 'Sending...' : 'Send LiveMeet+ Requests'}</span>
               </button>
             </div>
           </div>

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle2, XCircle, Clock, FileText, User, Calendar, MessageSquare, Video, Eye, ChevronRight, CircleAlert } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, FileText, User, Calendar, MessageSquare, Video, Eye, ChevronRight, CircleAlert, Undo2, SquarePen } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -17,6 +17,8 @@ const Approvals = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [showLiveMeetingModal, setShowLiveMeetingModal] = useState(false);
+  const [comments, setComments] = useState<{[key: string]: string[]}>({});
+  const [commentInputs, setCommentInputs] = useState<{[key: string]: string}>({});
 
   const handleLogout = () => {
     logout();
@@ -25,6 +27,32 @@ const Approvals = () => {
       description: "You have been successfully logged out.",
     });
     navigate("/");
+  };
+
+  const handleAddComment = (cardId: string) => {
+    const comment = commentInputs[cardId]?.trim();
+    if (comment) {
+      setComments(prev => ({
+        ...prev,
+        [cardId]: [...(prev[cardId] || []), comment]
+      }));
+      setCommentInputs(prev => ({ ...prev, [cardId]: '' }));
+    }
+  };
+
+  const handleUndoComment = (cardId: string, index: number) => {
+    setComments(prev => ({
+      ...prev,
+      [cardId]: prev[cardId]?.filter((_, i) => i !== index) || []
+    }));
+  };
+
+  const handleEditComment = (cardId: string, index: number) => {
+    const comment = comments[cardId]?.[index];
+    if (comment) {
+      setCommentInputs(prev => ({ ...prev, [cardId]: comment }));
+      handleUndoComment(cardId, index);
+    }
   };
 
   if (!user) {
@@ -44,7 +72,8 @@ const Approvals = () => {
       priority: "high",
       approvedBy: "Principal",
       approvedDate: "2024-01-12",
-      description: "Application for NSF research funding for AI in education project"
+      description: "Application for NSF research funding for AI in education project",
+      comment: "Excellent proposal with clear objectives and realistic timeline. The budget allocation is well-justified and the expected outcomes align with institutional goals."
     },
     {
       id: 7,
@@ -57,7 +86,21 @@ const Approvals = () => {
       rejectedDate: "2024-01-11",
       priority: "medium",
       reason: "Insufficient documentation",
-      description: "Permission request for annual tech symposium with external speakers"
+      description: "Permission request for annual tech symposium with external speakers",
+      comment: "Please provide detailed speaker profiles, venue safety certificates, and revised budget breakdown before resubmission."
+    },
+    {
+      id: 8,
+      title: "Course Curriculum Update",
+      type: "Proposal",
+      submitter: "Dr. Emily Chen",
+      submittedDate: "2024-01-08",
+      status: "approved",
+      priority: "low",
+      approvedBy: "Academic Committee",
+      approvedDate: "2024-01-10",
+      description: "Proposal to update computer science curriculum with modern AI and machine learning modules",
+      comment: "Well-structured curriculum update that addresses current industry needs. Implementation timeline is reasonable and faculty training plan is comprehensive."
     }
   ];
 
@@ -171,6 +214,47 @@ const Approvals = () => {
                             </div>
                           </div>
                           
+                          {/* Your Comments */}
+                          {comments['faculty-meeting']?.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-1">
+                                <MessageSquare className="h-4 w-4" />
+                                <span className="text-sm font-medium">Your Comments</span>
+                              </div>
+                              <div className="space-y-2">
+                                {comments['faculty-meeting'].map((comment, index) => (
+                                  <div key={index} className="bg-muted p-3 rounded-lg text-sm flex justify-between items-start">
+                                    <p className="flex-1">{comment}</p>
+                                    <div className="flex gap-1 ml-2">
+                                      <button 
+                                        className="px-4 py-2 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+                                        onClick={() => handleEditComment('faculty-meeting', index)}
+                                        title="Edit"
+                                      >
+                                        <SquarePen className="h-4 w-4 text-gray-600" />
+                                      </button>
+                                      <button 
+                                        className="px-4 py-2 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+                                        onClick={() => handleUndoComment('faculty-meeting', index)}
+                                        title="Undo"
+                                      >
+                                        <Undo2 className="h-4 w-4 text-gray-600" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Your Comments Header - only when no comments exist */}
+                          {!comments['faculty-meeting']?.length && (
+                            <div className="flex items-center gap-1">
+                              <MessageSquare className="h-4 w-4" />
+                              <span className="text-sm font-medium">Your Comments</span>
+                            </div>
+                          )}
+                          
                           {/* Input Field */}
                           <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors">
                             <textarea
@@ -178,6 +262,8 @@ const Approvals = () => {
                               placeholder="Add your comment..."
                               rows={1}
                               style={{ resize: 'none' }}
+                              value={commentInputs['faculty-meeting'] || ''}
+                              onChange={(e) => setCommentInputs(prev => ({ ...prev, 'faculty-meeting': e.target.value }))}
                               onInput={(e) => {
                                 const target = e.target as HTMLTextAreaElement;
                                 target.style.height = 'auto';
@@ -187,6 +273,7 @@ const Approvals = () => {
                             <button 
                               className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors"
                               title="Save comment"
+                              onClick={() => handleAddComment('faculty-meeting')}
                             >
                               <ChevronRight className="h-4 w-4 text-gray-600" />
                             </button>
@@ -267,6 +354,47 @@ const Approvals = () => {
                             </div>
                           </div>
                           
+                          {/* Your Comments */}
+                          {comments['budget-request']?.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-1">
+                                <MessageSquare className="h-4 w-4" />
+                                <span className="text-sm font-medium">Your Comments</span>
+                              </div>
+                              <div className="space-y-2">
+                                {comments['budget-request'].map((comment, index) => (
+                                  <div key={index} className="bg-muted p-3 rounded-lg text-sm flex justify-between items-start">
+                                    <p className="flex-1">{comment}</p>
+                                    <div className="flex gap-1 ml-2">
+                                      <button 
+                                        className="px-4 py-2 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+                                        onClick={() => handleEditComment('budget-request', index)}
+                                        title="Edit"
+                                      >
+                                        <SquarePen className="h-4 w-4 text-gray-600" />
+                                      </button>
+                                      <button 
+                                        className="px-4 py-2 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+                                        onClick={() => handleUndoComment('budget-request', index)}
+                                        title="Undo"
+                                      >
+                                        <Undo2 className="h-4 w-4 text-gray-600" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Your Comments Header - only when no comments exist */}
+                          {!comments['budget-request']?.length && (
+                            <div className="flex items-center gap-1">
+                              <MessageSquare className="h-4 w-4" />
+                              <span className="text-sm font-medium">Your Comments</span>
+                            </div>
+                          )}
+                          
                           {/* Input Field */}
                           <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors">
                             <textarea
@@ -274,6 +402,8 @@ const Approvals = () => {
                               placeholder="Add your comment..."
                               rows={1}
                               style={{ resize: 'none' }}
+                              value={commentInputs['budget-request'] || ''}
+                              onChange={(e) => setCommentInputs(prev => ({ ...prev, 'budget-request': e.target.value }))}
                               onInput={(e) => {
                                 const target = e.target as HTMLTextAreaElement;
                                 target.style.height = 'auto';
@@ -283,6 +413,7 @@ const Approvals = () => {
                             <button 
                               className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors"
                               title="Save comment"
+                              onClick={() => handleAddComment('budget-request')}
                             >
                               <ChevronRight className="h-4 w-4 text-gray-600" />
                             </button>
@@ -394,6 +525,17 @@ const Approvals = () => {
                               </div>
                             </div>
                             
+                            {/* Your Comments */}
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-1">
+                                <MessageSquare className="h-4 w-4" />
+                                <span className="text-sm font-medium">Your Comments</span>
+                              </div>
+                              <div className="bg-muted p-3 rounded text-sm">
+                                <p>{doc.comment}</p>
+                              </div>
+                            </div>
+                            
                             {/* Status Information */}
                             <div className="space-y-2">
                               <div className="flex items-center gap-1">
@@ -409,26 +551,7 @@ const Approvals = () => {
                               </div>
                             </div>
                             
-                            {/* Comment Field for Historical Records */}
-                            <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors">
-                              <textarea
-                                className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none"
-                                placeholder="Add a note about this approval..."
-                                rows={1}
-                                style={{ resize: 'none' }}
-                                onInput={(e) => {
-                                  const target = e.target as HTMLTextAreaElement;
-                                  target.style.height = 'auto';
-                                  target.style.height = target.scrollHeight + 'px';
-                                }}
-                              />
-                              <button 
-                                className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors"
-                                title="Save note"
-                              >
-                                <ChevronRight className="h-4 w-4 text-gray-600" />
-                              </button>
-                            </div>
+
                           </div>
                           <div className="flex flex-col gap-2 min-w-[150px]">
                             <Button variant="outline" size="sm">

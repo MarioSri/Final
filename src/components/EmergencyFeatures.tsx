@@ -257,42 +257,7 @@ export function EmergencyFeatures({ userRole }: EmergencyFeaturesProps) {
         </CardContent>
       </Card>
 
-      {/* EMERGENCY DIRECTIVE */}
-      <Card className="shadow-elegant">
-        <CardHeader>
-          <CardTitle>EMERGENCY DIRECTIVE</CardTitle>
-          <CardDescription>Recent emergency submissions and their resolution status</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {emergencyHistory.map((emergency) => (
-              <div
-                key={emergency.id}
-                className={`border-l-4 p-4 rounded-lg ${getPriorityColor(emergency.priority)} animate-fade-in`}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h4 className="font-semibold">{emergency.title}</h4>
-                    <p className="text-sm text-muted-foreground">{emergency.description}</p>
-                  </div>
-                  <Badge variant={getStatusBadge(emergency.status).variant}>
-                    {getStatusBadge(emergency.status).text}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <div className="flex items-center gap-4">
-                    <span>Submitted by: {emergency.submittedBy}</span>
-                    <span>{emergency.timestamp}</span>
-                  </div>
-                  <Badge variant="outline" className="text-xs">
-                    {emergency.priority.toUpperCase()} PRIORITY
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+
 
       {/* Emergency Protocols */}
       <Card className="shadow-elegant">
