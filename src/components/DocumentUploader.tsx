@@ -17,7 +17,8 @@ import {
   AlertCircle,
   Users,
   Send,
-  Eye
+  Eye,
+  Settings
 } from "lucide-react";
 import { LoadingState } from "@/components/ui/loading-states";
 import { RecipientSelector } from "@/components/RecipientSelector";
@@ -29,6 +30,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface DocumentUploaderProps {
   userRole: string;
@@ -44,6 +53,8 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState("normal");
   const [documentTitle, setDocumentTitle] = useState("");
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+  const [documentAssignments, setDocumentAssignments] = useState<{[key: string]: string[]}>({});
 
   const documentTypeOptions = [
     { id: "letter", label: "Letter", icon: FileText },
@@ -92,6 +103,10 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
       return;
     }
 
+    submitDocuments();
+  };
+
+  const submitDocuments = () => {
     setIsUploading(true);
     
     // Simulate upload process with loading animation
@@ -104,6 +119,7 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
         description,
         priority,
         timestamp: new Date().toISOString(),
+        assignments: documentAssignments
       };
       
       toast({
@@ -122,7 +138,28 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
       setSelectedRecipients([]);
       setDescription("");
       setPriority("normal");
+      setDocumentAssignments({});
     }, 2000);
+  };
+
+  const handleAssignmentChange = (fileName: string, recipientId: string, assigned: boolean) => {
+    setDocumentAssignments(prev => {
+      const current = prev[fileName] || [];
+      if (assigned) {
+        return { ...prev, [fileName]: [...current, recipientId] };
+      } else {
+        return { ...prev, [fileName]: current.filter(id => id !== recipientId) };
+      }
+    });
+  };
+
+  const handleAssignmentSave = () => {
+    setShowAssignmentModal(false);
+    toast({
+      title: "Assignment Saved",
+      description: "Document assignments have been saved successfully.",
+      variant: "default"
+    });
   };
 
   const isSubmitDisabled = !documentTitle.trim() || documentTypes.length === 0 || uploadedFiles.length === 0 || selectedRecipients.length === 0;
@@ -230,6 +267,26 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
               </div>
             )}
           </div>
+
+          {/* Assignment Preview */}
+          {uploadedFiles.length > 1 && selectedRecipients.length > 1 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-medium">Document Assignment</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAssignmentModal(true)}
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Customize Assignment
+                </Button>
+              </div>
+              <div className="text-sm text-muted-foreground bg-blue-50 p-3 rounded-md">
+                <p>Multiple files and recipients detected. You can customize which documents go to which recipients.</p>
+              </div>
+            </div>
+          )}
 
           {/* Document Management Recipients */}
           <div className="space-y-3">
@@ -344,6 +401,56 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
           </div>
         </CardContent>
       </Card>
+
+      {/* Document Assignment Modal */}
+      <Dialog open={showAssignmentModal} onOpenChange={setShowAssignmentModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Assign Documents to Recipients</DialogTitle>
+            <DialogDescription>
+              Select which documents should be sent to each recipient. By default, all documents will be sent to all recipients.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {uploadedFiles.map((file, fileIndex) => (
+              <Card key={fileIndex}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <File className="w-4 h-4" />
+                    {file.name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {selectedRecipients.map((recipientId) => (
+                      <div key={recipientId} className="flex items-center space-x-2 p-2 border rounded">
+                        <Checkbox
+                          id={`${file.name}-${recipientId}`}
+                          checked={documentAssignments[file.name]?.includes(recipientId) ?? true}
+                          onCheckedChange={(checked) => handleAssignmentChange(file.name, recipientId, !!checked)}
+                        />
+                        <Label htmlFor={`${file.name}-${recipientId}`} className="text-sm cursor-pointer">
+                          {recipientId.replace('-', ' ').toUpperCase()}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAssignmentModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAssignmentSave}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

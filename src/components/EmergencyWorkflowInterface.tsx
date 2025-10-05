@@ -27,8 +27,17 @@ import {
   Upload,
   X,
   File,
-  AlertCircle
+  AlertCircle,
+  Settings
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
 interface EmergencySubmission {
@@ -64,6 +73,11 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
     escalationTimeout: 24,
     escalationTimeUnit: 'hours' as 'seconds' | 'minutes' | 'hours' | 'days' | 'weeks' | 'months'
   });
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+  const [documentAssignments, setDocumentAssignments] = useState<{[key: string]: string[]}>({});
+  const [showRecipientSelection, setShowRecipientSelection] = useState(false);
+  const [finalSelectedRecipients, setFinalSelectedRecipients] = useState<string[]>([]);
+  const [useSmartDelivery, setUseSmartDelivery] = useState(false);
   const [emergencyHistory, setEmergencyHistory] = useState<EmergencySubmission[]>([
     {
       id: '1',
@@ -154,10 +168,21 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
   };
 
   const handleEmergencySubmit = () => {
+    const recipientsToSend = useSmartDelivery && showRecipientSelection ? finalSelectedRecipients : selectedRecipients;
+    
     if (!emergencyData.title || !emergencyData.description || selectedRecipients.length === 0) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields and select recipients",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (useSmartDelivery && showRecipientSelection && finalSelectedRecipients.length === 0) {
+      toast({
+        title: "No Recipients Selected",
+        description: "Please select at least one recipient from your chosen subset",
         variant: "destructive"
       });
       return;
@@ -169,7 +194,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
       description: emergencyData.description,
       reason: '', // No longer captured from user input
       urgencyLevel: emergencyData.urgencyLevel,
-      recipients: selectedRecipients,
+      recipients: recipientsToSend,
       submittedBy: userRole,
       submittedAt: new Date(),
       status: 'submitted',
@@ -192,14 +217,26 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
       escalationTimeUnit: 'hours' as 'seconds' | 'minutes' | 'hours' | 'days' | 'weeks' | 'months'
     });
     setSelectedRecipients([]);
+    setFinalSelectedRecipients([]);
+    setShowRecipientSelection(false);
+    setUseSmartDelivery(false);
     setIsEmergencyMode(false);
 
-    // Simulate immediate notifications
+    // Simulate immediate batch notifications
     toast({
       title: "EMERGENCY SUBMITTED",
-      description: `Emergency notification sent to ${selectedRecipients.length} recipients`,
+      description: `Emergency document sent immediately to ${recipientsToSend.length} recipient(s) at once`,
       duration: 10000,
     });
+
+    // Show batch sending confirmation
+    setTimeout(() => {
+      toast({
+        title: "Batch Delivery Confirmed",
+        description: `All documents successfully delivered to ${recipientsToSend.length} recipients simultaneously`,
+        variant: "default"
+      });
+    }, 2000);
 
     // Simulate escalation after delay
     setTimeout(() => {
@@ -489,6 +526,26 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
                   </div>
                 )}
               </div>
+
+              {/* Assignment Preview */}
+              {emergencyData.uploadedFiles.length > 1 && selectedRecipients.length > 1 && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base font-medium">Document Assignment</Label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAssignmentModal(true)}
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Customize Assignment
+                    </Button>
+                  </div>
+                  <div className="text-sm text-muted-foreground bg-blue-50 p-3 rounded-md">
+                    <p>Multiple files and recipients detected. You can customize which documents go to which recipients.</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Auto-Escalation Feature */}
@@ -544,6 +601,114 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
                 selectedRecipients={selectedRecipients}
                 onRecipientsChange={setSelectedRecipients}
               />
+              
+              {/* Smart Recipient Delivery Option */}
+              {selectedRecipients.length > 1 && (
+                <div className="space-y-3 p-4 border rounded-lg bg-blue-50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        checked={useSmartDelivery}
+                        onCheckedChange={setUseSmartDelivery}
+                      />
+                      <Label className="text-base font-medium cursor-pointer" onClick={() => setUseSmartDelivery(!useSmartDelivery)}>
+                        Use Smart Recipient Delivery Option
+                      </Label>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {selectedRecipients.length} Recipients Selected
+                    </Badge>
+                  </div>
+                  
+                  {useSmartDelivery && (
+                    <>
+                      <div className="text-sm text-blue-700 bg-blue-100 p-3 rounded-md">
+                        <p className="font-medium mb-1">Purpose:</p>
+                        <p className="mb-2">This feature allows users to control how emergency documents are distributed to multiple recipients efficiently and instantly. It ensures that documents are sent simultaneously to selected users without any delay or sequential sending.</p>
+                        <p className="font-medium mb-1">User Benefit:</p>
+                        <p>This feature helps users save time, ensures faster emergency communication, and allows targeted delivery of urgent documents to the right people when every second matters.</p>
+                      </div>
+                      <div className="space-y-3 mt-3">
+                    <div className="flex items-start space-x-2">
+                      <input
+                        type="radio"
+                        id="send-all"
+                        name="recipient-option"
+                        checked={!showRecipientSelection}
+                        onChange={() => {
+                          setShowRecipientSelection(false);
+                          setFinalSelectedRecipients(selectedRecipients);
+                        }}
+                        className="w-4 h-4 text-blue-600 mt-1"
+                      />
+                      <div className="flex-1">
+                        <Label htmlFor="send-all" className="text-sm cursor-pointer font-medium">
+                          Batch Send to All Recipients ({selectedRecipients.length})
+                        </Label>
+                        <p className="text-xs text-gray-600 mt-1">
+                          Instantly sends documents to all {selectedRecipients.length} selected recipients simultaneously. Fast and efficient for urgent emergencies.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <input
+                        type="radio"
+                        id="send-subset"
+                        name="recipient-option"
+                        checked={showRecipientSelection}
+                        onChange={() => {
+                          setShowRecipientSelection(true);
+                          setFinalSelectedRecipients([]);
+                        }}
+                        className="w-4 h-4 text-blue-600 mt-1"
+                      />
+                      <div className="flex-1">
+                        <Label htmlFor="send-subset" className="text-sm cursor-pointer font-medium">
+                          Selective Batch Send (Custom Recipients)
+                        </Label>
+                        <p className="text-xs text-gray-600 mt-1">
+                          Choose specific recipients from your selection. Documents will be sent simultaneously to only your chosen subset.
+                        </p>
+                      </div>
+                    </div>
+                      </div>
+                      
+                      {/* Subset Selection Interface */}
+                      {showRecipientSelection && (
+                        <div className="space-y-3 p-3 border rounded bg-white">
+                          <Label className="text-sm font-medium">Choose Recipients for Batch Document Delivery:</Label>
+                          <div className="grid grid-cols-2 gap-2">
+                            {selectedRecipients.map((recipientId) => (
+                              <div key={recipientId} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50">
+                                <Checkbox
+                                  id={`final-${recipientId}`}
+                                  checked={finalSelectedRecipients.includes(recipientId)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setFinalSelectedRecipients(prev => [...prev, recipientId]);
+                                    } else {
+                                      setFinalSelectedRecipients(prev => prev.filter(id => id !== recipientId));
+                                    }
+                                  }}
+                                />
+                                <Label htmlFor={`final-${recipientId}`} className="text-sm cursor-pointer">
+                                  {recipientId.replace('-', ' ').toUpperCase()}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                          {finalSelectedRecipients.length > 0 && (
+                            <div className="text-sm text-blue-600 bg-blue-100 p-2 rounded flex items-center gap-2">
+                              <CheckCircle2 className="w-4 h-4" />
+                              Ready to batch send documents to {finalSelectedRecipients.length} selected recipient(s) simultaneously
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -578,7 +743,71 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
         </Card>
       )}
 
+      {/* Document Assignment Modal */}
+      <Dialog open={showAssignmentModal} onOpenChange={setShowAssignmentModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Assign Documents to Recipients</DialogTitle>
+            <DialogDescription>
+              Select which documents should be sent to each recipient. By default, all documents will be sent to all recipients.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {emergencyData.uploadedFiles.map((file, fileIndex) => (
+              <Card key={fileIndex}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <File className="w-4 h-4" />
+                    {file.name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {selectedRecipients.map((recipientId) => (
+                      <div key={recipientId} className="flex items-center space-x-2 p-2 border rounded">
+                        <Checkbox
+                          id={`${file.name}-${recipientId}`}
+                          checked={documentAssignments[file.name]?.includes(recipientId) ?? true}
+                          onCheckedChange={(checked) => {
+                            setDocumentAssignments(prev => {
+                              const current = prev[file.name] || [];
+                              if (checked) {
+                                return { ...prev, [file.name]: [...current, recipientId] };
+                              } else {
+                                return { ...prev, [file.name]: current.filter(id => id !== recipientId) };
+                              }
+                            });
+                          }}
+                        />
+                        <Label htmlFor={`${file.name}-${recipientId}`} className="text-sm cursor-pointer">
+                          {recipientId.replace('-', ' ').toUpperCase()}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAssignmentModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              setShowAssignmentModal(false);
+              toast({
+                title: "Assignment Saved",
+                description: "Document assignments have been saved successfully.",
+                variant: "default"
+              });
+            }}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Emergency Contacts - Only show when not in emergency mode */}
       {!isEmergencyMode && (

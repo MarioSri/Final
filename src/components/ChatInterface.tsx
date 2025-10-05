@@ -731,16 +731,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
 
   const ChannelSidebar: React.FC = () => (
     <div className={cn(
-      "border-r bg-muted/20 flex flex-col transition-all duration-300 ease-in-out",
+      "border-r bg-background flex flex-col transition-all duration-300 ease-in-out",
       showSidebar ? "w-64" : "w-0 overflow-hidden"
     )}>
-      <div className="px-4 py-4 border-b">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Lock className="w-4 h-4 text-yellow-500" />
-            <h3 className="font-semibold flex-shrink-0">Channels</h3>
+      <div className="p-4 border-t">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Lock className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+            <h3 className="font-semibold flex-shrink-0 text-sm">Channels</h3>
           </div>
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center gap-1 flex-shrink-0 ml-auto">
             {deleteMode ? (
               <>
                 <Button
@@ -750,7 +750,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
                     setDeleteMode(false);
                     setSelectedChannelsToDelete([]);
                   }}
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap h-8 px-2 text-xs"
                 >
                   Cancel
                 </Button>
@@ -759,7 +759,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
                   variant="destructive"
                   onClick={() => setShowDeleteConfirmation(true)}
                   disabled={selectedChannelsToDelete.length === 0}
-                  className="whitespace-nowrap"
+                  className="whitespace-nowrap h-8 px-2 text-xs"
                 >
                   Delete ({selectedChannelsToDelete.length})
                 </Button>
@@ -770,6 +770,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
                   size="sm"
                   variant="ghost"
                   onClick={() => setDeleteMode(true)}
+                  className="h-8 w-8 p-0"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -819,7 +820,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
         </div>
       </ScrollArea>
       
-      <div className="p-2 border-t">
+      <div className="p-4 border-t">
         <Button
           size="sm"
           variant="ghost"

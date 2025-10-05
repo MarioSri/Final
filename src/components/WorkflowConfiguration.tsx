@@ -39,6 +39,14 @@ import {
   Eye,
   AlertCircle
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface WorkflowConfigurationProps {
   className?: string;
@@ -79,6 +87,8 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
   const [documentDescription, setDocumentDescription] = useState('');
   const [documentPriority, setDocumentPriority] = useState('normal');
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+  const [documentAssignments, setDocumentAssignments] = useState<{[key: string]: string[]}>({});
   const [stepTimeoutHours, setStepTimeoutHours] = useState(24);
   const [stepEscalationRoles, setStepEscalationRoles] = useState<string[]>([]);
   const [stepRequiresCounterApproval, setStepRequiresCounterApproval] = useState(false);
@@ -149,6 +159,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
     setSelectedRecipients([]);
     setDocumentDescription('');
     setDocumentPriority('normal');
+    setDocumentAssignments({});
     resetStepForm();
   };
 
@@ -701,6 +712,26 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
                       )}
                     </div>
 
+                    {/* Assignment Preview */}
+                    {uploadedFiles.length > 1 && selectedRecipients.length > 1 && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-sm font-medium">Document Assignment</label>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowAssignmentModal(true)}
+                          >
+                            <Settings className="w-4 h-4 mr-2" />
+                            Customize Assignment
+                          </Button>
+                        </div>
+                        <div className="text-sm text-muted-foreground bg-blue-50 p-3 rounded-md">
+                          <p>Multiple files and recipients detected. You can customize which documents go to which recipients.</p>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Recipients */}
                     <div>
                       <label className="text-sm font-medium">Approval Chain with Bypass Recipients</label>
@@ -1058,6 +1089,72 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
             )}
         </TabsContent>
       </Tabs>
+
+      {/* Document Assignment Modal */}
+      <Dialog open={showAssignmentModal} onOpenChange={setShowAssignmentModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Assign Documents to Recipients</DialogTitle>
+            <DialogDescription>
+              Select which documents should be sent to each recipient. By default, all documents will be sent to all recipients.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {uploadedFiles.map((file, fileIndex) => (
+              <Card key={fileIndex}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <File className="w-4 h-4" />
+                    {file.name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {selectedRecipients.map((recipientId) => (
+                      <div key={recipientId} className="flex items-center space-x-2 p-2 border rounded">
+                        <Checkbox
+                          id={`workflow-${file.name}-${recipientId}`}
+                          checked={documentAssignments[file.name]?.includes(recipientId) ?? true}
+                          onCheckedChange={(checked) => {
+                            setDocumentAssignments(prev => {
+                              const current = prev[file.name] || [];
+                              if (checked) {
+                                return { ...prev, [file.name]: [...current, recipientId] };
+                              } else {
+                                return { ...prev, [file.name]: current.filter(id => id !== recipientId) };
+                              }
+                            });
+                          }}
+                        />
+                        <label htmlFor={`workflow-${file.name}-${recipientId}`} className="text-sm cursor-pointer">
+                          {recipientId.replace('-', ' ').toUpperCase()}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAssignmentModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              setShowAssignmentModal(false);
+              toast({
+                title: "Assignment Saved",
+                description: "Document assignments have been saved successfully.",
+                variant: "default"
+              });
+            }}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
