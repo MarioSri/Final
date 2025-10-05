@@ -28,7 +28,13 @@ import {
   X,
   File,
   AlertCircle,
-  Settings
+  Settings,
+  Mail,
+  Phone,
+  Smartphone,
+  MessageCircle,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import {
   Dialog,
@@ -73,6 +79,26 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
     escalationTimeout: 24,
     escalationTimeUnit: 'hours' as 'seconds' | 'minutes' | 'hours' | 'days' | 'weeks' | 'months'
   });
+  const [useProfileDefaults, setUseProfileDefaults] = useState(true);
+  const [overrideNotifications, setOverrideNotifications] = useState(false);
+  const [notificationSettings, setNotificationSettings] = useState({
+    emailNotifications: false,
+    emailInterval: '15',
+    emailUnit: 'minutes' as 'seconds' | 'minutes' | 'hours' | 'days' | 'weeks' | 'months',
+    smsAlerts: false,
+    smsInterval: '30',
+    smsUnit: 'minutes' as 'seconds' | 'minutes' | 'hours' | 'days' | 'weeks' | 'months',
+    pushNotifications: false,
+    pushInterval: '5',
+    pushUnit: 'minutes' as 'seconds' | 'minutes' | 'hours' | 'days' | 'weeks' | 'months',
+    whatsappNotifications: false,
+    whatsappInterval: '1',
+    whatsappUnit: 'hours' as 'seconds' | 'minutes' | 'hours' | 'days' | 'weeks' | 'months',
+    notificationLogic: 'document' as 'document' | 'recipient'
+  });
+  const [recipientNotifications, setRecipientNotifications] = useState<{[key: string]: typeof notificationSettings}>({});
+  const [openRecipients, setOpenRecipients] = useState<{[key: string]: boolean}>({});
+  const [showCustomizeModal, setShowCustomizeModal] = useState(false);
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
   const [documentAssignments, setDocumentAssignments] = useState<{[key: string]: string[]}>({});
   const [showRecipientSelection, setShowRecipientSelection] = useState(false);
@@ -593,6 +619,291 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
               </div>
             )}
 
+            {/* Notification Alert Options */}
+            <div className="space-y-4 p-4 border-2 border-orange-200 rounded-lg bg-orange-50">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <Bell className="w-5 h-5 text-orange-600" />
+                Emergency Notification Settings
+              </h3>
+              
+              {/* Use Profile Defaults Toggle */}
+              <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                <div className="flex items-center gap-3">
+                  <Settings className="w-5 h-5 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">Use Profile Defaults</p>
+                    <p className="text-sm text-muted-foreground">Apply notification preferences from your profile settings</p>
+                  </div>
+                </div>
+                <Switch
+                  checked={useProfileDefaults}
+                  onCheckedChange={setUseProfileDefaults}
+                />
+              </div>
+
+              {/* Override for Emergency Toggle */}
+              <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="w-5 h-5 text-orange-600" />
+                  <div>
+                    <p className="font-medium">Override for Emergency</p>
+                    <p className="text-sm text-muted-foreground">Customize notification settings specifically for this emergency</p>
+                  </div>
+                </div>
+                <Switch
+                  checked={overrideNotifications}
+                  onCheckedChange={setOverrideNotifications}
+                  disabled={useProfileDefaults}
+                />
+              </div>
+
+              {/* Custom Notification Settings */}
+              {overrideNotifications && !useProfileDefaults && (
+                <div className="space-y-4 p-4 bg-white rounded-lg border">
+                  {/* Notification Strategy */}
+                  <div className="space-y-3 pt-4 border-t">
+                    <Label className="text-base font-medium">Notification Strategy</Label>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="radio"
+                            id="logic-recipient"
+                            name="notification-logic"
+                            checked={notificationSettings.notificationLogic === 'recipient'}
+                            onChange={() => setNotificationSettings({...notificationSettings, notificationLogic: 'recipient'})}
+                            className="w-4 h-4"
+                          />
+                          <Label htmlFor="logic-recipient" className="cursor-pointer flex-1">
+                            <span className="font-medium">Recipient-Based (Recommended)</span>
+                            <p className="text-xs text-muted-foreground mt-1">Send notifications based on individual recipient preferences and roles</p>
+                          </Label>
+                        </div>
+                        {notificationSettings.notificationLogic === 'recipient' && selectedRecipients.length > 0 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowCustomizeModal(true)}
+                            className="ml-2"
+                          >
+                            <Users className="w-4 h-4 mr-2" />
+                            Customize Recipients
+                          </Button>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="radio"
+                            id="logic-document"
+                            name="notification-logic"
+                            checked={notificationSettings.notificationLogic === 'document'}
+                            onChange={() => setNotificationSettings({...notificationSettings, notificationLogic: 'document'})}
+                            className="w-4 h-4"
+                          />
+                          <Label htmlFor="logic-document" className="cursor-pointer flex-1">
+                            <span className="font-medium">Document-Based</span>
+                            <p className="text-xs text-muted-foreground mt-1">Send uniform notifications to all recipients</p>
+                          </Label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Alert Channels Title */}
+                  <div className="pt-4 border-t">
+                    <h4 className="text-base font-semibold mb-4">Alert Channels</h4>
+                  </div>
+
+                  {/* Email Notifications */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between py-2">
+                      <div className="flex items-center gap-3">
+                        <Mail className="w-5 h-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">Email Notifications</p>
+                          <p className="text-sm text-muted-foreground">Receive updates via email</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={notificationSettings.emailNotifications}
+                        onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, emailNotifications: checked})}
+                      />
+                    </div>
+                    {notificationSettings.emailNotifications && (
+                      <div className="grid grid-cols-2 gap-3 ml-8">
+                        <Input
+                          type="number"
+                          value={notificationSettings.emailInterval}
+                          onChange={(e) => setNotificationSettings({...notificationSettings, emailInterval: e.target.value})}
+                          min={1}
+                          placeholder="Interval"
+                        />
+                        <Select
+                          value={notificationSettings.emailUnit}
+                          onValueChange={(value: any) => setNotificationSettings({...notificationSettings, emailUnit: value})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="seconds">Seconds</SelectItem>
+                            <SelectItem value="minutes">Minutes</SelectItem>
+                            <SelectItem value="hours">Hours</SelectItem>
+                            <SelectItem value="days">Days</SelectItem>
+                            <SelectItem value="weeks">Weeks</SelectItem>
+                            <SelectItem value="months">Months</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* SMS Alerts */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between py-2">
+                      <div className="flex items-center gap-3">
+                        <Phone className="w-5 h-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">SMS Alerts</p>
+                          <p className="text-sm text-muted-foreground">Critical updates via SMS</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={notificationSettings.smsAlerts}
+                        onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, smsAlerts: checked})}
+                      />
+                    </div>
+                    {notificationSettings.smsAlerts && (
+                      <div className="grid grid-cols-2 gap-3 ml-8">
+                        <Input
+                          type="number"
+                          value={notificationSettings.smsInterval}
+                          onChange={(e) => setNotificationSettings({...notificationSettings, smsInterval: e.target.value})}
+                          min={1}
+                          placeholder="Interval"
+                        />
+                        <Select
+                          value={notificationSettings.smsUnit}
+                          onValueChange={(value: any) => setNotificationSettings({...notificationSettings, smsUnit: value})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="seconds">Seconds</SelectItem>
+                            <SelectItem value="minutes">Minutes</SelectItem>
+                            <SelectItem value="hours">Hours</SelectItem>
+                            <SelectItem value="days">Days</SelectItem>
+                            <SelectItem value="weeks">Weeks</SelectItem>
+                            <SelectItem value="months">Months</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Push Notifications */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between py-2">
+                      <div className="flex items-center gap-3">
+                        <Smartphone className="w-5 h-5 text-muted-foreground" />
+                        <div>
+                          <p className="font-medium">Push Notifications</p>
+                          <p className="text-sm text-muted-foreground">Browser and mobile notifications</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={notificationSettings.pushNotifications}
+                        onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, pushNotifications: checked})}
+                      />
+                    </div>
+                    {notificationSettings.pushNotifications && (
+                      <div className="grid grid-cols-2 gap-3 ml-8">
+                        <Input
+                          type="number"
+                          value={notificationSettings.pushInterval}
+                          onChange={(e) => setNotificationSettings({...notificationSettings, pushInterval: e.target.value})}
+                          min={1}
+                          placeholder="Interval"
+                        />
+                        <Select
+                          value={notificationSettings.pushUnit}
+                          onValueChange={(value: any) => setNotificationSettings({...notificationSettings, pushUnit: value})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="seconds">Seconds</SelectItem>
+                            <SelectItem value="minutes">Minutes</SelectItem>
+                            <SelectItem value="hours">Hours</SelectItem>
+                            <SelectItem value="days">Days</SelectItem>
+                            <SelectItem value="weeks">Weeks</SelectItem>
+                            <SelectItem value="months">Months</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* WhatsApp Notifications */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between py-2">
+                      <div className="flex items-center gap-3">
+                        <MessageCircle className="w-5 h-5 text-green-600" />
+                        <div>
+                          <p className="font-medium">WhatsApp Notifications</p>
+                          <p className="text-sm text-muted-foreground">Receive updates via WhatsApp</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={notificationSettings.whatsappNotifications}
+                        onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, whatsappNotifications: checked})}
+                      />
+                    </div>
+                    {notificationSettings.whatsappNotifications && (
+                      <div className="grid grid-cols-2 gap-3 ml-8">
+                        <Input
+                          type="number"
+                          value={notificationSettings.whatsappInterval}
+                          onChange={(e) => setNotificationSettings({...notificationSettings, whatsappInterval: e.target.value})}
+                          min={1}
+                          placeholder="Interval"
+                        />
+                        <Select
+                          value={notificationSettings.whatsappUnit}
+                          onValueChange={(value: any) => setNotificationSettings({...notificationSettings, whatsappUnit: value})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="seconds">Seconds</SelectItem>
+                            <SelectItem value="minutes">Minutes</SelectItem>
+                            <SelectItem value="hours">Hours</SelectItem>
+                            <SelectItem value="days">Days</SelectItem>
+                            <SelectItem value="weeks">Weeks</SelectItem>
+                            <SelectItem value="months">Months</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+
+
+                </div>
+              )}
+
+              {/* Active Settings Indicator */}
+              {useProfileDefaults && (
+                <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Using notification preferences from your Profile Settings
+                </div>
+              )}
+            </div>
+
             {/* Expanded Recipient Selection */}
             <div className="space-y-4">
               <Label>Emergency Management Recipients</Label>
@@ -742,6 +1053,59 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
           </CardContent>
         </Card>
       )}
+
+      {/* Customize Recipients Modal */}
+      <Dialog open={showCustomizeModal} onOpenChange={setShowCustomizeModal}>
+        <DialogContent className="max-w-5xl max-h-[85vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Customize Notifications per Recipient
+            </DialogTitle>
+            <DialogDescription>
+              Configure individual notification preferences for each recipient
+            </DialogDescription>
+          </DialogHeader>
+          
+          <ScrollArea className="h-[60vh] pr-4">
+            <div className="space-y-3">
+              {selectedRecipients.map((recipientId) => {
+                const recipientSettings = recipientNotifications[recipientId] || notificationSettings;
+                const isOpen = openRecipients[recipientId] || false;
+                return (
+                  <Card key={recipientId} className="overflow-hidden">
+                    <div className="p-3 bg-muted/50 cursor-pointer hover:bg-muted transition-colors flex items-center justify-between" onClick={() => setOpenRecipients({...openRecipients, [recipientId]: !isOpen})}>
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-primary" />
+                        <h4 className="font-semibold text-sm uppercase">{recipientId.replace('-', ' ')}</h4>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {[recipientSettings.emailNotifications && 'Email', recipientSettings.smsAlerts && 'SMS', recipientSettings.pushNotifications && 'Push', recipientSettings.whatsappNotifications && 'WhatsApp'].filter(Boolean).join(', ') || 'None'}
+                        </Badge>
+                        {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </div>
+                    </div>
+                    {isOpen && (
+                      <div className="p-4 border-t space-y-3">
+                        <div className="space-y-2"><div className="flex items-center justify-between"><div className="flex items-center gap-2"><Mail className="w-4 h-4 text-muted-foreground" /><span className="text-sm font-medium">Email</span></div><Switch checked={recipientSettings.emailNotifications} onCheckedChange={(checked) => setRecipientNotifications({...recipientNotifications, [recipientId]: {...recipientSettings, emailNotifications: checked}})} /></div>{recipientSettings.emailNotifications && (<div className="grid grid-cols-2 gap-2 ml-6"><Input type="number" value={recipientSettings.emailInterval} onChange={(e) => setRecipientNotifications({...recipientNotifications, [recipientId]: {...recipientSettings, emailInterval: e.target.value}})} min={1} className="h-8 text-sm" /><Select value={recipientSettings.emailUnit} onValueChange={(value: any) => setRecipientNotifications({...recipientNotifications, [recipientId]: {...recipientSettings, emailUnit: value}})}><SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="seconds">Seconds</SelectItem><SelectItem value="minutes">Minutes</SelectItem><SelectItem value="hours">Hours</SelectItem><SelectItem value="days">Days</SelectItem><SelectItem value="weeks">Weeks</SelectItem><SelectItem value="months">Months</SelectItem></SelectContent></Select></div>)}</div>
+                        <div className="space-y-2"><div className="flex items-center justify-between"><div className="flex items-center gap-2"><Phone className="w-4 h-4 text-muted-foreground" /><span className="text-sm font-medium">SMS</span></div><Switch checked={recipientSettings.smsAlerts} onCheckedChange={(checked) => setRecipientNotifications({...recipientNotifications, [recipientId]: {...recipientSettings, smsAlerts: checked}})} /></div>{recipientSettings.smsAlerts && (<div className="grid grid-cols-2 gap-2 ml-6"><Input type="number" value={recipientSettings.smsInterval} onChange={(e) => setRecipientNotifications({...recipientNotifications, [recipientId]: {...recipientSettings, smsInterval: e.target.value}})} min={1} className="h-8 text-sm" /><Select value={recipientSettings.smsUnit} onValueChange={(value: any) => setRecipientNotifications({...recipientNotifications, [recipientId]: {...recipientSettings, smsUnit: value}})}><SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="seconds">Seconds</SelectItem><SelectItem value="minutes">Minutes</SelectItem><SelectItem value="hours">Hours</SelectItem><SelectItem value="days">Days</SelectItem><SelectItem value="weeks">Weeks</SelectItem><SelectItem value="months">Months</SelectItem></SelectContent></Select></div>)}</div>
+                        <div className="space-y-2"><div className="flex items-center justify-between"><div className="flex items-center gap-2"><Smartphone className="w-4 h-4 text-muted-foreground" /><span className="text-sm font-medium">Push</span></div><Switch checked={recipientSettings.pushNotifications} onCheckedChange={(checked) => setRecipientNotifications({...recipientNotifications, [recipientId]: {...recipientSettings, pushNotifications: checked}})} /></div>{recipientSettings.pushNotifications && (<div className="grid grid-cols-2 gap-2 ml-6"><Input type="number" value={recipientSettings.pushInterval} onChange={(e) => setRecipientNotifications({...recipientNotifications, [recipientId]: {...recipientSettings, pushInterval: e.target.value}})} min={1} className="h-8 text-sm" /><Select value={recipientSettings.pushUnit} onValueChange={(value: any) => setRecipientNotifications({...recipientNotifications, [recipientId]: {...recipientSettings, pushUnit: value}})}><SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="seconds">Seconds</SelectItem><SelectItem value="minutes">Minutes</SelectItem><SelectItem value="hours">Hours</SelectItem><SelectItem value="days">Days</SelectItem><SelectItem value="weeks">Weeks</SelectItem><SelectItem value="months">Months</SelectItem></SelectContent></Select></div>)}</div>
+                        <div className="space-y-2"><div className="flex items-center justify-between"><div className="flex items-center gap-2"><MessageCircle className="w-4 h-4 text-green-600" /><span className="text-sm font-medium">WhatsApp</span></div><Switch checked={recipientSettings.whatsappNotifications} onCheckedChange={(checked) => setRecipientNotifications({...recipientNotifications, [recipientId]: {...recipientSettings, whatsappNotifications: checked}})} /></div>{recipientSettings.whatsappNotifications && (<div className="grid grid-cols-2 gap-2 ml-6"><Input type="number" value={recipientSettings.whatsappInterval} onChange={(e) => setRecipientNotifications({...recipientNotifications, [recipientId]: {...recipientSettings, whatsappInterval: e.target.value}})} min={1} className="h-8 text-sm" /><Select value={recipientSettings.whatsappUnit} onValueChange={(value: any) => setRecipientNotifications({...recipientNotifications, [recipientId]: {...recipientSettings, whatsappUnit: value}})}><SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="seconds">Seconds</SelectItem><SelectItem value="minutes">Minutes</SelectItem><SelectItem value="hours">Hours</SelectItem><SelectItem value="days">Days</SelectItem><SelectItem value="weeks">Weeks</SelectItem><SelectItem value="months">Months</SelectItem></SelectContent></Select></div>)}</div>
+                      </div>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          </ScrollArea>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCustomizeModal(false)}>Cancel</Button>
+            <Button onClick={() => { setShowCustomizeModal(false); toast({ title: "Settings Saved", description: "Recipient notification preferences saved successfully." }); }}><CheckCircle2 className="w-4 h-4 mr-2" />Save Settings</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Document Assignment Modal */}
       <Dialog open={showAssignmentModal} onOpenChange={setShowAssignmentModal}>
