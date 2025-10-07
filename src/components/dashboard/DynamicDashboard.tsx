@@ -62,13 +62,27 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ className })
         try {
           const parsed = JSON.parse(savedWidgets);
           // Filter out unsupported widget types and disallowed widgets for role
-          const validWidgets = parsed.filter((widget: DashboardWidget) => 
+          let validWidgets = parsed.filter((widget: DashboardWidget) => 
             supportedWidgetTypes.includes(widget.type) && 
             !disallowedWidgetsForRole.includes(widget.type)
           );
           
-          // If we filtered out invalid widgets, save the cleaned version
-          if (validWidgets.length !== parsed.length) {
+          // CRITICAL FIX: Ensure Quick Actions widget is always present for all roles
+          const hasQuickActions = validWidgets.some((w: DashboardWidget) => w.type === 'quickActions');
+          if (!hasQuickActions) {
+            console.log('Quick Actions widget missing - adding it back');
+            validWidgets.unshift({
+              id: 'quickActions',
+              type: 'quickActions',
+              title: 'Quick Actions',
+              position: { x: 0, y: 0, w: isMobile ? 12 : 6, h: 2 },
+              visible: true,
+              permissions: []
+            });
+          }
+          
+          // If we filtered out invalid widgets or added Quick Actions, save the cleaned version
+          if (validWidgets.length !== parsed.length || !hasQuickActions) {
             localStorage.setItem(`dashboard-widgets-${user.role}`, JSON.stringify(validWidgets));
           }
           
