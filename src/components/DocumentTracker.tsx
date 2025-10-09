@@ -144,7 +144,28 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const [comment, setComment] = useState('');
+  const [submittedDocuments, setSubmittedDocuments] = useState<Document[]>([]);
   const { toast } = useToast();
+
+  // Load submitted documents from localStorage
+  React.useEffect(() => {
+    const loadSubmittedDocuments = () => {
+      const stored = JSON.parse(localStorage.getItem('submitted-documents') || '[]');
+      setSubmittedDocuments(stored);
+    };
+    
+    loadSubmittedDocuments();
+    
+    // Listen for storage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'submitted-documents') {
+        loadSubmittedDocuments();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   const getStatusIcon = (status: string): JSX.Element => {
     switch (status) {
@@ -182,7 +203,10 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
     }
   };
 
-  const filteredDocuments = mockDocuments.filter(doc => {
+  // Combine mock documents with submitted documents
+  const allDocuments = [...submittedDocuments, ...mockDocuments];
+  
+  const filteredDocuments = allDocuments.filter(doc => {
     const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          doc.submittedBy.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || doc.status === statusFilter;

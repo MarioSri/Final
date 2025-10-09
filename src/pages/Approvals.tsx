@@ -63,6 +63,19 @@ const Approvals = () => {
 
   const recentApprovals = [
     {
+      id: 9,
+      title: "Infrastructure Upgrade Request",
+      type: "Proposal",
+      submitter: "IT Department",
+      submittedDate: "2024-01-16",
+      status: "approved",
+      priority: "high",
+      approvedBy: "Principal",
+      approvedDate: "2024-01-17",
+      description: "Request for upgrading campus network infrastructure and server capacity to support increased digital learning initiatives",
+      comment: "Critical infrastructure upgrade approved. The proposed timeline and phased implementation approach will minimize disruption to ongoing activities. Budget allocation confirmed from IT modernization fund."
+    },
+    {
       id: 6,
       title: "Research Grant Application",
       type: "Report",
@@ -96,7 +109,7 @@ const Approvals = () => {
       submitter: "Dr. Emily Chen",
       submittedDate: "2024-01-08",
       status: "approved",
-      priority: "low",
+      priority: "normal",
       approvedBy: "Academic Committee",
       approvedDate: "2024-01-10",
       description: "Proposal to update computer science curriculum with modern AI and machine learning modules",
@@ -256,9 +269,9 @@ const Approvals = () => {
                           )}
                           
                           {/* Input Field */}
-                          <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors">
+                          <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors bg-white">
                             <textarea
-                              className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none"
+                              className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none bg-white"
                               placeholder="Add your comment..."
                               rows={1}
                               style={{ resize: 'none' }}
@@ -396,9 +409,9 @@ const Approvals = () => {
                           )}
                           
                           {/* Input Field */}
-                          <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors">
+                          <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors bg-white">
                             <textarea
-                              className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none"
+                              className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none bg-white"
                               placeholder="Add your comment..."
                               rows={1}
                               style={{ resize: 'none' }}
@@ -451,6 +464,141 @@ const Approvals = () => {
                     </CardContent>
                   </Card>
 
+                  {/* Student Event Proposal Card */}
+                  <Card className="hover:shadow-md transition-shadow border-destructive bg-red-50 animate-pulse">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col lg:flex-row gap-6">
+                        <div className="flex-1 space-y-4">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="font-semibold text-lg flex items-center gap-2">
+                                Student Event Proposal – Tech Fest 2024
+                              </h3>
+                              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <FileText className="h-4 w-4" />
+                                  Proposal
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <User className="h-4 w-4" />
+                                  Student Council
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-4 w-4" />
+                                  2024-01-14
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-yellow-600" />
+                              <Badge variant="warning">Pending</Badge>
+                              <Badge variant="outline" className="text-blue-600">Normal Priority</Badge>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-1">
+                              <MessageSquare className="h-4 w-4" />
+                              <span className="text-sm font-medium">Description</span>
+                            </div>
+                            <div className="bg-muted p-3 rounded text-sm">
+                              <p>Annual technology festival proposal including budget allocation, venue requirements, and guest speaker arrangements.</p>
+                            </div>
+                          </div>
+                          
+                          {comments['student-event']?.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-1">
+                                <MessageSquare className="h-4 w-4" />
+                                <span className="text-sm font-medium">Your Comments</span>
+                              </div>
+                              <div className="space-y-2">
+                                {comments['student-event'].map((comment, index) => (
+                                  <div key={index} className="bg-muted p-3 rounded-lg text-sm flex justify-between items-start">
+                                    <p className="flex-1">{comment}</p>
+                                    <div className="flex gap-1 ml-2">
+                                      <button 
+                                        className="px-4 py-2 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+                                        onClick={() => handleEditComment('student-event', index)}
+                                        title="Edit"
+                                      >
+                                        <SquarePen className="h-4 w-4 text-gray-600" />
+                                      </button>
+                                      <button 
+                                        className="px-4 py-2 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+                                        onClick={() => handleUndoComment('student-event', index)}
+                                        title="Undo"
+                                      >
+                                        <Undo2 className="h-4 w-4 text-gray-600" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {!comments['student-event']?.length && (
+                            <div className="flex items-center gap-1">
+                              <MessageSquare className="h-4 w-4" />
+                              <span className="text-sm font-medium">Your Comments</span>
+                            </div>
+                          )}
+                          
+                          <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors bg-white">
+                            <textarea
+                              className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none bg-white"
+                              placeholder="Add your comment..."
+                              rows={1}
+                              style={{ resize: 'none' }}
+                              value={commentInputs['student-event'] || ''}
+                              onChange={(e) => setCommentInputs(prev => ({ ...prev, 'student-event': e.target.value }))}
+                              onInput={(e) => {
+                                const target = e.target as HTMLTextAreaElement;
+                                target.style.height = 'auto';
+                                target.style.height = target.scrollHeight + 'px';
+                              }}
+                            />
+                            <button 
+                              className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors"
+                              title="Save comment"
+                              onClick={() => handleAddComment('student-event')}
+                            >
+                              <ChevronRight className="h-4 w-4 text-gray-600" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 min-w-[150px]">
+                          <Button variant="outline" size="sm">
+                            <Eye className="h-4 w-4 mr-2" />
+                            View
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="border-orange-500 text-orange-600 hover:bg-orange-50"
+                            onClick={() => setShowLiveMeetingModal(true)}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="relative w-4 h-4">
+                                <div className="absolute inset-0 w-4 h-4 bg-green-400 rounded-full"></div>
+                                <div className="absolute inset-1 w-2 h-2 bg-red-500 rounded-full"></div>
+                              </div>
+                              LiveMeet+
+                            </div>
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            Approve
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Reject
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
 
                 </div>
               </CardContent>
@@ -507,7 +655,7 @@ const Approvals = () => {
                                 <Badge variant="outline" className={
                                   doc.priority === "high" ? "text-orange-600 font-semibold" : 
                                   doc.priority === "medium" ? "text-yellow-600" : 
-                                  "text-green-600"
+                                  "text-blue-600"
                                 }>
                                   {doc.priority.charAt(0).toUpperCase() + doc.priority.slice(1)} Priority
                                 </Badge>

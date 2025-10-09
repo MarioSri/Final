@@ -17,7 +17,7 @@ import Messages from "./pages/Messages";
 import Approvals from "./pages/Approvals";
 import ApprovalRouting from "./pages/ApprovalRouting";
 import Analytics from "./pages/Analytics";
-
+import SmartDocs from "./pages/SmartDocs";
 import Emergency from "./pages/Emergency";
 import Search from "./pages/Search";
 import Profile from "./pages/Profile";
@@ -77,7 +77,11 @@ const App = () => (
                     <Analytics />
                   </ProtectedRoute>
                 } />
-
+                <Route path="/smartdocs" element={
+                  <ProtectedRoute>
+                    <SmartDocs />
+                  </ProtectedRoute>
+                } />
                 <Route path="/emergency" element={
                   <ProtectedRoute>
                     <Emergency />

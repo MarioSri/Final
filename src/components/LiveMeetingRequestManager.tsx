@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Filter, Search, TrendingUp, Clock, Users, AlertTriangle, FileText, User, Calendar, CheckCircle, XCircle, Eye, Download, ChevronRight, Zap, Activity, MessageSquare, Settings, Monitor, MapPin, Globe, CircleAlert, Building } from 'lucide-react';
+import { RefreshCw, Filter, Search, TrendingUp, Clock, Users, AlertTriangle, FileText, User, Calendar, CheckCircle, XCircle, Eye, Download, ChevronRight, Zap, Activity, MessageSquare, Settings, Monitor, MapPin, Globe, CircleAlert, Building, Wifi, BarChart3 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Input } from './ui/input';
@@ -323,7 +323,122 @@ export const LiveMeetingRequestManager: React.FC = () => {
 
       {/* Requests List */}
       <div className="space-y-4">
+        {/* All LiveMeet+ Request Cards - Properly positioned below search bar */}
         <div className="space-y-4">
+          {/* Dynamic LiveMeet+ Request Cards from localStorage */}
+          {JSON.parse(localStorage.getItem('livemeet-requests') || '[]').map((request: any) => (
+            <Card key={request.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="p-6">
+                <div className="flex flex-col lg:flex-row gap-6">
+                  <div className="flex-1 space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-3 mb-0">
+                          <h3 className="font-semibold text-lg flex items-center gap-2">
+                            <div className="relative w-4 h-4">
+                              <div className="absolute inset-0 w-4 h-4 bg-green-400 rounded-full"></div>
+                              <div className="absolute inset-1 w-2 h-2 bg-red-500 rounded-full"></div>
+                            </div>
+                            {request.title}
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
+                              request.type === 'circular' ? 'bg-blue-100 text-blue-800' :
+                              request.type === 'letter' ? 'bg-green-100 text-green-800' :
+                              'bg-purple-100 text-purple-800'
+                            }`}>
+                              <FileText className="h-3 w-3" />
+                              {request.type.charAt(0).toUpperCase() + request.type.slice(1)}
+                            </div>
+                            <div className="flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">
+                              <Calendar className="h-3 w-3" />
+                              {request.submittedDate} • {request.submittedTime}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-yellow-600" />
+                        <Badge variant="warning">Pending</Badge>
+                        <Badge variant="outline" className={`font-semibold flex items-center gap-1 ${
+                          request.priority === 'immediate' ? 'text-red-600' :
+                          request.priority === 'urgent' ? 'text-orange-600' :
+                          'text-blue-600'
+                        }`}>
+                          {request.priority === 'immediate' && <Zap className="w-3 h-3" />}
+                          {request.priority === 'urgent' && <AlertTriangle className="w-3 h-3" />}
+                          {request.priority === 'normal' && <Activity className="w-3 h-3" />}
+                          {request.priority.charAt(0).toUpperCase() + request.priority.slice(1)} Priority
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div className="flex items-center gap-1">
+                          <User className="h-4 w-4" />
+                          <span className="font-medium">From:</span> {request.submitter}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-4 w-4" />
+                          <span className="font-medium">Date:</span> {request.requestedDate || new Date().toLocaleDateString()}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Settings className="h-4 w-4" />
+                          <span className="font-medium">Meeting Purpose:</span> 
+                          <div className="flex items-center gap-1">
+                            <FileText className="h-4 w-4" />
+                            {request.purpose}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          <span className="font-medium">Time: From:</span> {request.startTime || '10:00 AM'} — To: {request.endTime || '11:00 AM'}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Users className="h-4 w-4" />
+                          <span className="font-medium">Meeting Format:</span> 
+                          <div className="flex items-center gap-1">
+                            {request.meetingFormat === 'online' && <><Monitor className="h-4 w-4" /> Online</>}
+                            {request.meetingFormat === 'in_person' && <><Building className="h-4 w-4" /> In-Person</>}
+                            {request.meetingFormat === 'hybrid' && <><Wifi className="h-4 w-4" /> Hybrid</>}
+                          </div>
+                        </div>
+                        {request.location && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-4 w-4" />
+                            <span className="font-medium">Meeting Location:</span> 
+                            <div className="flex items-center gap-1">
+                              <Globe className="h-4 w-4" />
+                              {request.location}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MessageSquare className="h-4 w-4" />
+                        <span className="text-sm font-medium">Description & Agenda</span>
+                      </div>
+                      <div className="bg-muted p-3 rounded text-sm">
+                        <p>{request.description}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2 min-w-[150px]">
+                    <Button variant="outline" size="sm">
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Accept
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Decline
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          
           {/* Original Dynamic Live Meeting Request Cards */}
           {filteredRequests.map(request => (
             <LiveMeetingRequestCard
@@ -544,8 +659,6 @@ export const LiveMeetingRequestManager: React.FC = () => {
             )}
         </div>
       </div>
-
-
     </div>
   );
 };

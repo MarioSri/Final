@@ -3,6 +3,7 @@ import { NotesReminders } from "@/components/NotesReminders";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ChatInterface } from "@/components/ChatInterface";
 import { LiveMeetingRequestManager } from "@/components/LiveMeetingRequestManager";
 import { DecentralizedChatService } from "@/services/DecentralizedChatService";
@@ -16,7 +17,20 @@ import {
   MessageSquare,
   Hash,
   Lock,
-  Video
+  Video,
+  FileText,
+  Calendar,
+  Clock,
+  User,
+  Settings,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  Monitor,
+  Building,
+  Wifi,
+  MapPin,
+  Globe
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +56,9 @@ const Messages = () => {
     liveMeetingRequests: 3 // NEW: Live meeting requests
   });
 
+  // LiveMeet+ requests state
+  const [liveMeetRequests, setLiveMeetRequests] = useState<any[]>([]);
+
   useEffect(() => {
     if (!user) return;
 
@@ -54,8 +71,27 @@ const Messages = () => {
       onlineUsers: 15 + Math.floor(Math.random() * 30)
     }));
 
+    // Load LiveMeet+ requests from localStorage
+    const loadLiveMeetRequests = () => {
+      const requests = JSON.parse(localStorage.getItem('livemeet-requests') || '[]');
+      setLiveMeetRequests(requests);
+      setStats(prev => ({ ...prev, liveMeetingRequests: requests.length }));
+    };
+
+    loadLiveMeetRequests();
+
+    // Listen for storage changes to update requests in real-time
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'livemeet-requests') {
+        loadLiveMeetRequests();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
     return () => {
       chatService.disconnect();
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, [user, chatService]);
 

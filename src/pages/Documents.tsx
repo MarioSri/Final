@@ -24,9 +24,45 @@ const Documents = () => {
 
   const handleDocumentSubmit = (data: any) => {
     console.log("Document submitted:", data);
+    
+    // Create tracking card data
+    const trackingCard = {
+      id: `DOC-${Date.now()}`,
+      title: data.title,
+      type: data.documentTypes[0]?.charAt(0).toUpperCase() + data.documentTypes[0]?.slice(1) || 'Document',
+      submittedBy: user?.fullName || 'Current User',
+      submittedDate: new Date().toISOString().split('T')[0],
+      status: 'pending',
+      priority: data.priority === 'normal' ? 'Normal Priority' : 
+               data.priority === 'medium' ? 'Medium Priority' :
+               data.priority === 'high' ? 'High Priority' : 'Urgent Priority',
+      workflow: {
+        currentStep: 'Submission',
+        progress: 25,
+        steps: [
+          { name: 'Submission', status: 'completed', assignee: user?.fullName || 'Current User', completedDate: new Date().toISOString().split('T')[0] },
+          { name: 'HOD Review', status: 'pending', assignee: 'Department Head' },
+          { name: 'Registrar Review', status: 'pending', assignee: 'Registrar' },
+          { name: 'Principal Approval', status: 'pending', assignee: 'Principal' },
+        ]
+      },
+      requiresSignature: true,
+      signedBy: [],
+      description: data.description,
+      recipients: data.recipients,
+      files: data.files.map((file: File) => file.name),
+      assignments: data.assignments,
+      comments: []
+    };
+    
+    // Save to localStorage for tracking
+    const existingCards = JSON.parse(localStorage.getItem('submitted-documents') || '[]');
+    existingCards.unshift(trackingCard);
+    localStorage.setItem('submitted-documents', JSON.stringify(existingCards));
+    
     toast({
       title: "Document Submitted",
-      description: "Your document has been submitted for review.",
+      description: "Your document has been submitted for review and is now being tracked.",
     });
   };
 

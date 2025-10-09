@@ -36,7 +36,8 @@ import {
   Search,
   ArrowRightLeft,
   FileSearch,
-  Eye
+  Eye,
+  Sparkles
 } from "lucide-react";
 import { AdvancedSignatureIcon } from "@/components/ui/signature-icon";
 import { cn } from "@/lib/utils";
@@ -113,6 +114,7 @@ export function DashboardSidebar({ userRole }: DashboardSidebarProps) {
       { title: "Calendar", url: "/calendar", icon: Calendar },
       { title: "Messages", url: "/messages", icon: MessageSquare },
       { title: "Document Management", url: "/documents", icon: FileText },
+      { title: "SmartDocs Editor", url: "/smartdocs", icon: Sparkles },
       { title: "Emergency Management", url: "/emergency", icon: AlertTriangle },
       { title: "Approval Chain with Bypass", url: "/approval-routing", icon: ArrowRightLeft },
       { title: "Analytics Dashboard", url: "/analytics", icon: BarChart3 },
@@ -125,6 +127,7 @@ export function DashboardSidebar({ userRole }: DashboardSidebarProps) {
       { title: "Calendar", url: "/calendar", icon: Calendar },
       { title: "Messages", url: "/messages", icon: MessageSquare },
       { title: "Document Management", url: "/documents", icon: FileText },
+      { title: "SmartDocs Editor", url: "/smartdocs", icon: Sparkles },
       { title: "Emergency Management", url: "/emergency", icon: AlertTriangle },
       { title: "Approval Chain with Bypass", url: "/approval-routing", icon: ArrowRightLeft },
       { title: "Analytics Dashboard", url: "/analytics", icon: BarChart3 },

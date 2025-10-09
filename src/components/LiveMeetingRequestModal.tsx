@@ -201,11 +201,30 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
 
       await liveMeetingService.createRequest(requestData);
 
-      toast({
-        title: "Request Sent!",
-        description: `Live meeting request sent successfully. ${URGENCY_CONFIGS[urgency].description} response expected.`,
-        variant: "default"
-      });
+      // Create card data for Messages page
+      const cardData = {
+        id: `livemeet-${Date.now()}`,
+        title: documentTitle,
+        type: documentType,
+        submitter: selectedParticipants.map(id => 
+          availableParticipants.find(p => p.id === id)?.name || 'Unknown'
+        ).join(', '),
+        submittedDate: new Date().toISOString().split('T')[0],
+        status: 'pending',
+        priority: urgency === 'immediate' ? 'immediate' : urgency === 'urgent' ? 'urgent' : 'normal',
+        description: agenda || 'LiveMeet+ request for document discussion',
+        meetingFormat,
+        location: meetingFormat === 'in_person' ? location : undefined,
+        startTime,
+        endTime,
+        requestedDate,
+        purpose: purposeOptions.find(p => p.toLowerCase().replace(' ', '_') === purpose) || 'Need Clarification'
+      };
+
+      // Store in localStorage for Messages page to pick up
+      const existingRequests = JSON.parse(localStorage.getItem('livemeet-requests') || '[]');
+      existingRequests.unshift(cardData);
+      localStorage.setItem('livemeet-requests', JSON.stringify(existingRequests));
 
       // Reset form and close modal
       handleClose();
