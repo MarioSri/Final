@@ -21,9 +21,9 @@ export const HITAMTreeLoading: React.FC<LoadingAnimationProps> = ({
   }, []);
 
   const sizeClasses = {
-    sm: 'w-64 h-64',
-    md: 'w-96 h-96', 
-    lg: 'w-[32rem] h-[32rem]'
+    sm: 'w-80 h-80',
+    md: 'w-[28rem] h-[28rem]', 
+    lg: 'w-[40rem] h-[40rem]'
   };
 
   // Use the exact file path for the logo
