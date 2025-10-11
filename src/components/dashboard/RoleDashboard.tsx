@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { DynamicDashboard } from './DynamicDashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { getDashboardConfig } from '@/config/roleConfigs';
 import { cn } from '@/lib/utils';
+import { PersonalInfoData } from '@/components/PersonalInformationForm';
 import {
   Crown,
   Shield,
@@ -19,6 +20,20 @@ import {
 export const RoleDashboard: React.FC = () => {
   const { user } = useAuth();
   const { isMobile } = useResponsive();
+  const [personalInfo, setPersonalInfo] = useState<PersonalInfoData | null>(null);
+
+  // Load saved personal information
+  useEffect(() => {
+    const savedProfile = localStorage.getItem('user-profile');
+    if (savedProfile) {
+      try {
+        const parsedProfile = JSON.parse(savedProfile);
+        setPersonalInfo(parsedProfile);
+      } catch (error) {
+        console.error('Error loading saved profile:', error);
+      }
+    }
+  }, []);
 
   if (!user) return null;
 
@@ -86,15 +101,25 @@ export const RoleDashboard: React.FC = () => {
                 "opacity-90 mt-1",
                 isMobile ? "text-sm" : "text-base"
               )}>
-                Logged in as <span className="font-semibold">{user.name}</span>
+                Logged in as <span className="font-semibold">{personalInfo?.name || user.name}</span>
               </p>
               <div className="flex flex-wrap gap-2 mt-3">
                 <Badge className="bg-white/20 text-white border-white/30 font-medium">
                   Role: {dashboardConfig.displayName}
                 </Badge>
-                {user.department && (
+                {(personalInfo?.department || user.department) && (
                   <Badge className="bg-white/20 text-white border-white/30">
-                    {user.department}
+                    {personalInfo?.department || user.department}
+                  </Badge>
+                )}
+                {personalInfo?.designation && (
+                  <Badge className="bg-white/20 text-white border-white/30">
+                    {personalInfo.designation}
+                  </Badge>
+                )}
+                {personalInfo?.employeeId && (
+                  <Badge className="bg-white/20 text-white border-white/30">
+                    ID: {personalInfo.employeeId}
                   </Badge>
                 )}
                 {user.branch && (

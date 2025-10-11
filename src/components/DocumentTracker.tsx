@@ -23,7 +23,8 @@ import {
   PenTool,
   Signature,
   Shield,
-  FileClock
+  FileClock,
+  Trash2
 } from "lucide-react";
 import { DigitalSignature } from "./DigitalSignature";
 import { useToast } from "@/hooks/use-toast";
@@ -80,6 +81,7 @@ const mockDocuments: Document[] = [
     },
     requiresSignature: true,
     signedBy: ['Prof. Michael Chen', 'Ms. Lisa Wang'],
+    description: 'Summary of faculty meeting outcomes, including budget allocation updates, curriculum changes, and department-level project progress discussions.',
     comments: [
       { author: 'Prof. Michael Chen', date: '2024-01-16', message: 'Minutes look comprehensive. Approved for next level.' },
       { author: 'Ms. Lisa Wang', date: '2024-01-18', message: 'Minutes are well-structured. Suggest adding attendance details for completeness.' }
@@ -105,6 +107,7 @@ const mockDocuments: Document[] = [
     },
     requiresSignature: true,
     signedBy: ['Prof. James Wilson', 'Dr. Maria Garcia', 'Dr. Robert Smith'],
+    description: 'Detailed proposal outlining the structure, objectives, and expected outcomes of the new Data Science course, including prerequisites and lab modules.',
     comments: [
       { author: 'Prof. James Wilson', date: '2024-01-15', message: 'Please attach vendor quotations for the requested equipment to justify costs.' },
       { author: 'Dr. Maria Garcia', date: '2024-01-18', message: 'Follow-up tasks should include timelines for each item discussed.' },
@@ -130,6 +133,7 @@ const mockDocuments: Document[] = [
     },
     requiresSignature: true,
     signedBy: ['Ms. Jennifer Lee'],
+    description: 'Request for allocation of funds for advanced lab equipment and IoT testing kits to support ongoing academic research and student projects.',
     comments: [
       { author: 'Ms. Jennifer Lee', date: '2024-01-14', message: 'Budget allocation exceeded. Please revise and resubmit with detailed justification.' },
       { author: 'Dr. Robert Smith', date: '2024-01-15', message: 'Consider phasing the purchase over two quarters to stay within the current budget.' }
@@ -145,6 +149,7 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
   const [showSignatureDialog, setShowSignatureDialog] = useState(false);
   const [comment, setComment] = useState('');
   const [submittedDocuments, setSubmittedDocuments] = useState<Document[]>([]);
+  const [removedDocuments, setRemovedDocuments] = useState<string[]>([]);
   const { toast } = useToast();
 
   // Load submitted documents from localStorage
@@ -207,12 +212,13 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
   const allDocuments = [...submittedDocuments, ...mockDocuments];
   
   const filteredDocuments = allDocuments.filter(doc => {
+    const notRemoved = !removedDocuments.includes(doc.id);
     const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          doc.submittedBy.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || doc.status === statusFilter;
     const matchesType = typeFilter === 'all' || doc.type === typeFilter;
     
-    return matchesSearch && matchesStatus && matchesType;
+    return notRemoved && matchesSearch && matchesStatus && matchesType;
   });
 
   const handleApprove = (docId: string) => {
@@ -240,6 +246,15 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
       description: "Digital signature has been applied to the document",
     });
     setShowSignatureDialog(false);
+  };
+
+  const handleRemove = (docId: string) => {
+    setRemovedDocuments(prev => [...prev, docId]);
+    toast({
+      title: "Document Removed",
+      description: `Document ${docId} has been removed from tracking`,
+      variant: "destructive"
+    });
   };
 
 
@@ -395,6 +410,23 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
                     </div>
                   )}
 
+                  {/* Description */}
+                  {(document as any).description && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1">
+                        <MessageSquare className="h-4 w-4" />
+                        <span className="text-sm font-medium">Description</span>
+                      </div>
+                      <div className="bg-muted p-3 rounded text-sm">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-medium">{document.submittedBy}</span>
+                          <span className="text-muted-foreground">{document.submittedDate}</span>
+                        </div>
+                        <p>{(document as any).description}</p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Comments */}
                   {document.comments && document.comments.length > 0 && (
                     <div className="space-y-2">
@@ -417,6 +449,10 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
 
                 {/* Action Buttons */}
                 <div className="flex flex-col gap-2 min-w-[150px]">
+                  <Button variant="outline" size="sm" onClick={() => handleRemove(document.id)}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Remove
+                  </Button>
                   <Button variant="outline" size="sm">
                     <Eye className="h-4 w-4 mr-2" />
                     View

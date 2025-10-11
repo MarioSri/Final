@@ -5,8 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Building2, Shield, Users, FileText } from "lucide-react";
+import { Building2, Shield, Users, FileText, ArrowLeft } from "lucide-react";
 import { HITAMTreeLoading } from "@/components/ui/loading-animation";
+import { PersonalInformationForm, PersonalInfoData } from "./PersonalInformationForm";
+import { useToast } from "@/hooks/use-toast";
 
 interface AuthenticationCardProps {
   onLogin: (role: string) => void;
@@ -17,6 +19,9 @@ export function AuthenticationCard({ onLogin }: AuthenticationCardProps) {
   const [loginMethod, setLoginMethod] = useState<"google" | "hitam">("google");
   const [isLoading, setIsLoading] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [showPersonalInfo, setShowPersonalInfo] = useState(false);
+  const [signupMethod, setSignupMethod] = useState<"google" | "hitam" | null>(null);
+  const { toast } = useToast();
 
   const carouselImages = [
     '/carousel-1.jpg',
@@ -47,10 +52,70 @@ export function AuthenticationCard({ onLogin }: AuthenticationCardProps) {
     }
   };
 
+  const handleSignup = (method: "google" | "hitam") => {
+    if (!selectedRole) return;
+    
+    setSignupMethod(method);
+    setShowPersonalInfo(true);
+    toast({
+      title: "Signup Successful",
+      description: `Please complete your personal information to continue.`,
+      variant: "default"
+    });
+  };
+
+  const handlePersonalInfoSave = (data: PersonalInfoData) => {
+    // Save to localStorage for profile and dashboard display
+    localStorage.setItem('user-profile', JSON.stringify(data));
+    
+    setIsLoading(true);
+    setTimeout(() => {
+      onLogin(selectedRole);
+    }, 1000);
+  };
+
+  const handleBackToLogin = () => {
+    setShowPersonalInfo(false);
+    setSignupMethod(null);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4">
         <HITAMTreeLoading size="lg" />
+      </div>
+    );
+  }
+
+  if (showPersonalInfo) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-2">
+        <Card className="w-full max-w-6xl shadow-elegant">
+          <CardHeader className="text-center space-y-1 py-4">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackToLogin}
+                className="p-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <div className="flex-1">
+                <CardTitle className="text-2xl font-bold">Complete Your Profile</CardTitle>
+                <CardDescription>
+                  Please fill in your personal information to continue
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-2 pb-4">
+            <PersonalInformationForm
+              onSave={handlePersonalInfoSave}
+              isStandalone={true}
+            />
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -153,7 +218,16 @@ export function AuthenticationCard({ onLogin }: AuthenticationCardProps) {
                   className="w-full"
                   disabled={!selectedRole}
                 >
-                  Sign in with Google (@hitam.org)
+                  Log in with Google (@hitam.org)
+                </Button>
+                <Button
+                  type="button"
+                  variant="gradient"
+                  className="w-full"
+                  disabled={!selectedRole}
+                  onClick={() => handleSignup("google")}
+                >
+                  Sign up with Google (@hitam.org)
                 </Button>
                 <p className="text-xs text-muted-foreground text-center">
                   Only @hitam.org email addresses are allowed
@@ -175,7 +249,16 @@ export function AuthenticationCard({ onLogin }: AuthenticationCardProps) {
                   className="w-full"
                   disabled={!selectedRole}
                 >
-                  Sign In
+                  Log in
+                </Button>
+                <Button
+                  type="button"
+                  variant="gradient"
+                  className="w-full"
+                  disabled={!selectedRole}
+                  onClick={() => handleSignup("hitam")}
+                >
+                  Sign up
                 </Button>
               </div>
             )}

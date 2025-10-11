@@ -215,8 +215,8 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
         description: agenda || 'LiveMeet+ request for document discussion',
         meetingFormat,
         location: meetingFormat === 'in_person' ? location : undefined,
-        startTime,
-        endTime,
+        startTime: startTime ? `${startTime} IST` : '',
+        endTime: endTime ? `${endTime} IST` : '',
         requestedDate,
         purpose: purposeOptions.find(p => p.toLowerCase().replace(' ', '_') === purpose) || 'Need Clarification'
       };
@@ -225,6 +225,13 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
       const existingRequests = JSON.parse(localStorage.getItem('livemeet-requests') || '[]');
       existingRequests.unshift(cardData);
       localStorage.setItem('livemeet-requests', JSON.stringify(existingRequests));
+
+      // Show success toast
+      toast({
+        title: "LiveMeet+ Request Sent",
+        description: "Your LiveMeet+ request has been sent successfully to the selected participants.",
+        variant: "default"
+      });
 
       // Reset form and close modal
       handleClose();

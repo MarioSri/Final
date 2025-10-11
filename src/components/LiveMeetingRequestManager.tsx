@@ -352,7 +352,7 @@ export const LiveMeetingRequestManager: React.FC = () => {
                             </div>
                             <div className="flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">
                               <Calendar className="h-3 w-3" />
-                              {request.submittedDate} • {request.submittedTime}
+                              {request.submittedDate} {request.submittedTime}
                             </div>
                           </div>
                         </div>
@@ -468,7 +468,10 @@ export const LiveMeetingRequestManager: React.FC = () => {
                       <div>
                         <div className="flex items-center gap-3 mb-0">
                           <h3 className="font-semibold text-lg flex items-center gap-2">
-                            <CircleAlert className="h-5 w-5 text-red-500" />
+                            <div className="relative w-4 h-4">
+                              <div className="absolute inset-0 w-4 h-4 bg-green-400 rounded-full"></div>
+                              <div className="absolute inset-1 w-2 h-2 bg-red-500 rounded-full"></div>
+                            </div>
                             Faculty Meeting Minutes – Q4 2024
                           </h3>
                           <div className="flex items-center gap-2">
@@ -567,7 +570,10 @@ export const LiveMeetingRequestManager: React.FC = () => {
                       <div>
                         <div className="flex items-center gap-3 mb-0">
                           <h3 className="font-semibold text-lg flex items-center gap-2">
-                            <CircleAlert className="h-5 w-5 text-red-500" />
+                            <div className="relative w-4 h-4">
+                              <div className="absolute inset-0 w-4 h-4 bg-green-400 rounded-full"></div>
+                              <div className="absolute inset-1 w-2 h-2 bg-red-500 rounded-full"></div>
+                            </div>
                             Budget Request – Lab Equipment
                           </h3>
                           <div className="flex items-center gap-2">

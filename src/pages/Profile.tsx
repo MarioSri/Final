@@ -30,17 +30,18 @@ import {
   Moon,
   MessageCircle
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { PersonalInformationForm, PersonalInfoData } from "@/components/PersonalInformationForm";
 
 const Profile = () => {
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const { theme, setTheme } = useTheme();
   
-  const [profileData, setProfileData] = useState({
+  const [profileData, setProfileData] = useState<PersonalInfoData>({
     name: "Dr. Rajesh Kumar",
     email: "rajesh.kumar@hitam.org",
     phone: "+91-9876543210",
@@ -50,6 +51,19 @@ const Profile = () => {
     bio: "Experienced educator and researcher with 15+ years in computer science education and administration.",
     avatar: ""
   });
+
+  // Load saved profile data from localStorage
+  useEffect(() => {
+    const savedProfile = localStorage.getItem('user-profile');
+    if (savedProfile) {
+      try {
+        const parsedProfile = JSON.parse(savedProfile);
+        setProfileData(parsedProfile);
+      } catch (error) {
+        console.error('Error loading saved profile:', error);
+      }
+    }
+  }, []);
 
   const [preferences, setPreferences] = useState({
     emailNotifications: true,
@@ -62,6 +76,7 @@ const Profile = () => {
 
   const { toast } = useToast();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleLogout = () => {
     toast({
@@ -71,7 +86,9 @@ const Profile = () => {
     navigate("/");
   };
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = (data: PersonalInfoData) => {
+    setProfileData(data);
+    localStorage.setItem('user-profile', JSON.stringify(data));
     setIsEditing(false);
     toast({
       title: "Profile Updated",
@@ -99,6 +116,22 @@ const Profile = () => {
     setTimeout(() => {
       navigate("/");
     }, 1000);
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setProfileData(prev => ({ ...prev, avatar: result }));
+        toast({
+          title: "Profile Picture Updated",
+          description: "Your profile picture has been updated successfully.",
+        });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -129,10 +162,18 @@ const Profile = () => {
                         {profileData.name.split(' ').map(n => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
                     <Button
                       size="icon"
                       variant="outline"
                       className="absolute -bottom-2 -right-2 rounded-full w-10 h-10"
+                      onClick={() => fileInputRef.current?.click()}
                     >
                       <Camera className="w-4 h-4" />
                     </Button>
@@ -160,87 +201,73 @@ const Profile = () => {
             </Card>
 
             {/* Profile Information */}
-            <Card className="shadow-elegant">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="w-5 h-5" />
-                  Personal Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input
-                      id="name"
-                      value={profileData.name}
-                      onChange={(e) => setProfileData({...profileData, name: e.target.value})}
-                      disabled={!isEditing}
-                      className="h-12 text-base"
-                    />
+            {isEditing ? (
+              <PersonalInformationForm
+                onSave={handleSaveProfile}
+                initialData={profileData}
+              />
+            ) : (
+              <Card className="shadow-elegant">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="w-5 h-5" />
+                    Personal Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label>Full Name</Label>
+                      <div className="h-12 px-3 py-2 border rounded-md bg-muted flex items-center">
+                        {profileData.name || 'Not provided'}
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Email Address</Label>
+                      <div className="h-12 px-3 py-2 border rounded-md bg-muted flex items-center">
+                        {profileData.email || 'Not provided'}
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Phone Number</Label>
+                      <div className="h-12 px-3 py-2 border rounded-md bg-muted flex items-center">
+                        {profileData.phone || 'Not provided'}
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Department</Label>
+                      <div className="h-12 px-3 py-2 border rounded-md bg-muted flex items-center">
+                        {profileData.department || 'Not provided'}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Employee ID</Label>
+                      <div className="h-12 px-3 py-2 border rounded-md bg-muted flex items-center">
+                        {profileData.employeeId || 'Not provided'}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Designation</Label>
+                      <div className="h-12 px-3 py-2 border rounded-md bg-muted flex items-center">
+                        {profileData.designation || 'Not provided'}
+                      </div>
+                    </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={profileData.email}
-                      onChange={(e) => setProfileData({...profileData, email: e.target.value})}
-                      disabled={!isEditing}
-                      className="h-12 text-base"
-                    />
+                    <Label>Bio</Label>
+                    <div className="min-h-[100px] px-3 py-2 border rounded-md bg-muted">
+                      {profileData.bio || 'No bio provided'}
+                    </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={profileData.phone}
-                      onChange={(e) => setProfileData({...profileData, phone: e.target.value})}
-                      disabled={!isEditing}
-                      className="h-12 text-base"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="department">Department</Label>
-                    <Input
-                      id="department"
-                      value={profileData.department}
-                      onChange={(e) => setProfileData({...profileData, department: e.target.value})}
-                      disabled={!isEditing}
-                      className="h-12 text-base"
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
-                  <Textarea
-                    id="bio"
-                    value={profileData.bio}
-                    onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
-                    disabled={!isEditing}
-                    rows={4}
-                    className="text-base"
-                  />
-                </div>
-                
-                {isEditing && (
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setIsEditing(false)} className="h-12 px-6">
-                      Cancel
-                    </Button>
-                    <Button onClick={handleSaveProfile} className="h-12 px-6">
-                      <Save className="w-4 h-4 mr-2" />
-                      Save Changes
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           <TabsContent value="preferences" className="space-y-6">

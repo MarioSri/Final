@@ -618,7 +618,7 @@ const Approvals = () => {
               <CardContent>
                 <div className="space-y-4">
                   {recentApprovals.map((doc) => (
-                    <Card key={doc.id} className="hover:shadow-md transition-shadow">
+                    <Card key={doc.id} className={`hover:shadow-md transition-shadow ${doc.title === 'Course Curriculum Update' ? 'border-destructive bg-red-50 animate-pulse' : ''}`}>
                       <CardContent className="p-6">
                         <div className="flex flex-col lg:flex-row gap-6">
                           <div className="flex-1 space-y-4">

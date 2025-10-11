@@ -23,6 +23,7 @@ import {
   ChatPoll
 } from '@/types/chat';
 import { cn } from '@/lib/utils';
+import { VideoCallModal } from './VideoCallModal';
 import {
   Send,
   SendHorizontal,
@@ -121,6 +122,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
   const [deleteMode, setDeleteMode] = useState(false);
   const [selectedChannelsToDelete, setSelectedChannelsToDelete] = useState<string[]>([]);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [showVideoCall, setShowVideoCall] = useState(false);
+  const [activeVideoCallId, setActiveVideoCallId] = useState<string | null>(null);
 
   // Handle click outside emoji picker
   useEffect(() => {
@@ -711,33 +714,43 @@ Generated on: ${new Date().toLocaleString()}`;
 
   const MessageComponent: React.FC<{ message: ChatMessage }> = ({ message }) => {
     const isOwnMessage = message.senderId === user?.id;
+    const isSystemMessage = message.senderId === 'system';
     const sender = users.find(u => u.id === message.senderId);
 
     return (
       <div className={cn(
         "flex gap-3 p-2 hover:bg-muted/50 group",
-        isOwnMessage && "flex-row-reverse"
+        isOwnMessage && "flex-row-reverse",
+        isSystemMessage && "justify-center"
       )}>
-        <Avatar className="w-8 h-8">
-          <AvatarImage src={sender?.avatar} />
-          <AvatarFallback>
-            {sender?.fullName?.substring(0, 2).toUpperCase() || 'U'}
-          </AvatarFallback>
-        </Avatar>
+        {!isSystemMessage && (
+          <Avatar className="w-8 h-8">
+            <AvatarImage src={sender?.avatar} />
+            <AvatarFallback>
+              {sender?.fullName?.substring(0, 2).toUpperCase() || 'U'}
+            </AvatarFallback>
+          </Avatar>
+        )}
         
-        <div className={cn("flex-1 min-w-0", isOwnMessage && "text-right")}>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-sm font-medium">
-              {isOwnMessage ? 'You' : sender?.fullName || 'Unknown'}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {formatTimestamp(message.timestamp)}
-            </span>
-            {message.editedAt && (
-              <span className="text-xs text-muted-foreground">(edited)</span>
-            )}
-            {getMessageStatusIcon(message.status)}
-          </div>
+        <div className={cn(
+          "flex-1 min-w-0", 
+          isOwnMessage && "text-right",
+          isSystemMessage && "text-center"
+        )}>
+          {!isSystemMessage && (
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm font-medium">
+                {isOwnMessage ? 'You' : sender?.fullName || 'Unknown'}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {formatTimestamp(message.timestamp)}
+              </span>
+              {message.editedAt && (
+                <span className="text-xs text-muted-foreground">(edited)</span>
+              )}
+              {getMessageStatusIcon(message.status)}
+            </div>
+          )}
           
           {message.parentMessageId && (
             <div className="text-xs text-muted-foreground mb-2 p-2 bg-muted rounded">
@@ -773,12 +786,29 @@ Generated on: ${new Date().toLocaleString()}`;
           ) : (
             <div className={cn(
               "inline-block p-3 rounded-lg",
-              message.metadata.pollId ? "max-w-full" : "max-w-[80%]",
-              isOwnMessage 
+              message.metadata?.pollId ? "max-w-full" : "max-w-[80%]",
+              isSystemMessage 
+                ? "bg-blue-50 text-blue-800 border border-blue-200 text-sm" 
+                : isOwnMessage 
                 ? "bg-gray-200 text-gray-900" 
                 : "bg-muted"
             )}>
-              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+              <p className={cn(
+                "whitespace-pre-wrap",
+                isSystemMessage ? "text-sm font-medium" : "text-sm"
+              )}>
+                {message.content}
+                {message.metadata?.callType === 'video-start' && activeVideoCallId === message.metadata?.meetingId && (
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="ml-2 h-6 text-xs"
+                    onClick={() => setShowVideoCall(true)}
+                  >
+                    Join Call
+                  </Button>
+                )}
+              </p>
                 
                 {message.attachments && message.attachments.length > 0 && (
                   <div className="mt-2 space-y-2">
@@ -882,40 +912,42 @@ Generated on: ${new Date().toLocaleString()}`;
           )}
         </div>
         
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="ghost">
-                <MoreVertical className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setReplyingTo(message)}>
-                <Reply className="w-4 h-4 mr-2" />
-                Reply
-              </DropdownMenuItem>
-              {isOwnMessage && (
-                <>
-                  <DropdownMenuItem onClick={() => setEditingMessage(message)}>
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleDeleteMessage(message.id)}
-                    className="text-destructive"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
-                  </DropdownMenuItem>
-                </>
-              )}
-              <DropdownMenuItem>
-                <ThumbsUp className="w-4 h-4 mr-2" />
-                React
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        {!isSystemMessage && (
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="ghost">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => setReplyingTo(message)}>
+                  <Reply className="w-4 h-4 mr-2" />
+                  Reply
+                </DropdownMenuItem>
+                {isOwnMessage && (
+                  <>
+                    <DropdownMenuItem onClick={() => setEditingMessage(message)}>
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleDeleteMessage(message.id)}
+                      className="text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </>
+                )}
+                <DropdownMenuItem>
+                  <ThumbsUp className="w-4 h-4 mr-2" />
+                  React
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
       </div>
     );
   };
@@ -1085,8 +1117,15 @@ Generated on: ${new Date().toLocaleString()}`;
                 <Button size="sm" variant="ghost" onClick={() => setShowSearch(!showSearch)}>
                   <Search className="w-4 h-4" />
                 </Button>
-                <Button size="sm" variant="ghost">
-                  <Video className="w-4 h-4" />
+                <Button 
+                  size="sm" 
+                  variant={activeVideoCallId ? "secondary" : "ghost"} 
+                  onClick={() => setShowVideoCall(true)}
+                  className={activeVideoCallId ? "animate-pulse" : ""}
+                  title="Start video call"
+                >
+                  <Video className={`w-4 h-4 ${activeVideoCallId ? 'text-green-600' : ''}`} />
+                  {activeVideoCallId && <span className="ml-1 text-xs">Live</span>}
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => setShowNewChannelModal(true)}>
                   <Plus className="w-4 h-4" />
@@ -1546,6 +1585,69 @@ Generated on: ${new Date().toLocaleString()}`;
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Video Call Modal */}
+      <VideoCallModal
+        isOpen={showVideoCall}
+        onClose={() => {
+          setShowVideoCall(false);
+          setActiveVideoCallId(null);
+        }}
+        channelName={activeChannel?.name || 'Unknown Channel'}
+        channelMembers={activeChannel?.members.filter(id => id !== user?.id).map(id => {
+          const member = users.find(u => u.id === id);
+          return member?.fullName || id;
+        }) || []}
+        onCallStart={(meetingId) => {
+          setActiveVideoCallId(meetingId);
+          // Add video call start message to chat
+          if (activeChannel && user) {
+            const callStartMessage: ChatMessage = {
+              id: `call-start-${Date.now()}`,
+              channelId: activeChannel.id,
+              senderId: 'system',
+              content: `🎥 Video meeting started — click to join`,
+              type: 'system',
+              timestamp: new Date(),
+              status: 'delivered',
+              reactions: [],
+              metadata: {
+                meetingId,
+                callType: 'video-start',
+                initiatedBy: user.fullName
+              }
+            };
+            setMessages(prev => [...prev, callStartMessage]);
+          }
+        }}
+        onCallEnd={(meetingId, duration) => {
+          // Add video call end message to chat
+          if (activeChannel && user) {
+            const minutes = Math.floor(duration / 60);
+            const seconds = duration % 60;
+            const endTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            const callEndMessage: ChatMessage = {
+              id: `call-end-${Date.now()}`,
+              channelId: activeChannel.id,
+              senderId: 'system',
+              content: `Video meeting ended at ${endTime} • Duration: ${minutes}m ${seconds}s`,
+              type: 'system',
+              timestamp: new Date(),
+              status: 'delivered',
+              reactions: [],
+              metadata: {
+                meetingId,
+                callType: 'video-end',
+                duration,
+                endedBy: user.fullName
+              }
+            };
+            setMessages(prev => [...prev, callEndMessage]);
+          }
+          setActiveVideoCallId(null);
+        }}
+      />
     </div>
   );
 };

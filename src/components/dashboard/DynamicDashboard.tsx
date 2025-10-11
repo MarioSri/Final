@@ -51,6 +51,12 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ className })
       const config = getDashboardConfig(user.role, user.department, user.branch);
       setDashboardConfig(config);
       
+      // FORCE RESET for principal role to ensure Quick Actions appears
+      if (user.role === 'principal') {
+        localStorage.removeItem(`dashboard-widgets-${user.role}`);
+        console.log('Principal dashboard reset - Quick Actions will appear');
+      }
+      
       // Define disallowed widgets for specific roles
       const disallowedWidgetsForRole = user.role && ['employee', 'registrar', 'program-head', 'hod', 'principal'].includes(user.role)
         ? ['analytics']
@@ -160,12 +166,24 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ className })
       }
     ];
 
-    return defaultWidgets.filter(widget => {
+    const filteredWidgets = defaultWidgets.filter(widget => {
+      // Always include Quick Actions widget regardless of permissions
+      if (widget.type === 'quickActions') return true;
+      
       if (widget.permissions.length === 0) return widget.visible;
       return widget.permissions.every(permission => 
         config.permissions[permission as keyof typeof config.permissions]
       );
     });
+    
+    // Final safeguard: Ensure Quick Actions is always first
+    const quickActionsIndex = filteredWidgets.findIndex(w => w.type === 'quickActions');
+    if (quickActionsIndex > 0) {
+      const quickActions = filteredWidgets.splice(quickActionsIndex, 1)[0];
+      filteredWidgets.unshift(quickActions);
+    }
+    
+    return filteredWidgets;
   };
 
   const renderWidget = (widget: DashboardWidget) => {
