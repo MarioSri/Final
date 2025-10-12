@@ -215,8 +215,8 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
         description: agenda || 'LiveMeet+ request for document discussion',
         meetingFormat,
         location: meetingFormat === 'in_person' ? location : undefined,
-        startTime: startTime ? `${startTime} IST` : '',
-        endTime: endTime ? `${endTime} IST` : '',
+        startTime: startTime ? convertTo12Hour(startTime) : '',
+        endTime: endTime ? convertTo12Hour(endTime) : '',
         requestedDate,
         purpose: purposeOptions.find(p => p.toLowerCase().replace(' ', '_') === purpose) || 'Need Clarification'
       };
@@ -245,6 +245,15 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
     } finally {
       setLoading(false);
     }
+  };
+
+  const convertTo12Hour = (time24: string) => {
+    if (!time24) return '';
+    const [hours, minutes] = time24.split(':');
+    const hour = parseInt(hours, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minutes} ${ampm}`;
   };
 
   const handleClose = () => {

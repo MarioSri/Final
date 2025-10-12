@@ -69,9 +69,10 @@ import {
 
 interface ChatInterfaceProps {
   className?: string;
+  channelMessageCounts?: { [key: string]: number };
 }
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className, channelMessageCounts = {} }) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -198,14 +199,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
       setConnectionStatus('disconnected');
     });
 
-    chatService.on('offline-mode', () => {
-      setConnectionStatus('offline');
-      toast({
-        title: 'Offline Mode',
-        description: 'Chat is now in offline mode. Messages will sync when connection is restored.',
-        variant: 'default'
-      });
-    });
+
 
     chatService.on('message-received', (message: ChatMessage) => {
       if (!activeChannel || message.channelId === activeChannel.id) {
@@ -470,12 +464,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className }) => {
         setMediaRecorder(recorder);
         recorder.start();
         setIsRecording(true);
-        
-        toast({
-          title: 'Recording started',
-          description: 'Click the mic again to stop recording',
-          variant: 'default'
-        });
       } catch (error) {
         toast({
           title: 'Recording failed',
@@ -795,19 +783,17 @@ Generated on: ${new Date().toLocaleString()}`;
             )}>
               <p className={cn(
                 "whitespace-pre-wrap",
-                isSystemMessage ? "text-sm font-medium" : "text-sm"
-              )}>
+                isSystemMessage ? "text-sm font-medium" : "text-sm",
+                message.metadata?.callType === 'video-start' && "cursor-pointer hover:text-blue-600"
+              )}
+              onClick={() => {
+                if (message.metadata?.callType === 'video-start') {
+                  setActiveVideoCallId(message.metadata.meetingId);
+                  setShowVideoCall(true);
+                }
+              }}
+              >
                 {message.content}
-                {message.metadata?.callType === 'video-start' && activeVideoCallId === message.metadata?.meetingId && (
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="ml-2 h-6 text-xs"
-                    onClick={() => setShowVideoCall(true)}
-                  >
-                    Join Call
-                  </Button>
-                )}
               </p>
                 
                 {message.attachments && message.attachments.length > 0 && (
@@ -1006,6 +992,45 @@ Generated on: ${new Date().toLocaleString()}`;
       
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
+          {/* Add default channels with message counts if none exist */}
+          {channels.length === 0 && [
+            { id: 'admin-council', name: 'Administrative Council', isPrivate: false, members: ['user-1'], createdAt: new Date(), createdBy: 'user-1' },
+            { id: 'faculty-board', name: 'Faculty Board', isPrivate: false, members: ['user-1'], createdAt: new Date(), createdBy: 'user-1' },
+            { id: 'general', name: 'General', isPrivate: false, members: ['user-1'], createdAt: new Date(), createdBy: 'user-1' }
+          ].map(channel => (
+            <div key={channel.id} className="flex items-center gap-2">
+              {deleteMode && (
+                <input
+                  type="checkbox"
+                  checked={selectedChannelsToDelete.includes(channel.id)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedChannelsToDelete(prev => [...prev, channel.id]);
+                    } else {
+                      setSelectedChannelsToDelete(prev => prev.filter(id => id !== channel.id));
+                    }
+                  }}
+                  className="w-4 h-4 rounded"
+                />
+              )}
+              <Button
+                variant={activeChannel?.id === channel.id ? "secondary" : "ghost"}
+                className="flex-1 justify-start"
+                onClick={() => !deleteMode && setActiveChannel(channel)}
+                disabled={deleteMode}
+              >
+                <div className="flex items-center gap-2">
+                  {channel.isPrivate ? <Lock className="w-4 h-4" /> : <Hash className="w-4 h-4" />}
+                  <span className="truncate">{channel.name}</span>
+                  {channelMessageCounts[channel.name] && (
+                    <Badge variant="destructive" className="ml-auto px-1 py-0 text-xs">
+                      {channelMessageCounts[channel.name]}
+                    </Badge>
+                  )}
+                </div>
+              </Button>
+            </div>
+          ))}
           {channels.map(channel => (
             <div key={channel.id} className="flex items-center gap-2">
               {deleteMode && (
@@ -1031,9 +1056,10 @@ Generated on: ${new Date().toLocaleString()}`;
                 <div className="flex items-center gap-2">
                   {channel.isPrivate ? <Lock className="w-4 h-4" /> : <Hash className="w-4 h-4" />}
                   <span className="truncate">{channel.name}</span>
-                  {notifications.filter(n => n.channelId === channel.id && !n.read).length > 0 && (
-                    <Badge variant="destructive" className="ml-auto">
-                      {notifications.filter(n => n.channelId === channel.id && !n.read).length}
+                  {/* Show real-time message count for each channel */}
+                  {channelMessageCounts[channel.name] && (
+                    <Badge variant="destructive" className="ml-auto px-1 py-0 text-xs">
+                      {channelMessageCounts[channel.name]}
                     </Badge>
                   )}
                 </div>
@@ -1122,7 +1148,6 @@ Generated on: ${new Date().toLocaleString()}`;
                   variant={activeVideoCallId ? "secondary" : "ghost"} 
                   onClick={() => setShowVideoCall(true)}
                   className={activeVideoCallId ? "animate-pulse" : ""}
-                  title="Start video call"
                 >
                   <Video className={`w-4 h-4 ${activeVideoCallId ? 'text-green-600' : ''}`} />
                   {activeVideoCallId && <span className="ml-1 text-xs">Live</span>}
@@ -1606,7 +1631,7 @@ Generated on: ${new Date().toLocaleString()}`;
               id: `call-start-${Date.now()}`,
               channelId: activeChannel.id,
               senderId: 'system',
-              content: `🎥 Video meeting started — click to join`,
+              content: `Video Call Started — Click To Join`,
               type: 'system',
               timestamp: new Date(),
               status: 'delivered',
@@ -1631,7 +1656,7 @@ Generated on: ${new Date().toLocaleString()}`;
               id: `call-end-${Date.now()}`,
               channelId: activeChannel.id,
               senderId: 'system',
-              content: `Video meeting ended at ${endTime} • Duration: ${minutes}m ${seconds}s`,
+              content: `Video Call Ended At ${endTime} • Duration: ${minutes}m ${seconds}s`,
               type: 'system',
               timestamp: new Date(),
               status: 'delivered',

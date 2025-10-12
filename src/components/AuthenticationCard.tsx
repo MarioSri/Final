@@ -220,15 +220,6 @@ export function AuthenticationCard({ onLogin }: AuthenticationCardProps) {
                 >
                   Log in with Google (@hitam.org)
                 </Button>
-                <Button
-                  type="button"
-                  variant="gradient"
-                  className="w-full"
-                  disabled={!selectedRole}
-                  onClick={() => handleSignup("google")}
-                >
-                  Sign up with Google (@hitam.org)
-                </Button>
                 <p className="text-xs text-muted-foreground text-center">
                   Only @hitam.org email addresses are allowed
                 </p>
@@ -250,15 +241,6 @@ export function AuthenticationCard({ onLogin }: AuthenticationCardProps) {
                   disabled={!selectedRole}
                 >
                   Log in
-                </Button>
-                <Button
-                  type="button"
-                  variant="gradient"
-                  className="w-full"
-                  disabled={!selectedRole}
-                  onClick={() => handleSignup("hitam")}
-                >
-                  Sign up
                 </Button>
               </div>
             )}

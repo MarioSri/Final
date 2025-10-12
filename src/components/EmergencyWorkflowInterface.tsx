@@ -904,6 +904,114 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
               )}
             </div>
 
+            {/* Smart Recipient Delivery Option */}
+            {selectedRecipients.length > 1 && (
+              <div className="space-y-3 p-4 border rounded-lg bg-blue-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={useSmartDelivery}
+                      onCheckedChange={setUseSmartDelivery}
+                    />
+                    <Label className="text-base font-medium cursor-pointer" onClick={() => setUseSmartDelivery(!useSmartDelivery)}>
+                      Use Smart Recipient Delivery Option
+                    </Label>
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    {selectedRecipients.length} Recipients Selected
+                  </Badge>
+                </div>
+                
+                {useSmartDelivery && (
+                  <>
+                    <div className="text-sm text-blue-700 bg-blue-100 p-3 rounded-md">
+                      <p className="font-medium mb-1">Purpose:</p>
+                      <p className="mb-2">This feature allows users to control how emergency documents are distributed to multiple recipients efficiently and instantly. It ensures that documents are sent simultaneously to selected users without any delay or sequential sending.</p>
+                      <p className="font-medium mb-1">User Benefit:</p>
+                      <p>This feature helps users save time, ensures faster emergency communication, and allows targeted delivery of urgent documents to the right people when every second matters.</p>
+                    </div>
+                    <div className="space-y-3 mt-3">
+                  <div className="flex items-start space-x-2">
+                    <input
+                      type="radio"
+                      id="send-all"
+                      name="recipient-option"
+                      checked={!showRecipientSelection}
+                      onChange={() => {
+                        setShowRecipientSelection(false);
+                        setFinalSelectedRecipients(selectedRecipients);
+                      }}
+                      className="w-4 h-4 text-blue-600 mt-1"
+                    />
+                    <div className="flex-1">
+                      <Label htmlFor="send-all" className="text-sm cursor-pointer font-medium">
+                        Batch Send to All Recipients ({selectedRecipients.length})
+                      </Label>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Instantly sends documents to all {selectedRecipients.length} selected recipients simultaneously. Fast and efficient for urgent emergencies.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-2">
+                    <input
+                      type="radio"
+                      id="send-subset"
+                      name="recipient-option"
+                      checked={showRecipientSelection}
+                      onChange={() => {
+                        setShowRecipientSelection(true);
+                        setFinalSelectedRecipients([]);
+                      }}
+                      className="w-4 h-4 text-blue-600 mt-1"
+                    />
+                    <div className="flex-1">
+                      <Label htmlFor="send-subset" className="text-sm cursor-pointer font-medium">
+                        Selective Batch Send (Custom Recipients)
+                      </Label>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Choose specific recipients from your selection. Documents will be sent simultaneously to only your chosen subset.
+                      </p>
+                    </div>
+                  </div>
+                    </div>
+                    
+                    {/* Subset Selection Interface */}
+                    {showRecipientSelection && (
+                      <div className="space-y-3 p-3 border rounded bg-white">
+                        <Label className="text-sm font-medium">Choose Recipients for Batch Document Delivery:</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {selectedRecipients.map((recipientId) => (
+                            <div key={recipientId} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50">
+                              <Checkbox
+                                id={`final-${recipientId}`}
+                                checked={finalSelectedRecipients.includes(recipientId)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setFinalSelectedRecipients(prev => [...prev, recipientId]);
+                                  } else {
+                                    setFinalSelectedRecipients(prev => prev.filter(id => id !== recipientId));
+                                  }
+                                }}
+                              />
+                              <Label htmlFor={`final-${recipientId}`} className="text-sm cursor-pointer">
+                                {recipientId.replace('-', ' ').toUpperCase()}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                        {finalSelectedRecipients.length > 0 && (
+                          <div className="text-sm text-blue-600 bg-blue-100 p-2 rounded flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4" />
+                            Ready to batch send documents to {finalSelectedRecipients.length} selected recipient(s) simultaneously
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
             {/* Expanded Recipient Selection */}
             <div className="space-y-4">
               <Label>Emergency Management Recipients</Label>
@@ -912,114 +1020,6 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
                 selectedRecipients={selectedRecipients}
                 onRecipientsChange={setSelectedRecipients}
               />
-              
-              {/* Smart Recipient Delivery Option */}
-              {selectedRecipients.length > 1 && (
-                <div className="space-y-3 p-4 border rounded-lg bg-blue-50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Switch
-                        checked={useSmartDelivery}
-                        onCheckedChange={setUseSmartDelivery}
-                      />
-                      <Label className="text-base font-medium cursor-pointer" onClick={() => setUseSmartDelivery(!useSmartDelivery)}>
-                        Use Smart Recipient Delivery Option
-                      </Label>
-                    </div>
-                    <Badge variant="outline" className="text-xs">
-                      {selectedRecipients.length} Recipients Selected
-                    </Badge>
-                  </div>
-                  
-                  {useSmartDelivery && (
-                    <>
-                      <div className="text-sm text-blue-700 bg-blue-100 p-3 rounded-md">
-                        <p className="font-medium mb-1">Purpose:</p>
-                        <p className="mb-2">This feature allows users to control how emergency documents are distributed to multiple recipients efficiently and instantly. It ensures that documents are sent simultaneously to selected users without any delay or sequential sending.</p>
-                        <p className="font-medium mb-1">User Benefit:</p>
-                        <p>This feature helps users save time, ensures faster emergency communication, and allows targeted delivery of urgent documents to the right people when every second matters.</p>
-                      </div>
-                      <div className="space-y-3 mt-3">
-                    <div className="flex items-start space-x-2">
-                      <input
-                        type="radio"
-                        id="send-all"
-                        name="recipient-option"
-                        checked={!showRecipientSelection}
-                        onChange={() => {
-                          setShowRecipientSelection(false);
-                          setFinalSelectedRecipients(selectedRecipients);
-                        }}
-                        className="w-4 h-4 text-blue-600 mt-1"
-                      />
-                      <div className="flex-1">
-                        <Label htmlFor="send-all" className="text-sm cursor-pointer font-medium">
-                          Batch Send to All Recipients ({selectedRecipients.length})
-                        </Label>
-                        <p className="text-xs text-gray-600 mt-1">
-                          Instantly sends documents to all {selectedRecipients.length} selected recipients simultaneously. Fast and efficient for urgent emergencies.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start space-x-2">
-                      <input
-                        type="radio"
-                        id="send-subset"
-                        name="recipient-option"
-                        checked={showRecipientSelection}
-                        onChange={() => {
-                          setShowRecipientSelection(true);
-                          setFinalSelectedRecipients([]);
-                        }}
-                        className="w-4 h-4 text-blue-600 mt-1"
-                      />
-                      <div className="flex-1">
-                        <Label htmlFor="send-subset" className="text-sm cursor-pointer font-medium">
-                          Selective Batch Send (Custom Recipients)
-                        </Label>
-                        <p className="text-xs text-gray-600 mt-1">
-                          Choose specific recipients from your selection. Documents will be sent simultaneously to only your chosen subset.
-                        </p>
-                      </div>
-                    </div>
-                      </div>
-                      
-                      {/* Subset Selection Interface */}
-                      {showRecipientSelection && (
-                        <div className="space-y-3 p-3 border rounded bg-white">
-                          <Label className="text-sm font-medium">Choose Recipients for Batch Document Delivery:</Label>
-                          <div className="grid grid-cols-2 gap-2">
-                            {selectedRecipients.map((recipientId) => (
-                              <div key={recipientId} className="flex items-center space-x-2 p-2 border rounded hover:bg-gray-50">
-                                <Checkbox
-                                  id={`final-${recipientId}`}
-                                  checked={finalSelectedRecipients.includes(recipientId)}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      setFinalSelectedRecipients(prev => [...prev, recipientId]);
-                                    } else {
-                                      setFinalSelectedRecipients(prev => prev.filter(id => id !== recipientId));
-                                    }
-                                  }}
-                                />
-                                <Label htmlFor={`final-${recipientId}`} className="text-sm cursor-pointer">
-                                  {recipientId.replace('-', ' ').toUpperCase()}
-                                </Label>
-                              </div>
-                            ))}
-                          </div>
-                          {finalSelectedRecipients.length > 0 && (
-                            <div className="text-sm text-blue-600 bg-blue-100 p-2 rounded flex items-center gap-2">
-                              <CheckCircle2 className="w-4 h-4" />
-                              Ready to batch send documents to {finalSelectedRecipients.length} selected recipient(s) simultaneously
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
             </div>
 
             <div className="space-y-2">

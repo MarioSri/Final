@@ -45,15 +45,22 @@ const Messages = () => {
     import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
   ));
 
-  // Communication stats
+  // Communication stats with real-time message counts
   const [stats, setStats] = useState({
-    unreadMessages: 8,
+    unreadMessages: 26, // Total from all channels
     pendingSignatures: 2,
     activePolls: 1,
     onlineUsers: 23,
     totalChannels: 5,
     notifications: 4,
-    liveMeetingRequests: 3 // NEW: Live meeting requests
+    liveMeetingRequests: 3
+  });
+
+  // Channel message counts
+  const [channelMessageCounts, setChannelMessageCounts] = useState({
+    'Administrative Council': 9,
+    'Faculty Board': 5,
+    'General': 12
   });
 
   // LiveMeet+ requests state
@@ -62,14 +69,25 @@ const Messages = () => {
   useEffect(() => {
     if (!user) return;
 
-    // Load initial stats (in real implementation, this would come from the API)
-    setStats(prevStats => ({
-      ...prevStats,
-      unreadMessages: Math.floor(Math.random() * 20),
-      pendingSignatures: Math.floor(Math.random() * 5),
-      activePolls: Math.floor(Math.random() * 3),
-      onlineUsers: 15 + Math.floor(Math.random() * 30)
-    }));
+    // Simulate real-time message updates
+    const messageInterval = setInterval(() => {
+      setChannelMessageCounts(prev => {
+        const channels = Object.keys(prev);
+        const randomChannel = channels[Math.floor(Math.random() * channels.length)];
+        const newCounts = { ...prev };
+        newCounts[randomChannel] = prev[randomChannel] + 1;
+        
+        // Update total unread messages
+        const totalMessages = Object.values(newCounts).reduce((sum, count) => sum + count, 0);
+        setStats(prevStats => ({ ...prevStats, unreadMessages: totalMessages }));
+        
+        return newCounts;
+      });
+    }, 5000); // Update every 5 seconds
+
+    return () => {
+      clearInterval(messageInterval);
+    };
 
     // Load LiveMeet+ requests from localStorage
     const loadLiveMeetRequests = () => {
@@ -243,7 +261,7 @@ const Messages = () => {
               </CardHeader>
               <CardContent className="p-0">
                 <div className="h-[600px]">
-                  <ChatInterface />
+                  <ChatInterface channelMessageCounts={channelMessageCounts} />
                 </div>
               </CardContent>
             </Card>

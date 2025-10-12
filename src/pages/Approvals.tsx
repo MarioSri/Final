@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle2, XCircle, Clock, FileText, User, Calendar, MessageSquare, Video, Eye, ChevronRight, CircleAlert, Undo2, SquarePen } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, FileText, User, Calendar, MessageSquare, Video, Eye, ChevronRight, CircleAlert, Undo2, SquarePen, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -105,7 +105,7 @@ const Approvals = () => {
     {
       id: 8,
       title: "Course Curriculum Update",
-      type: "Proposal",
+      type: "Circular",
       submitter: "Dr. Emily Chen",
       submittedDate: "2024-01-08",
       status: "approved",
@@ -473,15 +473,19 @@ const Approvals = () => {
                             <div>
                               <h3 className="font-semibold text-lg flex items-center gap-2">
                                 Student Event Proposal – Tech Fest 2024
+                                <Badge variant="destructive" className="text-xs">
+                                  <AlertTriangle className="w-3 h-3 mr-1" />
+                                  EMERGENCY
+                                </Badge>
                               </h3>
                               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                                 <div className="flex items-center gap-1">
                                   <FileText className="h-4 w-4" />
-                                  Proposal
+                                  Circular
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <User className="h-4 w-4" />
-                                  Student Council
+                                  Dr. Emily Davis
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <Calendar className="h-4 w-4" />
@@ -492,7 +496,7 @@ const Approvals = () => {
                             <div className="flex items-center gap-2">
                               <Clock className="h-4 w-4 text-yellow-600" />
                               <Badge variant="warning">Pending</Badge>
-                              <Badge variant="outline" className="text-blue-600">Normal Priority</Badge>
+                              <Badge variant="outline" className="text-yellow-600">Medium Priority</Badge>
                             </div>
                           </div>
                           
@@ -624,7 +628,15 @@ const Approvals = () => {
                           <div className="flex-1 space-y-4">
                             <div className="flex items-start justify-between">
                               <div>
-                                <h3 className="font-semibold text-lg">{doc.title}</h3>
+                                <h3 className="font-semibold text-lg flex items-center gap-2">
+                                  {doc.title}
+                                  {doc.title === 'Course Curriculum Update' && (
+                                    <Badge variant="destructive" className="text-xs">
+                                      <AlertTriangle className="w-3 h-3 mr-1" />
+                                      EMERGENCY
+                                    </Badge>
+                                  )}
+                                </h3>
                                 <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                                   <div className="flex items-center gap-1">
                                     <FileText className="h-4 w-4" />
@@ -655,9 +667,11 @@ const Approvals = () => {
                                 <Badge variant="outline" className={
                                   doc.priority === "high" ? "text-orange-600 font-semibold" : 
                                   doc.priority === "medium" ? "text-yellow-600" : 
+                                  doc.title === 'Course Curriculum Update' ? "text-yellow-600" :
                                   "text-blue-600"
                                 }>
-                                  {doc.priority.charAt(0).toUpperCase() + doc.priority.slice(1)} Priority
+                                  {doc.title === 'Course Curriculum Update' ? 'Medium Priority' : 
+                                   doc.priority.charAt(0).toUpperCase() + doc.priority.slice(1) + ' Priority'}
                                 </Badge>
                               </div>
                             </div>

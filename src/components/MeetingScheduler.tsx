@@ -246,8 +246,8 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
             { id: "2", name: "Prof. Registrar", email: "registrar@iaoms.edu", role: "Registrar", status: "accepted", isRequired: true, canEdit: false },
             { id: "3", name: "Dr. HOD-CSE", email: "hod.cse@iaoms.edu", role: "HOD", department: "Computer Science", status: "no-response" as const, isRequired: true, canEdit: true }
           ],
-          location: "Conference Room A",
-          type: "hybrid",
+          location: "google-meet",
+          type: "online",
           status: "confirmed",
           documents: ["recruitment-policy-2024.pdf", "application-summary.xlsx"],
           createdBy: user?.id || "user-1",
@@ -256,7 +256,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
           priority: "high",
           category: "recruitment",
           isRecurring: false,
-          tags: ["Category – Academic"],
+          tags: [],
           department: "Computer Science",
           meetingLinks: {
             googleMeet: {
@@ -337,7 +337,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
             endDate: new Date("2024-12-31"),
             exceptions: []
           },
-          tags: ["Category – Financial"],
+          tags: [],
           department: "Administration",
           meetingLinks: {
             zoom: {
@@ -605,18 +605,31 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
   };
 
   const handleJoinMeeting = (meeting: Meeting) => {
-    if (!meeting.meetingLinks) return;
+    if (!meeting.meetingLinks) {
+      toast({
+        title: "No Meeting Link",
+        description: "Meeting link not available",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const platform = meeting.meetingLinks.primary;
     const link = meeting.meetingLinks[platform];
     
-    if (link && 'joinUrl' in link) {
+    if (link && 'joinUrl' in link && link.joinUrl) {
       window.open(link.joinUrl, '_blank');
       
       toast({
         title: "Joining Meeting",
         description: `Opening ${platform} meeting...`,
         variant: "default"
+      });
+    } else {
+      toast({
+        title: "Invalid Meeting Link",
+        description: "Meeting link is not valid or available",
+        variant: "destructive"
       });
     }
   };
@@ -1013,6 +1026,22 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                           <p className="text-sm text-muted-foreground line-clamp-2">{meeting.description}</p>
                           
                           {/* Comments */}
+                          {meeting.description && (
+                            <div className="mt-3">
+                              <div className="flex items-center gap-1 mb-2">
+                                <MessageSquare className="h-4 w-4" />
+                                <span className="text-sm font-medium">Description & Agenda</span>
+                              </div>
+                              <div className="bg-muted p-3 rounded text-sm">
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="font-medium">{meeting.attendees[0]?.name || "System"}</span>
+                                </div>
+                                <p>{meeting.description}</p>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Legacy Comments for specific meetings */}
                           {(meeting.title === "Faculty Recruitment Board Meeting" || meeting.title === "Budget Review - Q1 2024") && (
                             <div className="mt-3">
                               <div className="flex items-center gap-1 mb-2">
@@ -1029,6 +1058,15 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                                     : "Quarterly budget analysis and financial planning for upcoming semester."}
                                 </p>
                               </div>
+                            </div>
+                          )}
+                          
+                          {/* Category */}
+                          {meeting.category && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              <Badge variant="secondary" className="text-xs">
+                                Category – {meeting.category.charAt(0).toUpperCase() + meeting.category.slice(1)}
+                              </Badge>
                             </div>
                           )}
                           
@@ -1057,7 +1095,6 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuItem onClick={() => handleEditMeeting(meeting)}>
                                 <Edit className="w-4 h-4 mr-2" />
                                 Edit Meeting
@@ -1068,7 +1105,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem className="text-red-600" onClick={() => handleCancelMeeting(meeting)}>
-                                <Trash2 className="w-4 h-4 mr-2" />
+                                <XCircle className="w-4 h-4 mr-2" />
                                 Cancel Meeting
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -1261,7 +1298,6 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="online">Online</SelectItem>
-                        <SelectItem value="hybrid">Hybrid</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1282,21 +1318,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                 </div>
                 
                 <div className="space-y-4">
-                  {newMeeting.type === 'hybrid' && (
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
-                        Meeting Location
-                      </Label>
-                      <Input
-                        placeholder="Enter physical meeting location"
-                        value={newMeeting.location}
-                        onChange={(e) => setNewMeeting({...newMeeting, location: e.target.value})}
-                      />
-                    </div>
-                  )}
-                  
-                  {(newMeeting.type === 'online' || newMeeting.type === 'hybrid') && (
+                  {newMeeting.type === 'online' && (
                     <div className="space-y-2">
                       <Label>Meeting Platform</Label>
                       <Select value={newMeeting.location} onValueChange={(value) => setNewMeeting({...newMeeting, location: value})}>
