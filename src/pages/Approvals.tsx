@@ -17,6 +17,7 @@ const Approvals = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [showLiveMeetingModal, setShowLiveMeetingModal] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState({ id: '', type: 'letter', title: '' });
   const [comments, setComments] = useState<{[key: string]: string[]}>({});
   const [commentInputs, setCommentInputs] = useState<{[key: string]: string}>({});
 
@@ -301,7 +302,10 @@ const Approvals = () => {
                             size="sm" 
                             variant="outline" 
                             className="border-orange-500 text-orange-600 hover:bg-orange-50"
-                            onClick={() => setShowLiveMeetingModal(true)}
+                            onClick={() => {
+                              setSelectedDocument({ id: 'faculty-meeting', type: 'circular', title: 'Faculty Meeting Minutes – Q4 2024' });
+                              setShowLiveMeetingModal(true);
+                            }}
                           >
                             <div className="flex items-center gap-2">
                               <div className="relative w-4 h-4">
@@ -441,7 +445,10 @@ const Approvals = () => {
                             size="sm" 
                             variant="outline" 
                             className="border-orange-500 text-orange-600 hover:bg-orange-50"
-                            onClick={() => setShowLiveMeetingModal(true)}
+                            onClick={() => {
+                              setSelectedDocument({ id: 'budget-request', type: 'letter', title: 'Budget Request – Lab Equipment' });
+                              setShowLiveMeetingModal(true);
+                            }}
                           >
                             <div className="flex items-center gap-2">
                               <div className="relative w-4 h-4">
@@ -581,7 +588,10 @@ const Approvals = () => {
                             size="sm" 
                             variant="outline" 
                             className="border-orange-500 text-orange-600 hover:bg-orange-50"
-                            onClick={() => setShowLiveMeetingModal(true)}
+                            onClick={() => {
+                              setSelectedDocument({ id: 'student-event', type: 'circular', title: 'Student Event Proposal – Tech Fest 2024' });
+                              setShowLiveMeetingModal(true);
+                            }}
                           >
                             <div className="flex items-center gap-2">
                               <div className="relative w-4 h-4">
@@ -746,9 +756,9 @@ const Approvals = () => {
         <LiveMeetingRequestModal
           isOpen={showLiveMeetingModal}
           onClose={() => setShowLiveMeetingModal(false)}
-          documentId="approval-request"
-          documentType="letter"
-          documentTitle="Approval Request"
+          documentId={selectedDocument.id}
+          documentType={selectedDocument.type as 'letter' | 'circular' | 'report'}
+          documentTitle={selectedDocument.title}
         />
       </div>
     </DashboardLayout>

@@ -326,7 +326,23 @@ export const LiveMeetingRequestManager: React.FC = () => {
         {/* All LiveMeet+ Request Cards - Properly positioned below search bar */}
         <div className="space-y-4">
           {/* Dynamic LiveMeet+ Request Cards from localStorage */}
-          {JSON.parse(localStorage.getItem('livemeet-requests') || '[]').map((request: any) => (
+          {JSON.parse(localStorage.getItem('livemeet-requests') || '[]').map((request: any) => {
+            // Get source document data from Approval Center
+            const sourceDocuments = {
+              'Faculty Meeting Minutes – Q4 2024': { type: 'Circular', date: '2024-01-15' },
+              'Budget Request – Lab Equipment': { type: 'Letter', date: '2024-01-13' },
+              'Student Event Proposal – Tech Fest 2024': { type: 'Circular', date: '2024-01-14' },
+              'Research Grant Application': { type: 'Report', date: '2024-01-10' },
+              'Event Permission Request': { type: 'Letter', date: '2024-01-09' },
+              'Course Curriculum Update': { type: 'Circular', date: '2024-01-08' },
+              'Infrastructure Upgrade Request': { type: 'Proposal', date: '2024-01-16' }
+            };
+            
+            const sourceDoc = sourceDocuments[request.title as keyof typeof sourceDocuments];
+            const displayType = sourceDoc?.type || request.type.charAt(0).toUpperCase() + request.type.slice(1);
+            const displayDate = sourceDoc?.date || request.submittedDate;
+            
+            return (
             <Card key={request.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex flex-col lg:flex-row gap-6">
@@ -343,16 +359,16 @@ export const LiveMeetingRequestManager: React.FC = () => {
                           </h3>
                           <div className="flex items-center gap-2">
                             <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
-                              request.type === 'circular' ? 'bg-blue-100 text-blue-800' :
-                              request.type === 'letter' ? 'bg-green-100 text-green-800' :
+                              displayType === 'Circular' ? 'bg-blue-100 text-blue-800' :
+                              displayType === 'Letter' ? 'bg-green-100 text-green-800' :
                               'bg-purple-100 text-purple-800'
                             }`}>
                               <FileText className="h-3 w-3" />
-                              {request.type.charAt(0).toUpperCase() + request.type.slice(1)}
+                              {displayType}
                             </div>
                             <div className="flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">
                               <Calendar className="h-3 w-3" />
-                              {request.submittedDate} {request.submittedTime}
+                              {displayDate}
                             </div>
                           </div>
                         </div>
@@ -437,7 +453,8 @@ export const LiveMeetingRequestManager: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
           
           {/* Original Dynamic Live Meeting Request Cards */}
           {filteredRequests.map(request => (

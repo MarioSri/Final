@@ -201,15 +201,28 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
 
       await liveMeetingService.createRequest(requestData);
 
+      // Get source document information for proper display
+      const sourceDocuments = {
+        'Faculty Meeting Minutes – Q4 2024': { type: 'Circular', date: '2024-01-15' },
+        'Budget Request – Lab Equipment': { type: 'Letter', date: '2024-01-13' },
+        'Student Event Proposal – Tech Fest 2024': { type: 'Circular', date: '2024-01-14' },
+        'Research Grant Application': { type: 'Report', date: '2024-01-10' },
+        'Event Permission Request': { type: 'Letter', date: '2024-01-09' },
+        'Course Curriculum Update': { type: 'Circular', date: '2024-01-08' },
+        'Infrastructure Upgrade Request': { type: 'Proposal', date: '2024-01-16' }
+      };
+      
+      const sourceDoc = sourceDocuments[documentTitle as keyof typeof sourceDocuments];
+      
       // Create card data for Messages page
       const cardData = {
         id: `livemeet-${Date.now()}`,
         title: documentTitle,
-        type: documentType,
+        type: sourceDoc?.type.toLowerCase() || documentType,
         submitter: selectedParticipants.map(id => 
           availableParticipants.find(p => p.id === id)?.name || 'Unknown'
         ).join(', '),
-        submittedDate: new Date().toISOString().split('T')[0],
+        submittedDate: sourceDoc?.date || new Date().toISOString().split('T')[0],
         status: 'pending',
         priority: urgency === 'immediate' ? 'immediate' : urgency === 'urgent' ? 'urgent' : 'normal',
         description: agenda || 'LiveMeet+ request for document discussion',
