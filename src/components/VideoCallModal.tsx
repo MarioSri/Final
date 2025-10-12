@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Video, VideoOff, Mic, MicOff, PhoneOff, Users, Monitor, MonitorOff } from 'lucide-react';
+import { Video, VideoOff, Mic, MicOff, PhoneOff, Users, Monitor, MonitorOff, Maximize, Minimize } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -31,6 +31,7 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [meetingId, setMeetingId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [callStartTime, setCallStartTime] = useState<Date | null>(null);
@@ -48,9 +49,9 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({
 
   useEffect(() => {
     if (channelMembers.length > 0) {
-      setParticipants([user?.fullName || 'You', ...channelMembers]);
+      setParticipants([user?.name || 'You', ...channelMembers]);
     } else {
-      setParticipants([user?.fullName || 'You']);
+      setParticipants([user?.name || 'You']);
     }
   }, [channelMembers, user]);
 
@@ -99,12 +100,6 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({
       
       setCallStartTime(new Date());
       onCallStart?.(meetingData.meetingId);
-      
-      toast({
-        title: '🎥 Google Meet session created',
-        description: `Meeting ID: ${meetingData.meetingId}`,
-        variant: 'default'
-      });
       
     } catch (err) {
       console.error('Meeting creation error:', err);
@@ -241,17 +236,17 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={endCall}>
-      <DialogContent className="max-w-4xl h-[600px] p-0 rounded-lg">
-        <DialogHeader className="p-4 pb-0">
+      <DialogContent className="max-w-5xl max-h-[90vh] p-0 rounded-lg flex flex-col">
+        <DialogHeader className="p-4 pb-2 border-b">
           <DialogTitle className="flex items-center gap-2">
             <Video className="w-5 h-5" />
             Video Call - {channelName}
           </DialogTitle>
         </DialogHeader>
         
-        <div className="flex-1 p-4">
+        <div className="flex-1 p-4 min-h-0">
           {isLoading ? (
-            <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
+            <div className="w-full h-full min-h-[400px] bg-gray-100 rounded-lg flex items-center justify-center">
               <div className="text-center">
                 <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                 <p className="text-gray-600">Starting video call...</p>
@@ -266,7 +261,7 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({
               </div>
             </div>
           ) : (
-            <div className="w-full h-full bg-black rounded-lg relative overflow-hidden">
+            <div className="w-full h-[500px] bg-black rounded-lg relative overflow-hidden">
               {stream ? (
                 <>
                   <video
@@ -295,24 +290,9 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({
                 </div>
               </div>
               
-              {meetingId && (
-                <div className="absolute bottom-4 left-4 bg-black/70 text-white px-3 py-2 rounded-lg">
-                  <div className="text-sm">
-                    <div>Meeting ID: {meetingId.split('-').pop()}</div>
-                    {isGoogleMeetReady && (
-                      <div className="text-green-300 text-xs mt-1">✓ Google Meet Ready</div>
-                    )}
-                  </div>
-                </div>
-              )}
+
               
-              {isGoogleMeetReady && (
-                <div className="absolute bottom-4 right-4">
-                  <div className="bg-green-600 text-white px-3 py-1 rounded-lg text-sm">
-                    ✓ Meeting Active
-                  </div>
-                </div>
-              )}
+
               
               {isScreenSharing && (
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-green-600 text-white px-4 py-2 rounded-full">
@@ -325,7 +305,7 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({
                 <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
                   <div className="text-white text-center">
                     <VideoOff className="w-16 h-16 mx-auto mb-4" />
-                    <p className="text-xl">{user?.fullName || 'You'}</p>
+                    <p className="text-xl">{user?.name || 'You'}</p>
                     <p className="text-gray-300">Camera is off</p>
                   </div>
                 </div>
@@ -360,6 +340,15 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({
             className="rounded-full w-12 h-12 p-0"
           >
             {isScreenSharing ? <MonitorOff className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
+          </Button>
+          
+          <Button
+            variant={isFullscreen ? "secondary" : "outline"}
+            size="lg"
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="rounded-full w-12 h-12 p-0"
+          >
+            {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
           </Button>
           
           <Button
