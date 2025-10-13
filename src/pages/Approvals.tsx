@@ -64,6 +64,19 @@ const Approvals = () => {
 
   const recentApprovals = [
     {
+      id: 10,
+      title: "Academic Standards Review Report",
+      type: "Letter",
+      submitter: "Prof. Jessica Chen",
+      submittedDate: "2024-01-18",
+      status: "approved",
+      priority: "normal",
+      approvedBy: "Principal",
+      approvedDate: "2024-01-19",
+      description: "Comprehensive review of academic standards and quality assurance measures across all departments",
+      comment: "Academic standards review approved. Implementation timeline is realistic and quality metrics are well-defined."
+    },
+    {
       id: 9,
       title: "Infrastructure Upgrade Request",
       type: "Proposal",
@@ -592,6 +605,99 @@ const Approvals = () => {
                               setSelectedDocument({ id: 'student-event', type: 'circular', title: 'Student Event Proposal – Tech Fest 2024' });
                               setShowLiveMeetingModal(true);
                             }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="relative w-4 h-4">
+                                <div className="absolute inset-0 w-4 h-4 bg-green-400 rounded-full"></div>
+                                <div className="absolute inset-1 w-2 h-2 bg-red-500 rounded-full"></div>
+                              </div>
+                              LiveMeet+
+                            </div>
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            Approve
+                          </Button>
+                          <Button variant="outline" size="sm">
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Reject
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Demo Card - Pending Approvals */}
+                  <Card className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex flex-col lg:flex-row gap-6">
+                        <div className="flex-1 space-y-4">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className="font-semibold text-lg flex items-center gap-2">
+                                Research Methodology Guidelines – Academic Review
+                              </h3>
+                              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <FileText className="h-4 w-4" />
+                                  Report
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <User className="h-4 w-4" />
+                                  Prof. Jessica Chen
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-4 w-4" />
+                                  2024-01-20
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Clock className="h-4 w-4 text-yellow-600" />
+                              <Badge variant="warning">Pending</Badge>
+                              <Badge variant="outline" className="text-blue-600">Normal Priority</Badge>
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-1">
+                              <MessageSquare className="h-4 w-4" />
+                              <span className="text-sm font-medium">Description</span>
+                            </div>
+                            <div className="bg-muted p-3 rounded text-sm">
+                              <p>Comprehensive guidelines for research methodology standards and academic review processes.</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-1">
+                            <MessageSquare className="h-4 w-4" />
+                            <span className="text-sm font-medium">Your Comments</span>
+                          </div>
+                          
+                          <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors bg-white">
+                            <textarea
+                              className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none bg-white"
+                              placeholder="Add your comment..."
+                              rows={1}
+                              style={{ resize: 'none' }}
+                            />
+                            <button 
+                              className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors"
+                              title="Save comment"
+                            >
+                              <ChevronRight className="h-4 w-4 text-gray-600" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 min-w-[150px]">
+                          <Button variant="outline" size="sm">
+                            <Eye className="h-4 w-4 mr-2" />
+                            View
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="border-orange-500 text-orange-600 hover:bg-orange-50"
                           >
                             <div className="flex items-center gap-2">
                               <div className="relative w-4 h-4">

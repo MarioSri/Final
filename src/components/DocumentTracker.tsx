@@ -62,6 +62,55 @@ interface Document {
 
 const mockDocuments: Document[] = [
   {
+    id: 'DOC-DEMO2',
+    title: 'Quality Assurance Framework - Implementation Plan',
+    type: 'Report',
+    submittedBy: 'Dr. Jennifer Park',
+    submittedDate: '2024-01-22',
+    status: 'approved',
+    priority: 'High Priority',
+    workflow: {
+      currentStep: 'Complete',
+      progress: 100,
+      steps: [
+        { name: 'Submission', status: 'completed', assignee: 'Dr. Jennifer Park', completedDate: '2024-01-22' },
+        { name: 'Department Review', status: 'completed', assignee: 'Prof. Mark Johnson', completedDate: '2024-01-23' },
+        { name: 'Principal Approval', status: 'completed', assignee: 'Dr. Principal', completedDate: '2024-01-24' },
+      ]
+    },
+    requiresSignature: true,
+    signedBy: ['Dr. Jennifer Park', 'Prof. Mark Johnson', 'Dr. Principal'],
+    description: 'Comprehensive framework for implementing quality assurance measures across academic and administrative processes.',
+    comments: [
+      { author: 'Prof. Mark Johnson', date: '2024-01-23', message: 'Excellent framework with clear implementation guidelines. Approved for next level.' },
+      { author: 'Dr. Principal', date: '2024-01-24', message: 'Quality framework approved. Timeline is realistic and metrics are well-defined.' }
+    ]
+  },
+  {
+    id: 'DOC-DEMO',
+    title: 'Demo Document - Sample Tracking',
+    type: 'Letter',
+    submittedBy: 'Prof. Alex Martinez',
+    submittedDate: '2024-01-20',
+    status: 'in-review',
+    priority: 'Medium Priority',
+    workflow: {
+      currentStep: 'HOD Review',
+      progress: 50,
+      steps: [
+        { name: 'Submission', status: 'completed', assignee: 'Prof. Alex Martinez', completedDate: '2024-01-20' },
+        { name: 'HOD Review', status: 'current', assignee: 'Dr. Rachel Thompson' },
+        { name: 'Principal Approval', status: 'pending', assignee: 'Dr. Principal' },
+      ]
+    },
+    requiresSignature: true,
+    signedBy: ['Prof. Alex Martinez'],
+    description: 'This is a demonstration document for testing the document tracking system functionality.',
+    comments: [
+      { author: 'Dr. Sarah Williams', date: '2024-01-20', message: 'Document submitted for departmental review and approval.' }
+    ]
+  },
+  {
     id: 'DOC-001',
     title: 'Faculty Meeting Minutes - Q4 2024',
     type: 'Report',
@@ -365,7 +414,9 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
       {/* Document List */}
       <div className="space-y-4">
         {filteredDocuments.map((document) => (
-          <Card key={document.id} className="hover:shadow-md transition-shadow">
+          <Card key={document.id} className={`hover:shadow-md transition-shadow ${
+            document.id === 'DOC-DEMO' ? 'border-destructive bg-red-50 animate-pulse' : ''
+          }`}>
             <CardContent className="p-6">
               <div className="flex flex-col lg:flex-row gap-6">
                 {/* Document Info */}
