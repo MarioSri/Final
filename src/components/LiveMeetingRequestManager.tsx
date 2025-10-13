@@ -10,6 +10,7 @@ import { useToast } from '../hooks/use-toast';
 import { LiveMeetingRequestCard } from './LiveMeetingRequestCard';
 import { liveMeetingService } from '../services/LiveMeetingService';
 import { LiveMeetingRequest, LiveMeetingStats, LiveMeetingResponse } from '../types/liveMeeting';
+import { useAuth } from '../contexts/AuthContext';
 
 interface StatsCardProps {
   title: string;
@@ -48,6 +49,7 @@ export const LiveMeetingRequestManager: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     loadLiveMeetingRequests();
@@ -326,7 +328,9 @@ export const LiveMeetingRequestManager: React.FC = () => {
         {/* All LiveMeet+ Request Cards - Properly positioned below search bar */}
         <div className="space-y-4">
           {/* Dynamic LiveMeet+ Request Cards from localStorage */}
-          {JSON.parse(localStorage.getItem('livemeet-requests') || '[]').map((request: any) => {
+          {JSON.parse(localStorage.getItem('livemeet-requests') || '[]')
+            .filter((request: any) => !request.title.includes('Approval Request'))
+            .map((request: any) => {
             // Get source document data from Approval Center
             const sourceDocuments = {
               'Faculty Meeting Minutes – Q4 2024': { type: 'Circular', date: '2024-01-15' },
@@ -393,7 +397,7 @@ export const LiveMeetingRequestManager: React.FC = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div className="flex items-center gap-1">
                           <User className="h-4 w-4" />
-                          <span className="font-medium">From:</span> {request.submitter}
+                          <span className="font-medium">From:</span> {user?.name} • {user?.role.toUpperCase()}
                         </div>
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
@@ -518,7 +522,7 @@ export const LiveMeetingRequestManager: React.FC = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div className="flex items-center gap-1">
                           <User className="h-4 w-4" />
-                          <span className="font-medium">From:</span> Prof. Michael Chen • HOD
+                          <span className="font-medium">From:</span> {user?.name} • {user?.role.toUpperCase()}
                         </div>
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
@@ -620,7 +624,7 @@ export const LiveMeetingRequestManager: React.FC = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div className="flex items-center gap-1">
                           <User className="h-4 w-4" />
-                          <span className="font-medium">From:</span> Prof. Michael Chen • HOD
+                          <span className="font-medium">From:</span> {user?.name} • {user?.role.toUpperCase()}
                         </div>
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />

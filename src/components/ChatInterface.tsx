@@ -784,10 +784,11 @@ Generated on: ${new Date().toLocaleString()}`;
               <p className={cn(
                 "whitespace-pre-wrap",
                 isSystemMessage ? "text-sm font-medium" : "text-sm",
-                message.metadata?.callType === 'video-start' && "cursor-pointer hover:text-blue-600"
+                message.metadata?.callType === 'video-start' && !message.metadata?.callEnded && "cursor-pointer hover:text-blue-600",
+                message.metadata?.callType === 'video-start' && message.metadata?.callEnded && "text-red-600"
               )}
               onClick={() => {
-                if (message.metadata?.callType === 'video-start') {
+                if (message.metadata?.callType === 'video-start' && !message.metadata?.callEnded) {
                   setActiveVideoCallId(message.metadata.meetingId);
                   setShowVideoCall(true);
                 }
@@ -846,9 +847,8 @@ Generated on: ${new Date().toLocaleString()}`;
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
                         <BarChart3 className="w-4 h-4 text-blue-600" />
-                        <h4 className="font-semibold text-base">{message.content.replace('Poll created: ', '')}</h4>
+                        <h4 className="font-semibold text-base">Poll</h4>
                       </div>
-                      <p className="text-xs text-muted-foreground">Select one</p>
                       
                       <div className="space-y-2">
                         {['Option 1', 'Option 2', 'Option 3'].map((option, idx) => {
@@ -1646,8 +1646,14 @@ Generated on: ${new Date().toLocaleString()}`;
           }
         }}
         onCallEnd={(meetingId, duration) => {
-          // Add video call end message to chat
+          // Mark the start message as ended and add end message
           if (activeChannel && user) {
+            setMessages(prev => prev.map(msg => 
+              msg.metadata?.meetingId === meetingId && msg.metadata?.callType === 'video-start'
+                ? { ...msg, metadata: { ...msg.metadata, callEnded: true } }
+                : msg
+            ));
+            
             const minutes = Math.floor(duration / 60);
             const seconds = duration % 60;
             const endTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });

@@ -42,6 +42,7 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({
   const [isGoogleMeetReady, setIsGoogleMeetReady] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   
@@ -234,9 +235,62 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({
     onClose();
   };
 
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        // Enter fullscreen
+        if (modalRef.current?.requestFullscreen) {
+          await modalRef.current.requestFullscreen();
+        } else if ((modalRef.current as any)?.webkitRequestFullscreen) {
+          await (modalRef.current as any).webkitRequestFullscreen();
+        } else if ((modalRef.current as any)?.msRequestFullscreen) {
+          await (modalRef.current as any).msRequestFullscreen();
+        }
+        setIsFullscreen(true);
+      } else {
+        // Exit fullscreen
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitExitFullscreen) {
+          await (document as any).webkitExitFullscreen();
+        } else if ((document as any).msExitFullscreen) {
+          await (document as any).msExitFullscreen();
+        }
+        setIsFullscreen(false);
+      }
+    } catch (error) {
+      console.error('Fullscreen error:', error);
+      toast({
+        title: 'Fullscreen Error',
+        description: 'Unable to toggle fullscreen mode',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
   return (
     <Dialog open={isOpen} onOpenChange={endCall}>
-      <DialogContent className="max-w-5xl max-h-[90vh] p-0 rounded-lg flex flex-col">
+      <DialogContent 
+        ref={modalRef}
+        className={`max-w-5xl max-h-[90vh] p-0 rounded-lg flex flex-col transition-all duration-300 ease-in-out ${isFullscreen ? 'fixed inset-0 max-w-none max-h-none w-screen h-screen z-50 rounded-none' : ''}`}
+      >
         <DialogHeader className="p-4 pb-2 border-b">
           <DialogTitle className="flex items-center gap-2">
             <Video className="w-5 h-5" />
@@ -261,7 +315,7 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({
               </div>
             </div>
           ) : (
-            <div className="w-full h-[500px] bg-black rounded-lg relative overflow-hidden">
+            <div className={`w-full bg-black rounded-lg relative overflow-hidden ${isFullscreen ? 'h-[calc(100vh-200px)]' : 'h-[500px]'}`}>
               {stream ? (
                 <>
                   <video
@@ -345,7 +399,7 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({
           <Button
             variant={isFullscreen ? "secondary" : "outline"}
             size="lg"
-            onClick={() => setIsFullscreen(!isFullscreen)}
+            onClick={toggleFullscreen}
             className="rounded-full w-12 h-12 p-0"
           >
             {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}

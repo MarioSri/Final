@@ -214,14 +214,16 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
       
       const sourceDoc = sourceDocuments[documentTitle as keyof typeof sourceDocuments];
       
-      // Create card data for Messages page
+      // Create card data for Messages page - only for selected participants
+      const selectedParticipantNames = selectedParticipants.map(id => 
+        availableParticipants.find(p => p.id === id)?.name || 'Unknown'
+      );
+      
       const cardData = {
         id: `livemeet-${Date.now()}`,
         title: documentTitle,
         type: sourceDoc?.type.toLowerCase() || documentType,
-        submitter: selectedParticipants.map(id => 
-          availableParticipants.find(p => p.id === id)?.name || 'Unknown'
-        ).join(', '),
+        submitter: 'Current User', // Will be replaced with actual user name
         submittedDate: sourceDoc?.date || new Date().toISOString().split('T')[0],
         status: 'pending',
         priority: urgency === 'immediate' ? 'immediate' : urgency === 'urgent' ? 'urgent' : 'normal',
@@ -231,7 +233,9 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
         startTime: startTime ? convertTo12Hour(startTime) : '',
         endTime: endTime ? convertTo12Hour(endTime) : '',
         requestedDate,
-        purpose: purposeOptions.find(p => p.toLowerCase().replace(' ', '_') === purpose) || 'Need Clarification'
+        purpose: purposeOptions.find(p => p.toLowerCase().replace(' ', '_') === purpose) || 'Need Clarification',
+        targetParticipants: selectedParticipantNames,
+        targetParticipantIds: selectedParticipants
       };
 
       // Store in localStorage for Messages page to pick up
@@ -239,10 +243,10 @@ export const LiveMeetingRequestModal: React.FC<LiveMeetingRequestModalProps> = (
       existingRequests.unshift(cardData);
       localStorage.setItem('livemeet-requests', JSON.stringify(existingRequests));
 
-      // Show success toast
+      // Show success toast with participant names
       toast({
         title: "LiveMeet+ Request Sent",
-        description: "Your LiveMeet+ request has been sent successfully to the selected participants.",
+        description: `Your LiveMeet+ request has been sent successfully to: ${selectedParticipantNames.join(', ')}.`,
         variant: "default"
       });
 

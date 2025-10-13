@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -150,21 +150,45 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
   const [comment, setComment] = useState('');
   const [submittedDocuments, setSubmittedDocuments] = useState<Document[]>([]);
   const [removedDocuments, setRemovedDocuments] = useState<string[]>([]);
+  const [currentUserProfile, setCurrentUserProfile] = useState({
+    name: 'Current User',
+    department: '',
+    designation: ''
+  });
   const { toast } = useToast();
 
-  // Load submitted documents from localStorage
-  React.useEffect(() => {
+  // Load submitted documents and user profile from localStorage
+  useEffect(() => {
     const loadSubmittedDocuments = () => {
       const stored = JSON.parse(localStorage.getItem('submitted-documents') || '[]');
       setSubmittedDocuments(stored);
     };
     
+    const loadUserProfile = () => {
+      const savedProfile = localStorage.getItem('user-profile');
+      if (savedProfile) {
+        try {
+          const parsedProfile = JSON.parse(savedProfile);
+          setCurrentUserProfile({
+            name: parsedProfile.name || 'Current User',
+            department: parsedProfile.department || '',
+            designation: parsedProfile.designation || ''
+          });
+        } catch (error) {
+          console.error('Error loading user profile:', error);
+        }
+      }
+    };
+    
     loadSubmittedDocuments();
+    loadUserProfile();
     
     // Listen for storage changes
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'submitted-documents') {
         loadSubmittedDocuments();
+      } else if (e.key === 'user-profile') {
+        loadUserProfile();
       }
     };
     
@@ -249,10 +273,17 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
   };
 
   const handleRemove = (docId: string) => {
+    // Remove from submitted documents if it exists there
+    const updatedSubmitted = submittedDocuments.filter(doc => doc.id !== docId);
+    setSubmittedDocuments(updatedSubmitted);
+    localStorage.setItem('submitted-documents', JSON.stringify(updatedSubmitted));
+    
+    // Add to removed list for mock documents
     setRemovedDocuments(prev => [...prev, docId]);
+    
     toast({
       title: "Document Removed",
-      description: `Document ${docId} has been removed from tracking`,
+      description: `Document ${docId} has been permanently removed`,
       variant: "destructive"
     });
   };
@@ -508,7 +539,7 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
                                 <Label className="text-base font-semibold">Digital Signature Required</Label>
                                 <DigitalSignature 
                                   userRole={userRole}
-                                  userName="Current User"
+                                  userName={currentUserProfile.name}
                                   onSignatureCapture={handleSignatureCapture}
                                 />
                               </div>
