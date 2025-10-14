@@ -25,18 +25,24 @@ const Documents = () => {
   const handleDocumentSubmit = (data: any) => {
     console.log("Document submitted:", data);
     
+    // Load user profile from Personal Information
+    const userProfile = JSON.parse(localStorage.getItem('user-profile') || '{}');
+    const currentUserName = userProfile.name || user?.fullName || user?.name || 'User';
+    const currentUserDept = userProfile.department || user?.department || 'Department';
+    const currentUserDesignation = userProfile.designation || user?.role || 'Employee';
+    
     // Map recipient IDs to names for workflow steps
     const getRecipientName = (recipientId: string) => {
       const recipientMap: { [key: string]: string } = {
-        'principal-dr-robert-principal': 'Dr. Robert Principal',
+        'principal-dr-robert-principal': 'Dr. Robert Smith',
         'registrar-prof-sarah-registrar': 'Prof. Sarah Registrar',
-        'hod-dr-cse-hod-cse': 'Dr. CSE HOD',
-        'hod-dr-eee-hod-eee': 'Dr. EEE HOD',
+        'hod-dr-cse-hod-cse': 'Dr. Michael Chen',
+        'hod-dr-eee-hod-eee': 'Dr. Mohammed Ali',
         'hod-dr-mech-hod-mech': 'Dr. MECH HOD',
         'hod-dr-ece-hod-ece': 'Dr. ECE HOD',
         'program-department-head-prof-cse-head-cse': 'Prof. CSE Head',
         'program-department-head-prof-eee-head-eee': 'Prof. EEE Head',
-        'dean-dr-maria-dean': 'Dr. Maria Dean',
+        'dean-dr-maria-dean': 'Dr. Maria Garcia',
         'controller-of-examinations-dr-robert-controller': 'Dr. Robert Controller'
       };
       return recipientMap[recipientId] || recipientId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -44,21 +50,22 @@ const Documents = () => {
     
     // Create workflow steps based on selected recipients
     const workflowSteps = [
-      { name: 'Submission', status: 'completed', assignee: user?.fullName || 'Current User', completedDate: new Date().toISOString().split('T')[0] }
+      { name: 'Submission', status: 'completed', assignee: currentUserName, completedDate: new Date().toISOString().split('T')[0] }
     ];
     
     // Add recipient-based workflow steps
     data.recipients.forEach((recipientId: string, index: number) => {
       const recipientName = getRecipientName(recipientId);
-      const stepName = recipientName.includes('HOD') ? 'HOD Review' :
-                      recipientName.includes('Principal') ? 'Principal Approval' :
-                      recipientName.includes('Registrar') ? 'Registrar Review' :
-                      recipientName.includes('Dean') ? 'Dean Review' :
-                      `${recipientName} Review`;
+      const stepName = recipientId.includes('hod') ? 'HOD Review' :
+                      recipientId.includes('principal') ? 'Principal Approval' :
+                      recipientId.includes('registrar') ? 'Registrar Review' :
+                      recipientId.includes('dean') ? 'Dean Review' :
+                      recipientId.includes('controller') ? 'Controller Review' :
+                      'Department Review';
       
       workflowSteps.push({
         name: stepName,
-        status: 'pending',
+        status: index === 0 ? 'current' : 'pending',
         assignee: recipientName
       });
     });
@@ -68,21 +75,22 @@ const Documents = () => {
       id: `DOC-${Date.now()}`,
       title: data.title,
       type: data.documentTypes[0]?.charAt(0).toUpperCase() + data.documentTypes[0]?.slice(1) || 'Document',
-      submittedBy: user?.fullName || 'Current User',
+      submittedBy: currentUserName,
+      submittedByDepartment: currentUserDept,
+      submittedByDesignation: currentUserDesignation,
       submittedDate: new Date().toISOString().split('T')[0],
       status: 'pending',
       priority: data.priority === 'normal' ? 'Normal Priority' : 
                data.priority === 'medium' ? 'Medium Priority' :
                data.priority === 'high' ? 'High Priority' : 'Urgent Priority',
       workflow: {
-        currentStep: workflowSteps.length > 1 ? workflowSteps[1].name : 'Submission Complete',
+        currentStep: workflowSteps.length > 1 ? workflowSteps[1].name : 'Complete',
         progress: 0,
         steps: workflowSteps
       },
       requiresSignature: true,
       signedBy: [],
       description: data.description,
-      recipients: data.recipients.map((id: string) => getRecipientName(id)),
       files: data.files.map((file: File) => file.name),
       assignments: data.assignments,
       comments: []
@@ -93,9 +101,45 @@ const Documents = () => {
     existingCards.unshift(trackingCard);
     localStorage.setItem('submitted-documents', JSON.stringify(existingCards));
     
+    // Create approval card for Approval Center
+    const approvalCard = {
+      id: trackingCard.id,
+      title: data.title,
+      type: data.documentTypes[0]?.charAt(0).toUpperCase() + data.documentTypes[0]?.slice(1) || 'Document',
+      submitter: currentUserName,
+      submittedDate: new Date().toISOString().split('T')[0],
+      status: 'pending',
+      priority: data.priority,
+      description: data.description,
+      recipients: data.recipients.map((id: string) => getRecipientName(id))
+    };
+    
+    // Save to localStorage for approvals
+    const existingApprovals = JSON.parse(localStorage.getItem('pending-approvals') || '[]');
+    existingApprovals.unshift(approvalCard);
+    localStorage.setItem('pending-approvals', JSON.stringify(existingApprovals));
+    
+    // Create channel for document collaboration
+    const channelName = `${data.title.substring(0, 30)}${data.title.length > 30 ? '...' : ''}`;
+    const newChannel = {
+      id: `doc-${trackingCard.id}`,
+      name: channelName,
+      members: [user?.id, ...data.recipients],
+      isPrivate: true,
+      createdAt: new Date().toISOString(),
+      createdBy: user?.id,
+      documentId: trackingCard.id,
+      documentTitle: data.title
+    };
+    
+    // Save channel to localStorage
+    const existingChannels = JSON.parse(localStorage.getItem('document-channels') || '[]');
+    existingChannels.unshift(newChannel);
+    localStorage.setItem('document-channels', JSON.stringify(existingChannels));
+    
     toast({
       title: "Document Submitted",
-      description: `Your document has been submitted to ${data.recipients.length} recipient(s) and is now being tracked.`,
+      description: `Your document has been submitted to ${data.recipients.length} recipient(s) and is now being tracked. A collaboration channel has been created.`,
     });
   };
 

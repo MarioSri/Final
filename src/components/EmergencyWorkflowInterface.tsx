@@ -229,6 +229,25 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
 
     setEmergencyHistory([newSubmission, ...emergencyHistory]);
     
+    // Create channel for emergency collaboration
+    const channelName = `Emergency: ${emergencyData.title.substring(0, 25)}${emergencyData.title.length > 25 ? '...' : ''}`;
+    const newChannel = {
+      id: `emergency-${newSubmission.id}`,
+      name: channelName,
+      members: [userRole, ...recipientsToSend],
+      isPrivate: true,
+      createdAt: new Date().toISOString(),
+      createdBy: userRole,
+      emergencyId: newSubmission.id,
+      emergencyTitle: emergencyData.title,
+      urgencyLevel: emergencyData.urgencyLevel
+    };
+    
+    // Save channel to localStorage
+    const existingChannels = JSON.parse(localStorage.getItem('document-channels') || '[]');
+    existingChannels.unshift(newChannel);
+    localStorage.setItem('document-channels', JSON.stringify(existingChannels));
+    
     // Reset form
     setEmergencyData({
       title: '',

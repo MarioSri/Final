@@ -24,7 +24,9 @@ import {
   Signature,
   Shield,
   FileClock,
-  Trash2
+  Trash2,
+  ArrowRight,
+  Building
 } from "lucide-react";
 import { DigitalSignature } from "./DigitalSignature";
 import { useToast } from "@/hooks/use-toast";
@@ -204,7 +206,10 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
     department: '',
     designation: ''
   });
+  const [approvalComments, setApprovalComments] = useState<{[key: string]: any[]}>({});
   const { toast } = useToast();
+  
+
 
   // Load submitted documents and user profile from localStorage
   useEffect(() => {
@@ -229,8 +234,14 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
       }
     };
     
+    const loadApprovalComments = () => {
+      const comments = JSON.parse(localStorage.getItem('document-comments') || '{}');
+      setApprovalComments(comments);
+    };
+    
     loadSubmittedDocuments();
     loadUserProfile();
+    loadApprovalComments();
     
     // Listen for storage changes
     const handleStorageChange = (e: StorageEvent) => {
@@ -238,11 +249,23 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
         loadSubmittedDocuments();
       } else if (e.key === 'user-profile') {
         loadUserProfile();
+      } else if (e.key === 'document-comments') {
+        loadApprovalComments();
       }
     };
     
+    // Listen for real-time updates from Approval Center
+    const handleApprovalChanges = () => {
+      loadApprovalComments();
+    };
+    
+    window.addEventListener('approval-comments-changed', handleApprovalChanges);
+    
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('approval-comments-changed', handleApprovalChanges);
+    };
   }, []);
 
   const getStatusIcon = (status: string): JSX.Element => {
@@ -250,7 +273,7 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
       case 'approved': return <CheckCircle className="h-4 w-4 text-green-600" />;
       case 'rejected': return <XCircle className="h-4 w-4 text-red-600" />;
       case 'pending': return <Clock className="h-4 w-4 text-yellow-600" />;
-      case 'in-review': return <AlertTriangle className="h-4 w-4 text-blue-600" />;
+      case 'in-review': return <FileClock className="h-4 w-4 text-blue-600" />;
       default: return <Clock className="h-4 w-4 text-gray-600" />;
     }
   };
@@ -423,7 +446,15 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
                 <div className="flex-1 space-y-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="font-semibold text-lg">{document.title}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-lg">{document.title}</h3>
+                        {document.id === 'DOC-DEMO' && (
+                          <Badge variant="destructive" className="animate-pulse">
+                            <AlertTriangle className="w-3 h-3 mr-1" />
+                            EMERGENCY
+                          </Badge>
+                        )}
+                      </div>
                       <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <FileText className="h-4 w-4" />
@@ -431,8 +462,12 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
                         </div>
                         <div className="flex items-center gap-1">
                           <User className="h-4 w-4" />
-                          {document.submittedBy}
+                          <span>{document.submittedBy}</span>
+                          {(document as any).submittedByDesignation && (
+                            <span className="text-xs text-muted-foreground"> • {(document as any).submittedByDesignation.toUpperCase()}</span>
+                          )}
                         </div>
+
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
                           {document.submittedDate}
@@ -469,11 +504,18 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
                         {step.status === 'completed' && <CheckCircle className="h-4 w-4 text-green-600" />}
                         {step.status === 'current' && <Clock className="h-4 w-4 text-blue-600" />}
                         {step.status === 'pending' && <div className="h-4 w-4 rounded-full border border-gray-300" />}
-                        <div>
+                        <div className="flex-1">
                           <div className={`${step.status === 'current' ? 'font-semibold' : ''}`}>
                             {step.name}
                           </div>
-                          <div className="text-xs text-muted-foreground">{step.assignee}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-xs text-muted-foreground">{step.assignee}</div>
+                            {document.id === 'DOC-DEMO' && step.name === 'HOD Review' && (
+                              <Badge variant="destructive" className="text-xs">
+                                Escalated 2x
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -510,14 +552,25 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
                   )}
 
                   {/* Comments */}
-                  {document.comments && document.comments.length > 0 && (
+                  {((document.comments && document.comments.length > 0) || (approvalComments[document.id] && approvalComments[document.id].length > 0)) && (
                     <div className="space-y-2">
                       <div className="flex items-center gap-1">
                         <MessageSquare className="h-4 w-4" />
                         <span className="text-sm font-medium">Comments</span>
                       </div>
-                      {document.comments.map((comment, index) => (
-                        <div key={index} className="bg-muted p-3 rounded text-sm">
+                      {/* Original comments */}
+                      {document.comments && document.comments.map((comment, index) => (
+                        <div key={`original-${index}`} className="bg-muted p-3 rounded text-sm">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-medium">{comment.author}</span>
+                            <span className="text-muted-foreground">{comment.date}</span>
+                          </div>
+                          <p>{comment.message}</p>
+                        </div>
+                      ))}
+                      {/* Approval comments from Approval Center */}
+                      {approvalComments[document.id] && approvalComments[document.id].map((comment, index) => (
+                        <div key={`approval-${index}`} className="bg-muted p-3 rounded text-sm">
                           <div className="flex justify-between items-center mb-1">
                             <span className="font-medium">{comment.author}</span>
                             <span className="text-muted-foreground">{comment.date}</span>
@@ -543,10 +596,44 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
                     <Download className="h-4 w-4 mr-2" />
                     Download
                   </Button>
-                  <Button variant="outline" size="sm" className="text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400"
+                    onClick={() => {
+                      // Create channel for approval chain bypass
+                      const channelName = `${document.title.substring(0, 30)}${document.title.length > 30 ? '...' : ''}`;
+                      const newChannel = {
+                        id: `bypass-${document.id}`,
+                        name: channelName,
+                        members: [currentUserProfile.name, document.submittedBy],
+                        isPrivate: true,
+                        createdAt: new Date().toISOString(),
+                        createdBy: currentUserProfile.name,
+                        documentId: document.id,
+                        documentTitle: document.title
+                      };
+                      
+                      // Save channel to localStorage
+                      const existingChannels = JSON.parse(localStorage.getItem('document-channels') || '[]');
+                      existingChannels.unshift(newChannel);
+                      localStorage.setItem('document-channels', JSON.stringify(existingChannels));
+                      
+                      toast({
+                        title: "Approval Chain Bypassed",
+                        description: `Bypass channel created for ${document.title}. Check Messages > Department Chat for collaboration.`,
+                      });
+                    }}
+                  >
                     <Shield className="h-4 w-4 mr-2" />
                     Approval Chain with Bypass
                   </Button>
+                  {document.id === 'DOC-DEMO' && (
+                    <Button variant="outline" size="sm">
+                      <ArrowRight className="h-4 w-4 mr-2" />
+                      Escalate
+                    </Button>
+                  )}
                   
                   {userRole === 'Principal' || userRole === 'Registrar' || userRole === 'HOD' ? (
                     <>

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle2, XCircle, Clock, FileText, User, Calendar, MessageSquare, Video, Eye, ChevronRight, CircleAlert, Undo2, SquarePen, AlertTriangle } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +20,14 @@ const Approvals = () => {
   const [selectedDocument, setSelectedDocument] = useState({ id: '', type: 'letter', title: '' });
   const [comments, setComments] = useState<{[key: string]: string[]}>({});
   const [commentInputs, setCommentInputs] = useState<{[key: string]: string}>({});
+  
+  useEffect(() => {
+    const savedInputs = JSON.parse(localStorage.getItem('comment-inputs') || '{}');
+    setCommentInputs(savedInputs);
+    
+    const savedComments = JSON.parse(localStorage.getItem('approval-comments') || '{}');
+    setComments(savedComments);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -33,26 +41,65 @@ const Approvals = () => {
   const handleAddComment = (cardId: string) => {
     const comment = commentInputs[cardId]?.trim();
     if (comment) {
-      setComments(prev => ({
-        ...prev,
-        [cardId]: [...(prev[cardId] || []), comment]
-      }));
-      setCommentInputs(prev => ({ ...prev, [cardId]: '' }));
+      const newComment = {
+        author: user?.fullName || user?.name || 'Reviewer',
+        date: new Date().toISOString().split('T')[0],
+        message: comment
+      };
+      
+      // Save to localStorage for Track Documents
+      const existingComments = JSON.parse(localStorage.getItem('document-comments') || '{}');
+      existingComments[cardId] = [...(existingComments[cardId] || []), newComment];
+      localStorage.setItem('document-comments', JSON.stringify(existingComments));
+      
+      const newComments = {
+        ...comments,
+        [cardId]: [...(comments[cardId] || []), comment]
+      };
+      setComments(newComments);
+      
+      // Save comments to localStorage for persistence
+      localStorage.setItem('approval-comments', JSON.stringify(newComments));
+      
+      // Clear input field after submission
+      const clearedInputs = { ...commentInputs, [cardId]: '' };
+      setCommentInputs(clearedInputs);
+      localStorage.setItem('comment-inputs', JSON.stringify(clearedInputs));
     }
   };
 
   const handleUndoComment = (cardId: string, index: number) => {
-    setComments(prev => ({
-      ...prev,
-      [cardId]: prev[cardId]?.filter((_, i) => i !== index) || []
-    }));
+    // Remove from comments state
+    const newComments = {
+      ...comments,
+      [cardId]: comments[cardId]?.filter((_, i) => i !== index) || []
+    };
+    setComments(newComments);
+    
+    // Save updated comments to localStorage
+    localStorage.setItem('approval-comments', JSON.stringify(newComments));
+    
+    // Remove from localStorage comments for Track Documents
+    const existingComments = JSON.parse(localStorage.getItem('document-comments') || '{}');
+    if (existingComments[cardId]) {
+      existingComments[cardId] = existingComments[cardId].filter((_: any, i: number) => i !== index);
+      localStorage.setItem('document-comments', JSON.stringify(existingComments));
+    }
+    
+    // Trigger real-time update for Track Documents
+    window.dispatchEvent(new CustomEvent('approval-comments-changed'));
   };
 
   const handleEditComment = (cardId: string, index: number) => {
     const comment = comments[cardId]?.[index];
     if (comment) {
-      setCommentInputs(prev => ({ ...prev, [cardId]: comment }));
+      const newInputs = { ...commentInputs, [cardId]: comment };
+      setCommentInputs(newInputs);
+      localStorage.setItem('comment-inputs', JSON.stringify(newInputs));
       handleUndoComment(cardId, index);
+      
+      // Trigger real-time update for Track Documents
+      window.dispatchEvent(new CustomEvent('approval-comments-changed'));
     }
   };
 
@@ -60,7 +107,19 @@ const Approvals = () => {
     return null; // This should be handled by ProtectedRoute, but adding as safety
   }
 
-  const pendingApprovals = [];
+  const [pendingApprovals, setPendingApprovals] = useState<any[]>([]);
+  
+  useEffect(() => {
+    const loadPendingApprovals = () => {
+      const stored = JSON.parse(localStorage.getItem('pending-approvals') || '[]');
+      setPendingApprovals(stored);
+    };
+    loadPendingApprovals();
+    
+    const handleStorageChange = () => loadPendingApprovals();
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   const recentApprovals = [
     {
@@ -147,7 +206,7 @@ const Approvals = () => {
                   <Clock className="h-6 w-6 text-warning" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{pendingApprovals.length}</p>
+                  <p className="text-2xl font-bold">{pendingApprovals.length + 3}</p>
                   <p className="text-sm text-muted-foreground">Pending Approvals</p>
                 </div>
               </div>
@@ -198,6 +257,159 @@ const Approvals = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  {/* Dynamic Submitted Documents */}
+                  {pendingApprovals.map((doc) => (
+                    <Card key={doc.id} className="hover:shadow-md transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="flex flex-col lg:flex-row gap-6">
+                          <div className="flex-1 space-y-4">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h3 className="font-semibold text-lg flex items-center gap-2">
+                                  {doc.title}
+                                </h3>
+                                <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                                  <div className="flex items-center gap-1">
+                                    <FileText className="h-4 w-4" />
+                                    {doc.type}
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <User className="h-4 w-4" />
+                                    {doc.submitter}
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="h-4 w-4" />
+                                    {doc.submittedDate}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-4 w-4 text-yellow-600" />
+                                <Badge variant="warning">Pending</Badge>
+                                <Badge variant="outline" className={`${
+                                  doc.priority === 'high' ? 'text-orange-600 font-semibold' :
+                                  doc.priority === 'medium' ? 'text-yellow-600' :
+                                  'text-blue-600'
+                                }`}>
+                                  {doc.priority === 'high' ? 'High Priority' :
+                                   doc.priority === 'medium' ? 'Medium Priority' :
+                                   'Normal Priority'}
+                                </Badge>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-1">
+                                <MessageSquare className="h-4 w-4" />
+                                <span className="text-sm font-medium">Description</span>
+                              </div>
+                              <div className="bg-muted p-3 rounded text-sm">
+                                <p>{doc.description}</p>
+                              </div>
+                            </div>
+                            
+                            {comments[doc.id]?.length > 0 && (
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-1">
+                                  <MessageSquare className="h-4 w-4" />
+                                  <span className="text-sm font-medium">Your Comments</span>
+                                </div>
+                                <div className="space-y-2">
+                                  {comments[doc.id].map((comment, index) => (
+                                    <div key={index} className="bg-muted p-3 rounded-lg text-sm flex justify-between items-start">
+                                      <p className="flex-1">{comment}</p>
+                                      <div className="flex gap-1 ml-2">
+                                        <button 
+                                          className="px-4 py-2 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+                                          onClick={() => handleEditComment(doc.id, index)}
+                                          title="Edit"
+                                        >
+                                          <SquarePen className="h-4 w-4 text-gray-600" />
+                                        </button>
+                                        <button 
+                                          className="px-4 py-2 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+                                          onClick={() => handleUndoComment(doc.id, index)}
+                                          title="Undo"
+                                        >
+                                          <Undo2 className="h-4 w-4 text-gray-600" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {!comments[doc.id]?.length && (
+                              <div className="flex items-center gap-1">
+                                <MessageSquare className="h-4 w-4" />
+                                <span className="text-sm font-medium">Your Comments</span>
+                              </div>
+                            )}
+                            
+                            <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors bg-white">
+                              <textarea
+                                className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none bg-white"
+                                placeholder="Add your comment..."
+                                rows={1}
+                                style={{ resize: 'none' }}
+                                value={commentInputs[doc.id] || ''}
+                                onChange={(e) => {
+                                const newInputs = { ...commentInputs, [doc.id]: e.target.value };
+                                setCommentInputs(newInputs);
+                                localStorage.setItem('comment-inputs', JSON.stringify(newInputs));
+                              }}
+                                onInput={(e) => {
+                                  const target = e.target as HTMLTextAreaElement;
+                                  target.style.height = 'auto';
+                                  target.style.height = target.scrollHeight + 'px';
+                                }}
+                              />
+                              <button 
+                                className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors"
+                                title="Save comment"
+                                onClick={() => handleAddComment(doc.id)}
+                              >
+                                <ChevronRight className="h-4 w-4 text-gray-600" />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex flex-col gap-2 min-w-[150px]">
+                            <Button variant="outline" size="sm">
+                              <Eye className="h-4 w-4 mr-2" />
+                              View
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="border-orange-500 text-orange-600 hover:bg-orange-50"
+                              onClick={() => {
+                                setSelectedDocument({ id: doc.id, type: doc.type.toLowerCase(), title: doc.title });
+                                setShowLiveMeetingModal(true);
+                              }}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div className="relative w-4 h-4">
+                                  <div className="absolute inset-0 w-4 h-4 bg-green-400 rounded-full"></div>
+                                  <div className="absolute inset-1 w-2 h-2 bg-red-500 rounded-full"></div>
+                                </div>
+                                LiveMeet+
+                              </div>
+                            </Button>
+                            <Button variant="outline" size="sm">
+                              <CheckCircle2 className="h-4 w-4 mr-2" />
+                              Approve
+                            </Button>
+                            <Button variant="outline" size="sm">
+                              <XCircle className="h-4 w-4 mr-2" />
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  
                   {/* Faculty Meeting Minutes Card */}
                   <Card className="hover:shadow-md transition-shadow">
                     <CardContent className="p-6">
@@ -290,7 +502,11 @@ const Approvals = () => {
                               rows={1}
                               style={{ resize: 'none' }}
                               value={commentInputs['faculty-meeting'] || ''}
-                              onChange={(e) => setCommentInputs(prev => ({ ...prev, 'faculty-meeting': e.target.value }))}
+                              onChange={(e) => {
+                                const newInputs = { ...commentInputs, 'faculty-meeting': e.target.value };
+                                setCommentInputs(newInputs);
+                                localStorage.setItem('comment-inputs', JSON.stringify(newInputs));
+                              }}
                               onInput={(e) => {
                                 const target = e.target as HTMLTextAreaElement;
                                 target.style.height = 'auto';
@@ -433,7 +649,11 @@ const Approvals = () => {
                               rows={1}
                               style={{ resize: 'none' }}
                               value={commentInputs['budget-request'] || ''}
-                              onChange={(e) => setCommentInputs(prev => ({ ...prev, 'budget-request': e.target.value }))}
+                              onChange={(e) => {
+                                const newInputs = { ...commentInputs, 'budget-request': e.target.value };
+                                setCommentInputs(newInputs);
+                                localStorage.setItem('comment-inputs', JSON.stringify(newInputs));
+                              }}
                               onInput={(e) => {
                                 const target = e.target as HTMLTextAreaElement;
                                 target.style.height = 'auto';
@@ -576,7 +796,11 @@ const Approvals = () => {
                               rows={1}
                               style={{ resize: 'none' }}
                               value={commentInputs['student-event'] || ''}
-                              onChange={(e) => setCommentInputs(prev => ({ ...prev, 'student-event': e.target.value }))}
+                              onChange={(e) => {
+                                const newInputs = { ...commentInputs, 'student-event': e.target.value };
+                                setCommentInputs(newInputs);
+                                localStorage.setItem('comment-inputs', JSON.stringify(newInputs));
+                              }}
                               onInput={(e) => {
                                 const target = e.target as HTMLTextAreaElement;
                                 target.style.height = 'auto';
@@ -669,10 +893,44 @@ const Approvals = () => {
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-1">
-                            <MessageSquare className="h-4 w-4" />
-                            <span className="text-sm font-medium">Your Comments</span>
-                          </div>
+                          {comments['research-methodology']?.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-1">
+                                <MessageSquare className="h-4 w-4" />
+                                <span className="text-sm font-medium">Your Comments</span>
+                              </div>
+                              <div className="space-y-2">
+                                {comments['research-methodology'].map((comment, index) => (
+                                  <div key={index} className="bg-muted p-3 rounded-lg text-sm flex justify-between items-start">
+                                    <p className="flex-1">{comment}</p>
+                                    <div className="flex gap-1 ml-2">
+                                      <button 
+                                        className="px-4 py-2 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+                                        onClick={() => handleEditComment('research-methodology', index)}
+                                        title="Edit"
+                                      >
+                                        <SquarePen className="h-4 w-4 text-gray-600" />
+                                      </button>
+                                      <button 
+                                        className="px-4 py-2 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+                                        onClick={() => handleUndoComment('research-methodology', index)}
+                                        title="Undo"
+                                      >
+                                        <Undo2 className="h-4 w-4 text-gray-600" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {!comments['research-methodology']?.length && (
+                            <div className="flex items-center gap-1">
+                              <MessageSquare className="h-4 w-4" />
+                              <span className="text-sm font-medium">Your Comments</span>
+                            </div>
+                          )}
                           
                           <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors bg-white">
                             <textarea
@@ -680,10 +938,18 @@ const Approvals = () => {
                               placeholder="Add your comment..."
                               rows={1}
                               style={{ resize: 'none' }}
+                              value={commentInputs['research-methodology'] || ''}
+                              onChange={(e) => setCommentInputs(prev => ({ ...prev, 'research-methodology': e.target.value }))}
+                              onInput={(e) => {
+                                const target = e.target as HTMLTextAreaElement;
+                                target.style.height = 'auto';
+                                target.style.height = target.scrollHeight + 'px';
+                              }}
                             />
                             <button 
                               className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors"
                               title="Save comment"
+                              onClick={() => handleAddComment('research-methodology')}
                             >
                               <ChevronRight className="h-4 w-4 text-gray-600" />
                             </button>

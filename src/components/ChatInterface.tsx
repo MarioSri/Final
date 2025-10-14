@@ -154,12 +154,27 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className, channel
         
         // Load user channels
         const userChannels = await chatService.getChannels(user.id);
-        setChannels(userChannels);
         
-        if (userChannels.length > 0) {
-          setActiveChannel(userChannels[0]);
+        // Load document channels from localStorage
+        const documentChannels = JSON.parse(localStorage.getItem('document-channels') || '[]');
+        const userDocumentChannels = documentChannels.filter((channel: any) => 
+          channel.members.includes(user.id) || channel.createdBy === user.id
+        );
+        
+        // Combine all channels
+        const allChannels = [...userDocumentChannels, ...userChannels];
+        setChannels(allChannels);
+        
+        if (allChannels.length > 0) {
+          setActiveChannel(allChannels[0]);
         }
       } catch (error) {
+        // Load document channels even if service fails
+        const documentChannels = JSON.parse(localStorage.getItem('document-channels') || '[]');
+        const userDocumentChannels = documentChannels.filter((channel: any) => 
+          channel.members.includes(user.id) || channel.createdBy === user.id
+        );
+        
         // Fallback: create default channels
         const defaultChannels = [
           {
@@ -171,8 +186,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className, channel
             createdBy: user.id
           }
         ];
-        setChannels(defaultChannels);
-        setActiveChannel(defaultChannels[0]);
+        
+        const allChannels = [...userDocumentChannels, ...defaultChannels];
+        setChannels(allChannels);
+        setActiveChannel(allChannels[0]);
       }
     };
 
@@ -236,8 +253,18 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className, channel
       }
     });
 
+    // Listen for storage changes to update channels in real-time
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'document-channels') {
+        initChat(); // Reload channels when document channels change
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
     return () => {
       chatService.disconnect();
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, [user]);
 

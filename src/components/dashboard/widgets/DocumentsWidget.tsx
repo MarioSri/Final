@@ -147,6 +147,21 @@ export const DocumentsWidget: React.FC<DocumentsWidgetProps> = ({
           requiresAction: false,
           escalationLevel: 0,
           aiSummary: 'Research lab proposal for ₹15L. Rejected due to budget constraints. Resubmission suggested with phased approach.'
+        },
+        {
+          id: 'DOC-2024-006',
+          title: 'Demo Document – Sample Tracking Card',
+          type: 'Report',
+          status: 'pending',
+          submittedBy: 'System Admin',
+          submittedByRole: 'Employee',
+          department: 'Administration',
+          date: '2024-01-16',
+          priority: 'medium',
+          description: 'Sample document for demonstration purposes with tracking capabilities',
+          requiresAction: true,
+          escalationLevel: 0,
+          aiSummary: 'Demo document showcasing system tracking and approval workflow features.'
         }
       ];
 
@@ -396,18 +411,35 @@ export const DocumentsWidget: React.FC<DocumentsWidgetProps> = ({
                 {/* Quick Actions for Approvers */}
                 {doc.requiresAction && (userRole === 'principal' || userRole === 'registrar' || userRole === 'hod') && (
                   <div className="flex gap-2 mt-3">
-                    <Button size="sm" variant="default" className="flex-1">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Approve
-                    </Button>
-                    <Button size="sm" variant="destructive" className="flex-1">
-                      <XCircle className="w-3 h-3 mr-1" />
-                      Reject
-                    </Button>
-                    <Button size="sm" variant="outline">
-                      <ArrowRight className="w-3 h-3 mr-1" />
-                      Escalate
-                    </Button>
+                    {doc.id === 'DOC-2024-006' ? (
+                      // Demo Document specific buttons
+                      <>
+                        <Button size="sm" variant="outline" className="flex-1">
+                          <ArrowRight className="w-3 h-3 mr-1" />
+                          Approval Chain with Bypass
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <ArrowRight className="w-3 h-3 mr-1" />
+                          Escalate
+                        </Button>
+                      </>
+                    ) : (
+                      // Default buttons for other documents
+                      <>
+                        <Button size="sm" variant="default" className="flex-1">
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Approve
+                        </Button>
+                        <Button size="sm" variant="destructive" className="flex-1">
+                          <XCircle className="w-3 h-3 mr-1" />
+                          Reject
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <ArrowRight className="w-3 h-3 mr-1" />
+                          Escalate
+                        </Button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
