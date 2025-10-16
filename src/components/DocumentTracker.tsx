@@ -350,12 +350,33 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
     setSubmittedDocuments(updatedSubmitted);
     localStorage.setItem('submitted-documents', JSON.stringify(updatedSubmitted));
     
+    // Remove from pending approvals in Approval Center
+    const existingApprovals = JSON.parse(localStorage.getItem('pending-approvals') || '[]');
+    const updatedApprovals = existingApprovals.filter((doc: any) => doc.id !== docId);
+    localStorage.setItem('pending-approvals', JSON.stringify(updatedApprovals));
+    
+    // Remove associated comments and inputs
+    const existingComments = JSON.parse(localStorage.getItem('document-comments') || '{}');
+    delete existingComments[docId];
+    localStorage.setItem('document-comments', JSON.stringify(existingComments));
+    
+    const existingInputs = JSON.parse(localStorage.getItem('comment-inputs') || '{}');
+    delete existingInputs[docId];
+    localStorage.setItem('comment-inputs', JSON.stringify(existingInputs));
+    
+    const approvalComments = JSON.parse(localStorage.getItem('approval-comments') || '{}');
+    delete approvalComments[docId];
+    localStorage.setItem('approval-comments', JSON.stringify(approvalComments));
+    
     // Add to removed list for mock documents
     setRemovedDocuments(prev => [...prev, docId]);
     
+    // Trigger real-time update for Approval Center
+    window.dispatchEvent(new CustomEvent('document-removed', { detail: { docId } }));
+    
     toast({
       title: "Document Removed",
-      description: `Document ${docId} has been permanently removed`,
+      description: `Document ${docId} has been permanently removed from both pages`,
       variant: "destructive"
     });
   };

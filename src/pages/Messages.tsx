@@ -107,9 +107,18 @@ const Messages = () => {
 
     window.addEventListener('storage', handleStorageChange);
 
+    // Listen for document removal from Track Documents
+    const handleDocumentRemoval = (event: any) => {
+      const { docId } = event.detail;
+      setPendingApprovals(prev => prev.filter(doc => doc.id !== docId));
+    };
+    
+    window.addEventListener('document-removed', handleDocumentRemoval);
+    
     return () => {
       chatService.disconnect();
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('document-removed', handleDocumentRemoval);
     };
   }, [user, chatService]);
 

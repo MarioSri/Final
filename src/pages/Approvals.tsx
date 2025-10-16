@@ -117,8 +117,20 @@ const Approvals = () => {
     loadPendingApprovals();
     
     const handleStorageChange = () => loadPendingApprovals();
+    
+    // Listen for document removal from Track Documents
+    const handleDocumentRemoval = (event: any) => {
+      const { docId } = event.detail;
+      setPendingApprovals(prev => prev.filter(doc => doc.id !== docId));
+    };
+    
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('document-removed', handleDocumentRemoval);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('document-removed', handleDocumentRemoval);
+    };
   }, []);
 
   const recentApprovals = [
