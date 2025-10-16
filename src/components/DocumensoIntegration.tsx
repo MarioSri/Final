@@ -268,7 +268,7 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl max-h-[90vh] p-0 bg-gradient-to-br from-green-50 to-blue-50">
+      <DialogContent className="max-w-7xl max-h-[90vh] p-0 bg-gradient-to-br from-green-50 to-blue-50 overflow-hidden">
         <div className="flex h-[85vh]">
           {/* Left Column - Document Viewer */}
           <div className="w-1/2 p-6 border-r border-gray-200">
@@ -301,10 +301,10 @@ This document has been processed through the Institutional Academic Operations M
           </div>
 
           {/* Right Column - Signature Interaction */}
-          <div className="w-1/2 p-6">
-            <Card className="h-full shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardContent className="p-6 h-full flex flex-col">
-                <DialogHeader className="mb-6">
+          <div className="w-1/2 p-6 flex flex-col">
+            <Card className="flex-1 shadow-lg border-0 bg-white/80 backdrop-blur-sm overflow-hidden flex flex-col">
+              <CardContent className="p-6 flex-1 flex flex-col overflow-hidden">
+                <DialogHeader className="mb-4 flex-shrink-0">
                   <DialogTitle className="flex items-center gap-2 text-xl">
                     <Signature className="h-6 w-6 text-green-600" />
                     Digital Signature
@@ -312,9 +312,9 @@ This document has been processed through the Institutional Academic Operations M
                 </DialogHeader>
 
                 {/* Form Fields */}
-                <div className="space-y-4 mb-6">
+                <div className="space-y-3 mb-4 flex-shrink-0">
                   <div>
-                    <Label htmlFor="signerName">Full Name</Label>
+                    <Label htmlFor="signerName" className="text-sm">Full Name</Label>
                     <Input
                       id="signerName"
                       value={signerName}
@@ -324,7 +324,7 @@ This document has been processed through the Institutional Academic Operations M
                   </div>
                   
                   <div>
-                    <Label htmlFor="signerEmail">Email Address</Label>
+                    <Label htmlFor="signerEmail" className="text-sm">Email Address</Label>
                     <Input
                       id="signerEmail"
                       value={signerEmail}
@@ -334,7 +334,7 @@ This document has been processed through the Institutional Academic Operations M
                   </div>
                   
                   <div>
-                    <Label htmlFor="currentDate">Date</Label>
+                    <Label htmlFor="currentDate" className="text-sm">Date</Label>
                     <Input
                       id="currentDate"
                       type="date"
@@ -346,7 +346,7 @@ This document has been processed through the Institutional Academic Operations M
                 </div>
 
                 {/* Signature Area */}
-                <div className="flex-1 mb-6">
+                <div className="flex-1 mb-4 overflow-y-auto min-h-0">
                   <Label className="text-sm font-medium mb-3 block">Signature</Label>
                   
                   {!showCamera ? (
@@ -444,7 +444,7 @@ This document has been processed through the Institutional Academic Operations M
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-3 pt-4 border-t">
+                <div className="flex gap-3 pt-3 mt-auto border-t flex-shrink-0">
                   <Button
                     variant="outline"
                     onClick={onClose}

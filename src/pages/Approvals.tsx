@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle2, XCircle, Clock, FileText, User, Calendar, MessageSquare, Video, Eye, ChevronRight, CircleAlert, Undo2, SquarePen, AlertTriangle } from "lucide-react";
+import { DocumensoIntegration } from "@/components/DocumensoIntegration";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -18,6 +19,8 @@ const Approvals = () => {
   const navigate = useNavigate();
   const [showLiveMeetingModal, setShowLiveMeetingModal] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState({ id: '', type: 'letter', title: '' });
+  const [showDocumenso, setShowDocumenso] = useState(false);
+  const [documensoDocument, setDocumensoDocument] = useState<any>(null);
   const [comments, setComments] = useState<{[key: string]: string[]}>({});
   const [commentInputs, setCommentInputs] = useState<{[key: string]: string}>({});
   
@@ -408,9 +411,21 @@ const Approvals = () => {
                                 LiveMeet+
                               </div>
                             </Button>
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                setDocumensoDocument({
+                                  id: doc.id,
+                                  title: doc.title,
+                                  content: doc.description,
+                                  type: doc.type
+                                });
+                                setShowDocumenso(true);
+                              }}
+                            >
                               <CheckCircle2 className="h-4 w-4 mr-2" />
-                              Approve
+                              Accept & Sign
                             </Button>
                             <Button variant="outline" size="sm">
                               <XCircle className="h-4 w-4 mr-2" />
@@ -556,9 +571,21 @@ const Approvals = () => {
                               LiveMeet+
                             </div>
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setDocumensoDocument({
+                                id: 'faculty-meeting',
+                                title: 'Faculty Meeting Minutes – Q4 2024',
+                                content: 'Add a risk-mitigation section to highlight potential delays or issues.',
+                                type: 'Circular'
+                              });
+                              setShowDocumenso(true);
+                            }}
+                          >
                             <CheckCircle2 className="h-4 w-4 mr-2" />
-                            Approve
+                            Accept & Sign
                           </Button>
                           <Button variant="outline" size="sm">
                             <XCircle className="h-4 w-4 mr-2" />
@@ -703,9 +730,21 @@ const Approvals = () => {
                               LiveMeet+
                             </div>
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setDocumensoDocument({
+                                id: 'budget-request',
+                                title: 'Budget Request – Lab Equipment',
+                                content: 'Consider revising the scope to focus on priority items within this quarter\'s budget.',
+                                type: 'Letter'
+                              });
+                              setShowDocumenso(true);
+                            }}
+                          >
                             <CheckCircle2 className="h-4 w-4 mr-2" />
-                            Approve
+                            Accept & Sign
                           </Button>
                           <Button variant="outline" size="sm">
                             <XCircle className="h-4 w-4 mr-2" />
@@ -850,9 +889,21 @@ const Approvals = () => {
                               LiveMeet+
                             </div>
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setDocumensoDocument({
+                                id: 'student-event',
+                                title: 'Student Event Proposal – Tech Fest 2024',
+                                content: 'Annual technology festival proposal including budget allocation, venue requirements, and guest speaker arrangements.',
+                                type: 'Circular'
+                              });
+                              setShowDocumenso(true);
+                            }}
+                          >
                             <CheckCircle2 className="h-4 w-4 mr-2" />
-                            Approve
+                            Accept & Sign
                           </Button>
                           <Button variant="outline" size="sm">
                             <XCircle className="h-4 w-4 mr-2" />
@@ -976,6 +1027,10 @@ const Approvals = () => {
                             size="sm" 
                             variant="outline" 
                             className="border-orange-500 text-orange-600 hover:bg-orange-50"
+                            onClick={() => {
+                              setSelectedDocument({ id: 'research-methodology', type: 'report', title: 'Research Methodology Guidelines – Academic Review' });
+                              setShowLiveMeetingModal(true);
+                            }}
                           >
                             <div className="flex items-center gap-2">
                               <div className="relative w-4 h-4">
@@ -985,9 +1040,21 @@ const Approvals = () => {
                               LiveMeet+
                             </div>
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setDocumensoDocument({
+                                id: 'research-methodology',
+                                title: 'Research Methodology Guidelines – Academic Review',
+                                content: 'Comprehensive guidelines for research methodology standards and academic review processes.',
+                                type: 'Report'
+                              });
+                              setShowDocumenso(true);
+                            }}
+                          >
                             <CheckCircle2 className="h-4 w-4 mr-2" />
-                            Approve
+                            Accept & Sign
                           </Button>
                           <Button variant="outline" size="sm">
                             <XCircle className="h-4 w-4 mr-2" />
@@ -1144,6 +1211,19 @@ const Approvals = () => {
           documentType={selectedDocument.type as 'letter' | 'circular' | 'report'}
           documentTitle={selectedDocument.title}
         />
+        
+        {documensoDocument && (
+          <DocumensoIntegration
+            isOpen={showDocumenso}
+            onClose={() => setShowDocumenso(false)}
+            document={documensoDocument}
+            user={{
+              name: user?.fullName || user?.name || 'User',
+              email: user?.email || 'user@university.edu',
+              role: user?.role || 'Employee'
+            }}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
