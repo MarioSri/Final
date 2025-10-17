@@ -158,107 +158,48 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
     }
   };
 
-  // Documenso API integration
-  const processWithDocumenso = async () => {
+  // Submit approval
+  const handleSubmit = async () => {
     setIsProcessing(true);
     
     try {
-      // 1. Create document in Documenso
-      const createDocResponse = await fetch(`${DOCUMENSO_BASE_URL}/documents`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${DOCUMENSO_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          title: document.title,
-          content: document.content,
-          type: document.type
-        })
-      });
-
-      const docData = await createDocResponse.json();
-      
-      // 2. AI-powered signature placement
-      const placementResponse = await fetch(`${DOCUMENSO_BASE_URL}/documents/${docData.id}/analyze`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${DOCUMENSO_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          enableAI: true,
-          detectSignatureZones: true,
-          patterns: ['Authorized Signatory', 'Signature', 'Sign Here', 'Principal Signature'],
-          templateType: 'institutional_document'
-        })
-      });
-
-      const placementData = await placementResponse.json();
-      
-      // 3. Add signature field with AI placement
-      const signatureFieldResponse = await fetch(`${DOCUMENSO_BASE_URL}/documents/${docData.id}/fields`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${DOCUMENSO_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          type: 'signature',
-          coordinates: placementData.suggestedCoordinates,
-          signer: {
-            name: signerName,
-            email: signerEmail
-          },
-          signatureImage: signatureData || capturedSignature
-        })
-      });
-
-      // 4. Complete signing process
-      const signingResponse = await fetch(`${DOCUMENSO_BASE_URL}/documents/${docData.id}/sign`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${DOCUMENSO_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          signerId: signerEmail,
-          signatureData: signatureData || capturedSignature,
-          timestamp: new Date().toISOString(),
-          metadata: {
-            iaoms_document_id: document.id,
-            signer_role: user.role,
-            approval_type: 'accept'
-          }
-        })
-      });
-
-      const signedDoc = await signingResponse.json();
+      // Get canvas signature if drawn
+      if (canvasRef.current && !capturedSignature) {
+        const canvas = canvasRef.current;
+        const canvasData = canvas.toDataURL('image/png');
+        setSignatureData(canvasData);
+      }
       
       // Update IAOMS document status
       const approvalUpdate = {
         documentId: document.id,
         status: 'approved',
-        signedBy: user.name,
+        signedBy: signerName,
         signedAt: new Date().toISOString(),
-        documensoId: docData.id,
-        signatureUrl: signedDoc.downloadUrl
+        signatureData: signatureData || capturedSignature,
+        signerEmail: signerEmail,
+        approvalDate: currentDate
       };
       
       localStorage.setItem(`approval-${document.id}`, JSON.stringify(approvalUpdate));
       
+      // Remove from pending approvals
+      const pending = JSON.parse(localStorage.getItem('pending-approvals') || '[]');
+      const updated = pending.filter((doc: any) => doc.id !== document.id);
+      localStorage.setItem('pending-approvals', JSON.stringify(updated));
+      
       toast({
-        title: "Document Signed Successfully",
-        description: "The document has been digitally signed and approved via Documenso.",
+        title: "Document Approved",
+        description: "The document has been successfully approved and signed.",
       });
       
       onClose();
       
     } catch (error) {
-      console.error('Documenso integration error:', error);
+      console.error('Approval error:', error);
       toast({
-        title: "Signing Error",
-        description: "Failed to process document signature. Please try again.",
+        title: "Approval Error",
+        description: "Failed to process document approval. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -455,8 +396,8 @@ This document has been processed through the Institutional Academic Operations M
                   </Button>
                   
                   <Button
-                    onClick={processWithDocumenso}
-                    disabled={isProcessing || (!signatureData && !capturedSignature)}
+                    onClick={handleSubmit}
+                    disabled={isProcessing}
                     className="flex-1 bg-green-600 hover:bg-green-700"
                   >
                     {isProcessing ? (
@@ -464,7 +405,7 @@ This document has been processed through the Institutional Academic Operations M
                     ) : (
                       <>
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        Submit & Sign
+                        Submit
                       </>
                     )}
                   </Button>

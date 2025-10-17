@@ -125,6 +125,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className, channel
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
   const [activeVideoCallId, setActiveVideoCallId] = useState<string | null>(null);
+  const [showChannelMembersModal, setShowChannelMembersModal] = useState(false);
+  const [selectedChannelForMembers, setSelectedChannelForMembers] = useState<ChatChannel | null>(null);
 
   // Handle click outside emoji picker
   useEffect(() => {
@@ -161,8 +163,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className, channel
           channel.members.includes(user.id) || channel.createdBy === user.id
         );
         
-        // Combine all channels
-        const allChannels = [...userDocumentChannels, ...userChannels];
+        // Combine all channels and ensure they have members
+        const allChannels = [...userDocumentChannels, ...userChannels].map(channel => ({
+          ...channel,
+          members: channel.members?.length > 0 ? channel.members : [user.id, 'principal', 'registrar', 'dean']
+        }));
         setChannels(allChannels);
         
         if (allChannels.length > 0) {
@@ -180,14 +185,33 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className, channel
           {
             id: 'general',
             name: 'General',
-            members: [user.id],
+            members: [user.id, 'principal', 'registrar', 'hod-cse', 'dean'],
+            isPrivate: false,
+            createdAt: new Date(),
+            createdBy: user.id
+          },
+          {
+            id: 'admin-council',
+            name: 'Administrative Council',
+            members: [user.id, 'principal', 'registrar', 'dean'],
+            isPrivate: false,
+            createdAt: new Date(),
+            createdBy: user.id
+          },
+          {
+            id: 'faculty-board',
+            name: 'Faculty Board',
+            members: [user.id, 'hod-cse', 'hod-eee', 'dean'],
             isPrivate: false,
             createdAt: new Date(),
             createdBy: user.id
           }
         ];
         
-        const allChannels = [...userDocumentChannels, ...defaultChannels];
+        const allChannels = [...userDocumentChannels, ...defaultChannels].map(channel => ({
+          ...channel,
+          members: channel.members?.length > 0 ? channel.members : [user.id, 'principal', 'registrar', 'dean']
+        }));
         setChannels(allChannels);
         setActiveChannel(allChannels[0]);
       }
@@ -1021,11 +1045,11 @@ Generated on: ${new Date().toLocaleString()}`;
         <div className="p-2 space-y-1">
           {/* Add default channels with message counts if none exist */}
           {channels.length === 0 && [
-            { id: 'admin-council', name: 'Administrative Council', isPrivate: false, members: ['user-1'], createdAt: new Date(), createdBy: 'user-1' },
-            { id: 'faculty-board', name: 'Faculty Board', isPrivate: false, members: ['user-1'], createdAt: new Date(), createdBy: 'user-1' },
-            { id: 'general', name: 'General', isPrivate: false, members: ['user-1'], createdAt: new Date(), createdBy: 'user-1' }
+            { id: 'admin-council', name: 'Administrative Council', isPrivate: false, members: ['user-1', 'principal', 'registrar', 'dean'], createdAt: new Date(), createdBy: 'user-1' },
+            { id: 'faculty-board', name: 'Faculty Board', isPrivate: false, members: ['user-1', 'hod-cse', 'hod-eee', 'dean'], createdAt: new Date(), createdBy: 'user-1' },
+            { id: 'general', name: 'General', isPrivate: false, members: ['user-1', 'principal', 'registrar', 'hod-cse', 'dean'], createdAt: new Date(), createdBy: 'user-1' }
           ].map(channel => (
-            <div key={channel.id} className="flex items-center gap-2">
+            <div key={channel.id} className="flex items-center gap-1">
               {deleteMode && (
                 <input
                   type="checkbox"
@@ -1037,29 +1061,40 @@ Generated on: ${new Date().toLocaleString()}`;
                       setSelectedChannelsToDelete(prev => prev.filter(id => id !== channel.id));
                     }
                   }}
-                  className="w-4 h-4 rounded"
+                  className="w-4 h-4 rounded flex-shrink-0"
                 />
               )}
               <Button
                 variant={activeChannel?.id === channel.id ? "secondary" : "ghost"}
-                className="flex-1 justify-start"
+                className="flex-1 justify-start min-w-0"
                 onClick={() => !deleteMode && setActiveChannel(channel)}
                 disabled={deleteMode}
               >
-                <div className="flex items-center gap-2">
-                  {channel.isPrivate ? <Lock className="w-4 h-4" /> : <Hash className="w-4 h-4" />}
+                <div className="flex items-center gap-2 min-w-0">
+                  {channel.isPrivate ? <Lock className="w-4 h-4 flex-shrink-0" /> : <Hash className="w-4 h-4 flex-shrink-0" />}
                   <span className="truncate">{channel.name}</span>
                   {channelMessageCounts[channel.name] && (
-                    <Badge variant="destructive" className="ml-auto px-1 py-0 text-xs">
+                    <Badge variant="destructive" className="px-1 py-0 text-xs ml-auto flex-shrink-0">
                       {channelMessageCounts[channel.name]}
                     </Badge>
                   )}
                 </div>
               </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 w-8 p-0 flex-shrink-0"
+                onClick={() => {
+                  setSelectedChannelForMembers(channel);
+                  setShowChannelMembersModal(true);
+                }}
+              >
+                <Users className="h-4 w-4" />
+              </Button>
             </div>
           ))}
           {channels.map(channel => (
-            <div key={channel.id} className="flex items-center gap-2">
+            <div key={channel.id} className="flex items-center gap-1">
               {deleteMode && (
                 <input
                   type="checkbox"
@@ -1071,25 +1106,35 @@ Generated on: ${new Date().toLocaleString()}`;
                       setSelectedChannelsToDelete(prev => prev.filter(id => id !== channel.id));
                     }
                   }}
-                  className="w-4 h-4 rounded"
+                  className="w-4 h-4 rounded flex-shrink-0"
                 />
               )}
               <Button
                 variant={activeChannel?.id === channel.id ? "secondary" : "ghost"}
-                className="flex-1 justify-start"
+                className="flex-1 justify-start min-w-0"
                 onClick={() => !deleteMode && setActiveChannel(channel)}
                 disabled={deleteMode}
               >
-                <div className="flex items-center gap-2">
-                  {channel.isPrivate ? <Lock className="w-4 h-4" /> : <Hash className="w-4 h-4" />}
+                <div className="flex items-center gap-2 min-w-0">
+                  {channel.isPrivate ? <Lock className="w-4 h-4 flex-shrink-0" /> : <Hash className="w-4 h-4 flex-shrink-0" />}
                   <span className="truncate">{channel.name}</span>
-                  {/* Show real-time message count for each channel */}
                   {channelMessageCounts[channel.name] && (
-                    <Badge variant="destructive" className="ml-auto px-1 py-0 text-xs">
+                    <Badge variant="destructive" className="ml-auto px-1 py-0 text-xs flex-shrink-0">
                       {channelMessageCounts[channel.name]}
                     </Badge>
                   )}
                 </div>
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 w-8 p-0 flex-shrink-0"
+                onClick={() => {
+                  setSelectedChannelForMembers(channel);
+                  setShowChannelMembersModal(true);
+                }}
+              >
+                <Users className="h-4 w-4" />
               </Button>
             </div>
           ))}
@@ -1635,6 +1680,65 @@ Generated on: ${new Date().toLocaleString()}`;
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Channel Members Modal */}
+      <AlertDialog open={showChannelMembersModal} onOpenChange={setShowChannelMembersModal}>
+        <AlertDialogContent className="max-w-2xl">
+          <button
+            onClick={() => setShowChannelMembersModal(false)}
+            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-500" />
+              View Members in Channel Group
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedChannelForMembers?.name} • Total Members: 5
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Channel Group Members</label>
+              <ScrollArea className="h-64 border rounded-md p-2">
+                {[
+                  { id: 'principal', fullName: 'Dr. Principal', role: 'Principal', isOnline: true },
+                  { id: 'registrar', fullName: 'Prof. Registrar', role: 'Registrar', isOnline: true },
+                  { id: 'dean', fullName: 'Dr. Dean', role: 'Dean', isOnline: false },
+                  { id: 'hod-cse', fullName: 'Dr. HOD-CSE', role: 'HOD', isOnline: true },
+                  { id: 'hod-eee', fullName: 'Dr. HOD-EEE', role: 'HOD', isOnline: false }
+                ].map((member) => (
+                  <div key={member.id} className="flex items-center justify-between p-2 hover:bg-accent rounded-md">
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <Avatar className="w-8 h-8">
+                          <AvatarFallback className="text-xs">
+                            {member.fullName.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
+                          member.isOnline ? 'bg-green-500' : 'bg-gray-400'
+                        }`} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{member.fullName}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {member.role}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant={member.isOnline ? "default" : "secondary"} className="text-xs">
+                      {member.isOnline ? 'Online' : 'Offline'}
+                    </Badge>
+                  </div>
+                ))}
+              </ScrollArea>
+            </div>
+          </div>
         </AlertDialogContent>
       </AlertDialog>
 
