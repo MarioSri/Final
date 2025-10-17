@@ -14,7 +14,7 @@ import { DocumentsWidget } from './widgets/DocumentsWidget';
 import { CalendarWidget } from './widgets/CalendarWidget';
 import { NotificationsWidget } from './widgets/NotificationsWidget';
 import { AnalyticsWidget } from './widgets/AnalyticsWidget';
-import { WorkflowWidget } from './widgets/WorkflowWidget';
+
 import { AIWidget } from './widgets/AIWidget';
 
 import {
@@ -43,7 +43,7 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ className })
   // Supported widget types - only these will be rendered
   const supportedWidgetTypes = [
     'quickActions', 'documents', 'calendar', 'notifications', 
-    'analytics', 'workflow', 'ai'
+    'analytics', 'ai'
   ];
 
   useEffect(() => {
@@ -148,14 +148,7 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ className })
                 !['employee', 'registrar', 'program-head', 'hod', 'principal'].includes(user?.role || ''),
         permissions: ['canViewAnalytics']
       },
-      {
-        id: 'workflow',
-        type: 'workflow',
-        title: 'Workflow Management',
-        position: { x: isMobile ? 0 : 6, y: 5, w: isMobile ? 12 : 6, h: 2 },
-        visible: config.permissions.canManageWorkflows,
-        permissions: ['canManageWorkflows']
-      },
+
       {
         id: 'ai',
         type: 'ai',
@@ -209,8 +202,7 @@ export const DynamicDashboard: React.FC<DynamicDashboardProps> = ({ className })
           return <NotificationsWidget {...widgetProps} />;
         case 'analytics':
           return <AnalyticsWidget {...widgetProps} />;
-        case 'workflow':
-          return <WorkflowWidget {...widgetProps} />;
+
         case 'ai':
           return <AIWidget {...widgetProps} />;
         default:

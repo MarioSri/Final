@@ -47,6 +47,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { WatermarkFeature } from '@/components/WatermarkFeature';
 
 interface WorkflowConfigurationProps {
   className?: string;
@@ -92,6 +93,8 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
   const [stepTimeoutHours, setStepTimeoutHours] = useState(24);
   const [stepEscalationRoles, setStepEscalationRoles] = useState<string[]>([]);
   const [stepRequiresCounterApproval, setStepRequiresCounterApproval] = useState(false);
+  const [showWatermarkModal, setShowWatermarkModal] = useState(false);
+  const [pendingSubmissionData, setPendingSubmissionData] = useState<any>(null);
 
   const availableRoles = ['principal', 'registrar', 'program-head', 'hod', 'employee'];
 
@@ -106,6 +109,12 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
   const handleDocumentTypeChange = (typeId: string, checked: boolean) => {
     if (checked) {
       setDocumentTypes([...documentTypes, typeId]);
+      // Auto-trigger watermark feature for circular documents
+      if (typeId === 'circular' && uploadedFiles.length > 0) {
+        setTimeout(() => {
+          setShowWatermarkModal(true);
+        }, 500);
+      }
     } else {
       setDocumentTypes(documentTypes.filter(id => id !== typeId));
     }
@@ -114,6 +123,13 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     setUploadedFiles([...uploadedFiles, ...files]);
+    
+    // Auto-trigger watermark feature if circular is already selected
+    if (documentTypes.includes('circular') && files.length > 0) {
+      setTimeout(() => {
+        setShowWatermarkModal(true);
+      }, 500);
+    }
   };
 
   const removeFile = (index: number) => {
@@ -239,6 +255,11 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
       setSelectedWorkflow(workflow);
       setIsEditing(false);
       setIsCreating(false);
+      
+      // Handle watermark completion
+      if (pendingSubmissionData) {
+        setPendingSubmissionData(null);
+      }
     } catch (error) {
       toast({
         title: 'Error',
@@ -697,6 +718,14 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
                                   <Eye className="w-3 h-3 mr-1" />
                                   View
                                 </Badge>
+                                <Badge 
+                                  variant="outline" 
+                                  className="text-xs cursor-pointer hover:bg-primary/10"
+                                  onClick={() => setShowWatermarkModal(true)}
+                                >
+                                  <Settings className="w-3 h-3 mr-1" />
+                                  Watermark
+                                </Badge>
                               </div>
                               <Button
                                 variant="ghost"
@@ -861,7 +890,24 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
                       Cancel
                     </Button>
                     <Button
-                      onClick={handleSaveWorkflow}
+                      onClick={() => {
+                        // Check if circular is selected and watermark is needed
+                        if (documentTypes.includes('circular')) {
+                          const submissionData = {
+                            workflowName,
+                            documentTitle,
+                            documentTypes,
+                            uploadedFiles,
+                            selectedRecipients,
+                            documentDescription,
+                            documentPriority
+                          };
+                          setPendingSubmissionData(submissionData);
+                          setShowWatermarkModal(true);
+                          return;
+                        }
+                        handleSaveWorkflow();
+                      }}
                       variant="default"
                       className="font-bold animate-pulse bg-green-600 hover:bg-green-700 text-white"
                     >
@@ -1155,6 +1201,29 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Watermark Feature Modal */}
+      {showWatermarkModal && uploadedFiles.length > 0 && user && (
+        <WatermarkFeature
+          isOpen={showWatermarkModal}
+          onClose={() => {
+            setShowWatermarkModal(false);
+            setPendingSubmissionData(null);
+          }}
+          document={{
+            id: `bypass-${Date.now()}`,
+            title: documentTitle || 'Approval Chain Bypass Document',
+            content: documentDescription || 'This document will bypass normal approval workflows and be watermarked according to your specifications.',
+            type: 'circular'
+          }}
+          user={{
+            id: user.id,
+            name: user.fullName || user.name || 'User',
+            email: user.email || 'user@example.com',
+            role: user.role || 'Employee'
+          }}
+        />
+      )}
     </div>
   );
 };

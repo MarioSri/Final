@@ -45,6 +45,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { WatermarkFeature } from "@/components/WatermarkFeature";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface EmergencySubmission {
   id: string;
@@ -65,6 +67,7 @@ interface EmergencyWorkflowInterfaceProps {
 }
 
 export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProps> = ({ userRole }) => {
+  const { user } = useAuth();
   const [isEmergencyMode, setIsEmergencyMode] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
   const [emergencyData, setEmergencyData] = useState({
@@ -102,6 +105,8 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
   const [documentAssignments, setDocumentAssignments] = useState<{[key: string]: string[]}>({});
   const [showRecipientSelection, setShowRecipientSelection] = useState(false);
+  const [showWatermarkModal, setShowWatermarkModal] = useState(false);
+  const [pendingSubmissionData, setPendingSubmissionData] = useState<any>(null);
   const [finalSelectedRecipients, setFinalSelectedRecipients] = useState<string[]>([]);
   const [useSmartDelivery, setUseSmartDelivery] = useState(false);
   const [emergencyHistory, setEmergencyHistory] = useState<EmergencySubmission[]>([
@@ -167,6 +172,12 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
   const handleDocumentTypeChange = (typeId: string, checked: boolean) => {
     if (checked) {
       setEmergencyData({...emergencyData, documentTypes: [...emergencyData.documentTypes, typeId]});
+      // Auto-trigger watermark feature for circular documents
+      if (typeId === 'circular' && emergencyData.uploadedFiles.length > 0) {
+        setTimeout(() => {
+          setShowWatermarkModal(true);
+        }, 500);
+      }
     } else {
       setEmergencyData({...emergencyData, documentTypes: emergencyData.documentTypes.filter(id => id !== typeId)});
     }
@@ -175,6 +186,13 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     setEmergencyData({...emergencyData, uploadedFiles: [...emergencyData.uploadedFiles, ...files]});
+    
+    // Auto-trigger watermark feature if circular is already selected
+    if (emergencyData.documentTypes.includes('circular') && files.length > 0) {
+      setTimeout(() => {
+        setShowWatermarkModal(true);
+      }, 500);
+    }
   };
 
   const removeFile = (index: number) => {
@@ -214,6 +232,20 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
       return;
     }
 
+    // Check if circular is selected and watermark is needed
+    if (emergencyData.documentTypes.includes('circular')) {
+      const submissionData = {
+        title: emergencyData.title,
+        description: emergencyData.description,
+        urgencyLevel: emergencyData.urgencyLevel,
+        recipients: recipientsToSend
+      };
+      setPendingSubmissionData(submissionData);
+      setShowWatermarkModal(true);
+      return;
+    }
+    
+    // Regular submission for non-circular documents
     const newSubmission: EmergencySubmission = {
       id: Date.now().toString(),
       title: emergencyData.title,
@@ -249,23 +281,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
     localStorage.setItem('document-channels', JSON.stringify(existingChannels));
     
     // Reset form
-    setEmergencyData({
-      title: '',
-      description: '',
-      reason: '',
-      urgencyLevel: 'medium',
-      documentTypes: [],
-      uploadedFiles: [],
-      attachments: [],
-      autoEscalation: false,
-      escalationTimeout: 24,
-      escalationTimeUnit: 'hours' as 'seconds' | 'minutes' | 'hours' | 'days' | 'weeks' | 'months'
-    });
-    setSelectedRecipients([]);
-    setFinalSelectedRecipients([]);
-    setShowRecipientSelection(false);
-    setUseSmartDelivery(false);
-    setIsEmergencyMode(false);
+    resetEmergencyForm();
 
     // Simulate immediate batch notifications
     toast({
@@ -291,6 +307,58 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
         variant: "destructive"
       });
     }, 5000);
+  };
+  
+  const resetEmergencyForm = () => {
+    setEmergencyData({
+      title: '',
+      description: '',
+      reason: '',
+      urgencyLevel: 'medium',
+      documentTypes: [],
+      uploadedFiles: [],
+      attachments: [],
+      autoEscalation: false,
+      escalationTimeout: 24,
+      escalationTimeUnit: 'hours' as 'seconds' | 'minutes' | 'hours' | 'days' | 'weeks' | 'months'
+    });
+    setSelectedRecipients([]);
+    setFinalSelectedRecipients([]);
+    setShowRecipientSelection(false);
+    setUseSmartDelivery(false);
+    setIsEmergencyMode(false);
+  };
+  
+  const handleWatermarkComplete = () => {
+    setShowWatermarkModal(false);
+    
+    if (pendingSubmissionData) {
+      const recipientsToSend = useSmartDelivery && showRecipientSelection ? finalSelectedRecipients : selectedRecipients;
+      
+      const newSubmission: EmergencySubmission = {
+        id: Date.now().toString(),
+        title: pendingSubmissionData.title,
+        description: pendingSubmissionData.description,
+        reason: '',
+        urgencyLevel: pendingSubmissionData.urgencyLevel,
+        recipients: recipientsToSend,
+        submittedBy: userRole,
+        submittedAt: new Date(),
+        status: 'submitted',
+        escalationLevel: 0
+      };
+
+      setEmergencyHistory([newSubmission, ...emergencyHistory]);
+      
+      setPendingSubmissionData(null);
+      resetEmergencyForm();
+
+      toast({
+        title: "EMERGENCY SUBMITTED",
+        description: `Emergency document with watermark sent to ${recipientsToSend.length} recipient(s)`,
+        duration: 10000,
+      });
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -555,6 +623,14 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
                             >
                               <Eye className="w-3 h-3 mr-1" />
                               View
+                            </Badge>
+                            <Badge 
+                              variant="outline" 
+                              className="text-xs cursor-pointer hover:bg-primary/10"
+                              onClick={() => setShowWatermarkModal(true)}
+                            >
+                              <Settings className="w-3 h-3 mr-1" />
+                              Watermark
                             </Badge>
                           </div>
                           <Button
@@ -1236,6 +1312,29 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
           </div>
         </CardContent>
       </Card>
+      )}
+      
+      {/* Watermark Feature Modal */}
+      {showWatermarkModal && emergencyData.uploadedFiles.length > 0 && user && (
+        <WatermarkFeature
+          isOpen={showWatermarkModal}
+          onClose={() => {
+            setShowWatermarkModal(false);
+            setPendingSubmissionData(null);
+          }}
+          document={{
+            id: `emergency-${Date.now()}`,
+            title: emergencyData.title || 'Emergency Circular',
+            content: emergencyData.description || 'This emergency circular document will be watermarked according to your specifications.',
+            type: 'circular'
+          }}
+          user={{
+            id: user?.id || 'emergency-user',
+            name: user?.fullName || user?.name || 'Emergency User',
+            email: user?.email || 'emergency@example.com',
+            role: user?.role || userRole
+          }}
+        />
       )}
     </div>
   );

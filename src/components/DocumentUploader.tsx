@@ -38,6 +38,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { WatermarkFeature } from "@/components/WatermarkFeature";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DocumentUploaderProps {
   userRole: string;
@@ -45,6 +47,7 @@ interface DocumentUploaderProps {
 }
 
 export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [documentTypes, setDocumentTypes] = useState<string[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -55,6 +58,8 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
   const [documentTitle, setDocumentTitle] = useState("");
   const [showAssignmentModal, setShowAssignmentModal] = useState(false);
   const [documentAssignments, setDocumentAssignments] = useState<{[key: string]: string[]}>({});
+  const [showWatermarkModal, setShowWatermarkModal] = useState(false);
+  const [pendingSubmissionData, setPendingSubmissionData] = useState<any>(null);
 
   const documentTypeOptions = [
     { id: "letter", label: "Letter", icon: FileText },
@@ -65,6 +70,12 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
   const handleDocumentTypeChange = (typeId: string, checked: boolean) => {
     if (checked) {
       setDocumentTypes([...documentTypes, typeId]);
+      // Auto-trigger watermark feature for circular documents
+      if (typeId === 'circular' && uploadedFiles.length > 0) {
+        setTimeout(() => {
+          setShowWatermarkModal(true);
+        }, 500);
+      }
     } else {
       setDocumentTypes(documentTypes.filter(id => id !== typeId));
     }
@@ -73,6 +84,13 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     setUploadedFiles([...uploadedFiles, ...files]);
+    
+    // Auto-trigger watermark feature if circular is already selected
+    if (documentTypes.includes('circular') && files.length > 0) {
+      setTimeout(() => {
+        setShowWatermarkModal(true);
+      }, 500);
+    }
   };
 
   const removeFile = (index: number) => {
@@ -107,21 +125,28 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
   };
 
   const submitDocuments = () => {
+    const data = {
+      title: documentTitle,
+      documentTypes,
+      files: uploadedFiles,
+      recipients: selectedRecipients,
+      description,
+      priority,
+      timestamp: new Date().toISOString(),
+      assignments: documentAssignments
+    };
+    
+    // Check if circular is selected and watermark is needed
+    if (documentTypes.includes('circular')) {
+      setPendingSubmissionData(data);
+      setShowWatermarkModal(true);
+      return;
+    }
+    
+    // Regular submission for non-circular documents
     setIsUploading(true);
     
-    // Simulate upload process with loading animation
     setTimeout(() => {
-      const data = {
-        title: documentTitle,
-        documentTypes,
-        files: uploadedFiles,
-        recipients: selectedRecipients,
-        description,
-        priority,
-        timestamp: new Date().toISOString(),
-        assignments: documentAssignments
-      };
-      
       toast({
         title: "Document Submitted Successfully",
         description: `Submitted ${uploadedFiles.length} file(s) to ${selectedRecipients.length} recipient(s)`,
@@ -132,14 +157,41 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
       setIsUploading(false);
       
       // Reset form after successful submission
-      setDocumentTitle("");
-      setDocumentTypes([]);
-      setUploadedFiles([]);
-      setSelectedRecipients([]);
-      setDescription("");
-      setPriority("normal");
-      setDocumentAssignments({});
+      resetForm();
     }, 2000);
+  };
+  
+  const resetForm = () => {
+    setDocumentTitle("");
+    setDocumentTypes([]);
+    setUploadedFiles([]);
+    setSelectedRecipients([]);
+    setDescription("");
+    setPriority("normal");
+    setDocumentAssignments({});
+  };
+  
+  const handleWatermarkComplete = () => {
+    setShowWatermarkModal(false);
+    
+    if (pendingSubmissionData) {
+      setIsUploading(true);
+      
+      setTimeout(() => {
+        toast({
+          title: "Document Submitted Successfully",
+          description: `Submitted ${uploadedFiles.length} file(s) to ${selectedRecipients.length} recipient(s) with watermark applied`,
+          variant: "default"
+        });
+        
+        onSubmit(pendingSubmissionData);
+        setIsUploading(false);
+        setPendingSubmissionData(null);
+        
+        // Reset form after successful submission
+        resetForm();
+      }, 1000);
+    }
   };
 
   const handleAssignmentChange = (fileName: string, recipientId: string, assigned: boolean) => {
@@ -252,6 +304,14 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
                       >
                         <Eye className="w-3 h-3 mr-1" />
                         View
+                      </Badge>
+                      <Badge 
+                        variant="outline" 
+                        className="text-xs cursor-pointer hover:bg-primary/10"
+                        onClick={() => setShowWatermarkModal(true)}
+                      >
+                        <Settings className="w-3 h-3 mr-1" />
+                        Watermark
                       </Badge>
                     </div>
                     <Button
@@ -451,6 +511,29 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Watermark Feature Modal */}
+      {showWatermarkModal && uploadedFiles.length > 0 && user && (
+        <WatermarkFeature
+          isOpen={showWatermarkModal}
+          onClose={() => {
+            setShowWatermarkModal(false);
+            setPendingSubmissionData(null);
+          }}
+          document={{
+            id: `temp-${Date.now()}`,
+            title: documentTitle || 'Circular Document',
+            content: description || 'This circular document will be watermarked according to your specifications.',
+            type: 'circular'
+          }}
+          user={{
+            id: user.id,
+            name: user.fullName || user.name || 'User',
+            email: user.email || 'user@example.com',
+            role: user.role || 'Employee'
+          }}
+        />
+      )}
     </div>
   );
 }
