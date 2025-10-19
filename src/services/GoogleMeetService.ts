@@ -7,7 +7,7 @@ export class GoogleMeetService {
     this.apiKey = apiKey;
   }
 
-  static getInstance(apiKey: string = 'AIzaSyCmLf2e17ukWMdJrp1oBGwmSj6LV-qTmHQ'): GoogleMeetService {
+  static getInstance(apiKey: string = 'AIzaSyDmYMl3R63MJz6AqDkfTm4wqIrzd91XZa8'): GoogleMeetService {
     if (!GoogleMeetService.instance) {
       GoogleMeetService.instance = new GoogleMeetService(apiKey);
     }
@@ -69,9 +69,8 @@ export class GoogleMeetService {
     // Generate unique meeting ID
     const meetingId = `iaoms-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
-    // For demo purposes, create a mock Google Meet URL
-    // In production, this would use the actual Google Calendar API to create events with Meet links
-    const meetingUrl = `https://meet.google.com/${meetingId}`;
+    // Use the official Google Meet creation endpoint
+    const meetingUrl = 'https://meet.google.com/new';
     
     try {
       // This would be the actual API call in production:
@@ -115,7 +114,7 @@ export class GoogleMeetService {
   }
 
   getMeetingUrl(meetingId: string): string {
-    return `https://meet.google.com/${meetingId}`;
+    return 'https://meet.google.com/new';
   }
 
   async validateMeeting(meetingId: string): Promise<boolean> {
@@ -130,7 +129,7 @@ export class GoogleMeetService {
 
   getEmbedUrl(meetingId: string): string {
     // Generate embed-friendly URL for iframe
-    return `https://meet.google.com/${meetingId}?authuser=0&hl=en`;
+    return 'https://meet.google.com/new?authuser=0&hl=en';
   }
 }
 

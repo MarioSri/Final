@@ -261,9 +261,9 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
           meetingLinks: {
             googleMeet: {
               meetingId: "meet-123",
-              joinUrl: "https://meet.google.com/abc-defg-hij",
-              hangoutLink: "https://meet.google.com/abc-defg-hij",
-              conferenceId: "abc-defg-hij",
+              joinUrl: "https://meet.google.com/new",
+              hangoutLink: "https://meet.google.com/new",
+              conferenceId: "meet-123",
               requestId: "req-123",
               status: "success",
               createdAt: new Date()
@@ -342,8 +342,8 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
           meetingLinks: {
             zoom: {
               meetingId: "zoom-456",
-              joinUrl: "https://zoom.us/j/123456789",
-              startUrl: "https://zoom.us/s/123456789",
+              joinUrl: "https://zoom.us/start/webmeeting",
+              startUrl: "https://zoom.us/start/webmeeting",
               password: "budget2024",
               meetingNumber: "123456789",
               status: "waiting",
@@ -384,9 +384,14 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
 
   // Helper functions
   const timeSlots = [
-    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-    "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
-    "15:00", "15:30", "16:00", "16:30", "17:00"
+    "08:00", "08:15", "08:30", "08:45", "09:00", "09:15", "09:30", "09:45",
+    "10:00", "10:15", "10:30", "10:45", "11:00", "11:15", "11:30", "11:45",
+    "12:00", "12:15", "12:30", "12:45", "13:00", "13:15", "13:30", "13:45",
+    "14:00", "14:15", "14:30", "14:45", "15:00", "15:15", "15:30", "15:45",
+    "16:00", "16:15", "16:30", "16:45", "17:00", "17:15", "17:30", "17:45",
+    "18:00", "18:15", "18:30", "18:45", "19:00", "19:15", "19:30", "19:45",
+    "20:00", "20:15", "20:30", "20:45", "21:00", "21:15", "21:30", "21:45",
+    "22:00", "22:15", "22:30", "22:45", "23:00", "23:15", "23:30"
   ];
 
   const availableAttendees = [
@@ -423,12 +428,12 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
 
   const getPriorityBadge = (priority: MeetingPriority, meetingTitle?: string) => {
     const variants = {
-      low: { variant: "secondary" as const, text: "Low Priority" },
-      medium: { variant: "default" as const, text: "Medium Priority" },
-      high: { variant: "default" as const, text: meetingTitle === "Faculty Recruitment Board Meeting" ? "Urgent Priority" : "High Priority" },
-      urgent: { variant: "destructive" as const, text: "Urgent" }
+      low: { variant: "default" as const, text: "Low Priority", className: "bg-green-500 text-white font-semibold" },
+      medium: { variant: "default" as const, text: "Medium Priority", className: "bg-green-500 text-white font-semibold" },
+      high: { variant: "default" as const, text: meetingTitle === "Faculty Recruitment Board Meeting" ? "Urgent Priority" : "High Priority", className: "bg-green-500 text-white font-semibold" },
+      urgent: { variant: "default" as const, text: "Urgent Priority", className: "bg-green-500 text-white font-semibold" }
     };
-    return variants[priority] || { variant: "default" as const, text: priority };
+    return variants[priority] || { variant: "default" as const, text: priority, className: "bg-green-500 text-white font-semibold" };
   };
 
   const getTypeIcon = (type: MeetingType) => {
@@ -605,33 +610,19 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
   };
 
   const handleJoinMeeting = (meeting: Meeting) => {
-    if (!meeting.meetingLinks) {
-      toast({
-        title: "No Meeting Link",
-        description: "Meeting link not available",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const platform = meeting.meetingLinks.primary;
-    const link = meeting.meetingLinks[platform];
+    const platform = meeting.meetingLinks?.primary || 'google-meet';
     
-    if (link && 'joinUrl' in link && link.joinUrl) {
-      window.open(link.joinUrl, '_blank');
-      
-      toast({
-        title: "Joining Meeting",
-        description: `Opening ${platform} meeting...`,
-        variant: "default"
-      });
-    } else {
-      toast({
-        title: "Invalid Meeting Link",
-        description: "Meeting link is not valid or available",
-        variant: "destructive"
-      });
+    if (platform === 'google-meet') {
+      window.open('https://meet.google.com/new', '_blank');
+    } else if (platform === 'zoom') {
+      window.open('https://zoom.us/start/webmeeting', '_blank');
     }
+    
+    toast({
+      title: "Joining Meeting",
+      description: `Opening ${platform} meeting...`,
+      variant: "default"
+    });
   };
 
   const handleViewDetails = (meeting: Meeting) => {
@@ -1013,7 +1004,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                         <div className="space-y-1 flex-1">
                           <div className="flex items-center gap-2">
                             <h3 className="font-semibold">{meeting.title}</h3>
-                            <Badge variant={getPriorityBadge(meeting.priority, meeting.title).variant} className="text-xs">
+                            <Badge variant={getPriorityBadge(meeting.priority, meeting.title).variant} className={`text-xs ${getPriorityBadge(meeting.priority, meeting.title).className || ''}`}>
                               {getPriorityBadge(meeting.priority, meeting.title).text}
                             </Badge>
                             {meeting.isRecurring && (
@@ -1305,10 +1296,9 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                     <Label>Priority</Label>
                     <Select value={newMeeting.priority} onValueChange={(value: MeetingPriority) => setNewMeeting({...newMeeting, priority: value})}>
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Select priority" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
                         <SelectItem value="medium">Medium</SelectItem>
                         <SelectItem value="high">High</SelectItem>
                         <SelectItem value="urgent">Urgent</SelectItem>
@@ -1327,7 +1317,7 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
                         </SelectTrigger>
                         <SelectContent>
                           {meetingPlatforms.filter(p => p.value !== 'physical').map((platform) => (
-                            <SelectItem key={platform.value} value={platform.value}>
+                            <SelectItem key={platform.value} value={platform.value} disabled={platform.value === 'teams'}>
                               <div className="flex items-center gap-2">
                                 {platform.icon}
                                 {platform.label}

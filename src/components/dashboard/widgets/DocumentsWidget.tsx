@@ -59,7 +59,7 @@ export const DocumentsWidget: React.FC<DocumentsWidgetProps> = ({
   const { user } = useAuth();
   const { isMobile } = useResponsive();
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'urgent' | 'emergency'>('all');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'emergency'>('all');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -67,103 +67,7 @@ export const DocumentsWidget: React.FC<DocumentsWidgetProps> = ({
     const fetchDocuments = async () => {
       setLoading(true);
       
-      const mockDocuments: Document[] = [
-        {
-          id: 'DOC-2024-001',
-          title: 'Faculty Recruitment Authorization - CSE Department',
-          type: 'Letter',
-          status: userRole === 'employee' ? 'pending' : 'approved',
-          submittedBy: 'Dr. Rajesh Kumar',
-          submittedByRole: 'HOD',
-          department: 'Computer Science & Engineering',
-          branch: 'CSE',
-          year: '3rd Year',
-          date: '2024-01-15',
-          priority: 'high',
-          description: 'Authorization for hiring 3 new faculty members to address growing enrollment',
-          requiresAction: userRole === 'principal' || userRole === 'registrar',
-          escalationLevel: 0,
-          aiSummary: 'Request for 3 CSE faculty positions due to 25% enrollment increase. Budget approved, positions justified.'
-        },
-        {
-          id: 'DOC-2024-002',
-          title: 'Semester Fee Structure Update Circular',
-          type: 'Circular',
-          status: 'pending',
-          submittedBy: 'Prof. Anita Sharma',
-          submittedByRole: 'Registrar',
-          department: 'Finance',
-          date: '2024-01-14',
-          priority: 'medium',
-          description: 'Updated fee structure for upcoming semester with new course additions',
-          requiresAction: userRole === 'principal',
-          escalationLevel: 1,
-          aiSummary: 'Fee increase of 8% for new courses. Includes lab fees and technology upgrades.'
-        },
-        {
-          id: 'DOC-2024-003',
-          title: 'Emergency Infrastructure Repair Report',
-          type: 'Report',
-          status: 'emergency',
-          submittedBy: 'Maintenance Team',
-          submittedByRole: 'Employee',
-          department: 'Infrastructure',
-          date: '2024-01-16',
-          priority: 'emergency',
-          description: 'Critical electrical system failure in Block A requiring immediate attention',
-          requiresAction: true,
-          escalationLevel: 2,
-          aiSummary: 'Critical electrical failure affecting 200+ students. Immediate repair needed, estimated cost ₹2.5L.'
-        },
-        {
-          id: 'DOC-2024-004',
-          title: 'Monthly Academic Performance Analysis - EEE',
-          type: 'Report',
-          status: 'in-review',
-          submittedBy: 'Dr. Mohammed Ali',
-          submittedByRole: 'HOD',
-          department: 'Electrical Engineering',
-          branch: 'EEE',
-          year: '2nd Year',
-          date: '2024-01-13',
-          priority: 'medium',
-          description: 'Comprehensive analysis of student performance and faculty effectiveness',
-          requiresAction: userRole === 'registrar' || userRole === 'principal',
-          escalationLevel: 0,
-          aiSummary: 'Overall performance improved by 12%. Identified 3 areas for improvement in lab practicals.'
-        },
-        {
-          id: 'DOC-2024-005',
-          title: 'Research Grant Application - AI Lab Setup',
-          type: 'Letter',
-          status: 'rejected',
-          submittedBy: 'Dr. Priya Patel',
-          submittedByRole: 'Employee',
-          department: 'Computer Science & Engineering',
-          branch: 'CSE',
-          date: '2024-01-12',
-          priority: 'low',
-          description: 'Proposal for establishing AI research laboratory with modern equipment',
-          requiresAction: false,
-          escalationLevel: 0,
-          aiSummary: 'Research lab proposal for ₹15L. Rejected due to budget constraints. Resubmission suggested with phased approach.'
-        },
-        {
-          id: 'DOC-2024-006',
-          title: 'Demo Document – Sample Tracking Card',
-          type: 'Report',
-          status: 'pending',
-          submittedBy: 'System Admin',
-          submittedByRole: 'Employee',
-          department: 'Administration',
-          date: '2024-01-16',
-          priority: 'medium',
-          description: 'Sample document for demonstration purposes with tracking capabilities',
-          requiresAction: true,
-          escalationLevel: 0,
-          aiSummary: 'Demo document showcasing system tracking and approval workflow features.'
-        }
-      ];
+      const mockDocuments: Document[] = [];
 
       // Filter documents based on role and permissions
       const filteredDocs = mockDocuments.filter(doc => {
@@ -192,8 +96,7 @@ export const DocumentsWidget: React.FC<DocumentsWidgetProps> = ({
     switch (filter) {
       case 'pending':
         return documents.filter(doc => doc.status === 'pending' || doc.status === 'in-review');
-      case 'urgent':
-        return documents.filter(doc => doc.priority === 'high' || doc.priority === 'emergency');
+
       case 'emergency':
         return documents.filter(doc => doc.status === 'emergency' || doc.priority === 'emergency');
       default:
@@ -285,7 +188,7 @@ export const DocumentsWidget: React.FC<DocumentsWidgetProps> = ({
           
           <div className="flex items-center gap-2">
             <div className="flex gap-1">
-              {(['all', 'pending', 'urgent', 'emergency'] as const).map(filterType => (
+              {(['all', 'pending', 'emergency'] as const).map(filterType => (
                 <Button
                   key={filterType}
                   variant={filter === filterType ? "default" : "ghost"}
@@ -294,8 +197,7 @@ export const DocumentsWidget: React.FC<DocumentsWidgetProps> = ({
                   className={cn(isMobile && "text-xs px-2")}
                 >
                   {filterType === 'all' ? 'All' : 
-                   filterType === 'pending' ? 'Pending' :
-                   filterType === 'urgent' ? 'Urgent' : 'Emergency'}
+                   filterType === 'pending' ? 'Pending' : 'Emergency'}
                 </Button>
               ))}
             </div>

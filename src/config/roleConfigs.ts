@@ -22,7 +22,7 @@ export const roleConfigs: Record<string, RoleConfig> = {
       canViewAllDepartments: true,
       canEscalateDocuments: true,
       canOverrideApprovals: true,
-      canAccessAI: true,
+      canAccessAI: false,
       canManageUsers: true,
       departments: ['All'],
       branches: branches,
@@ -30,7 +30,7 @@ export const roleConfigs: Record<string, RoleConfig> = {
     },
     defaultWidgets: [
       'quickActions', 'documents', 'calendar', 
-      'notifications', 'workflow', 'ai'
+      'notifications', 'workflow'
     ],
     dashboardLayout: {
       columns: 12,
@@ -74,7 +74,7 @@ export const roleConfigs: Record<string, RoleConfig> = {
       canViewAllDepartments: true,
       canEscalateDocuments: true,
       canOverrideApprovals: false,
-      canAccessAI: true,
+      canAccessAI: false,
       canManageUsers: false,
       departments: ['All'],
       branches: branches,
@@ -82,7 +82,7 @@ export const roleConfigs: Record<string, RoleConfig> = {
     },
     defaultWidgets: [
       'quickActions', 'documents', 'calendar',
-      'notifications', 'workflow', 'ai'
+      'notifications', 'workflow'
     ],
     dashboardLayout: {
       columns: 12,
@@ -126,7 +126,7 @@ export const roleConfigs: Record<string, RoleConfig> = {
       canViewAllDepartments: false,
       canEscalateDocuments: true,
       canOverrideApprovals: false,
-      canAccessAI: true,
+      canAccessAI: false,
       canManageUsers: false,
       departments: [], // Set based on user's department
       branches: [], // Set based on user's branch
@@ -134,7 +134,7 @@ export const roleConfigs: Record<string, RoleConfig> = {
     },
     defaultWidgets: [
       'quickActions', 'documents', 'calendar', 
-      'notifications', 'ai'
+      'notifications'
     ],
     dashboardLayout: {
       columns: 12,
@@ -178,7 +178,7 @@ export const roleConfigs: Record<string, RoleConfig> = {
       canViewAllDepartments: false,
       canEscalateDocuments: true,
       canOverrideApprovals: false,
-      canAccessAI: true,
+      canAccessAI: false,
       canManageUsers: false,
       departments: [], // Set based on user's department
       branches: [], // Set based on user's branch
@@ -186,7 +186,7 @@ export const roleConfigs: Record<string, RoleConfig> = {
     },
     defaultWidgets: [
       'quickActions', 'documents', 'calendar',
-      'notifications', 'ai'
+      'notifications'
     ],
     dashboardLayout: {
       columns: 12,
@@ -230,7 +230,7 @@ export const roleConfigs: Record<string, RoleConfig> = {
       canViewAllDepartments: false,
       canEscalateDocuments: false,
       canOverrideApprovals: false,
-      canAccessAI: true,
+      canAccessAI: false,
       canManageUsers: false,
       departments: [], // Set based on user's department
       branches: [], // Set based on user's branch
@@ -238,7 +238,7 @@ export const roleConfigs: Record<string, RoleConfig> = {
     },
     defaultWidgets: [
       'quickActions', 'documents', 'calendar',
-      'notifications', 'ai'
+      'notifications'
     ],
     dashboardLayout: {
       columns: 12,

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle2, XCircle, Clock, FileText, User, Calendar, MessageSquare, Video, Eye, ChevronRight, CircleAlert, Undo2, SquarePen, AlertTriangle } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, FileText, User, Calendar, MessageSquare, Video, Eye, ChevronRight, CircleAlert, Undo2, SquarePen, AlertTriangle, Zap } from "lucide-react";
 import { DocumensoIntegration } from "@/components/DocumensoIntegration";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -799,6 +799,17 @@ const Approvals = () => {
                             <div className="bg-muted p-3 rounded text-sm">
                               <p>Annual technology festival proposal including budget allocation, venue requirements, and guest speaker arrangements.</p>
                             </div>
+                          </div>
+                          
+                          {/* Action Required Indicator */}
+                          <div className="flex items-center gap-2 p-2 bg-warning/10 rounded border border-warning/20">
+                            <Zap className="w-4 h-4 text-warning" />
+                            <span className="text-sm font-medium text-warning">
+                              Action Required
+                            </span>
+                            <Badge variant="destructive" className="text-xs">
+                              Escalated 2x
+                            </Badge>
                           </div>
                           
                           {comments['student-event']?.length > 0 && (

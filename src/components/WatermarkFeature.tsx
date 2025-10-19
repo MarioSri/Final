@@ -84,11 +84,6 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
     setColor(style.color);
     setOpacity([style.opacity]);
     setRotation(style.rotation);
-    
-    toast({
-      title: "Unique Watermark Generated",
-      description: "A unique watermark style has been created based on your text and settings.",
-    });
   };
 
   const regenerateVariant = () => {
@@ -116,19 +111,10 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
     setColor(style.color);
     setOpacity([style.opacity]);
     setRotation(style.rotation);
-    
-    toast({
-      title: "Variant Generated",
-      description: "A new watermark variant has been created.",
-    });
   };
 
   const lockWatermark = () => {
     setIsLocked(!isLocked);
-    toast({
-      title: isLocked ? "Watermark Unlocked" : "Watermark Locked",
-      description: isLocked ? "Watermark settings can now be modified." : "Watermark settings have been saved and locked.",
-    });
   };
 
   const handleSubmit = () => {
@@ -251,7 +237,7 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
                   type="color"
                   value={color}
                   onChange={(e) => setColor(e.target.value)}
-                  className="w-16 h-10 p-1 border rounded"
+                  className="w-16 h-10 p-1 border rounded-md"
                 />
                 <Input
                   type="text"
@@ -411,7 +397,7 @@ This document is part of the Institutional Academic Operations Management System
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                        className={`px-3 py-2 rounded-full text-sm font-medium transition-all flex-1 text-center ${
                           activeTab === tab.id
                             ? 'bg-black text-white'
                             : 'text-gray-600 hover:text-gray-800'

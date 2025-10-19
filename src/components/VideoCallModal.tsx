@@ -291,9 +291,9 @@ export const VideoCallModal: React.FC<VideoCallModalProps> = ({
         ref={modalRef}
         className={`max-w-5xl max-h-[90vh] p-0 rounded-lg flex flex-col transition-all duration-300 ease-in-out ${isFullscreen ? 'fixed inset-0 max-w-none max-h-none w-screen h-screen z-50 rounded-none' : ''}`}
       >
-        <DialogHeader className="p-4 pb-2 border-b">
-          <DialogTitle className="flex items-center gap-2">
-            <Video className="w-5 h-5" />
+        <DialogHeader className="p-4 pb-2">
+          <DialogTitle className="flex items-center gap-2 text-xl mt-2">
+            <Video className="w-6 h-6" />
             Video Call - {channelName}
           </DialogTitle>
         </DialogHeader>
