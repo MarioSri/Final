@@ -1,9 +1,10 @@
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect, useRef } from "react";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { NotificationCenter } from "./NotificationCenter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { User, LogOut, Search, Settings, Crown, Shield, Users, Briefcase } from "lucide-react";
 import {
   DropdownMenu,
@@ -24,6 +25,35 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children, userRole, onLogout }: DashboardLayoutProps) {
   const navigate = useNavigate();
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setIsSearchExpanded(false);
+        setSearchQuery("");
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsSearchExpanded(false);
+        setSearchQuery("");
+      }
+    };
+
+    if (isSearchExpanded) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isSearchExpanded]);
   const currentDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
@@ -102,18 +132,49 @@ export function DashboardLayout({ children, userRole, onLogout }: DashboardLayou
 
               {/* Right Section - Navigation & Profile */}
               <div className="flex items-center gap-3">
-                {/* Main Navigation Buttons */}
-                <div className="hidden md:flex items-center gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => navigate("/search")}
-                    title="Universal Search"
-                    className="text-sm"
-                  >
-                    <Search className="w-4 h-4 mr-1" />
-                    Search
-                  </Button>
+                {/* Search Bar */}
+                <div className="hidden md:flex items-center gap-2" ref={searchRef}>
+                  {isSearchExpanded ? (
+                    <div className="flex items-center bg-gray-50 rounded-full px-4 py-2 w-96">
+                      <Input
+                        type="text"
+                        placeholder="Search..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && searchQuery.trim()) {
+                            console.log('Search:', searchQuery);
+                          }
+                        }}
+                      />
+                      <Button
+                        size="sm"
+                        className="ml-2 bg-gray-800 hover:bg-gray-900 rounded-full px-3 py-1 h-8"
+                        onClick={() => {
+                          if (searchQuery.trim()) {
+                            console.log('Search:', searchQuery);
+                          }
+                          setIsSearchExpanded(false);
+                          setSearchQuery("");
+                        }}
+                      >
+                        <Search className="w-4 h-4 text-white" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setIsSearchExpanded(true)}
+                      title="Search"
+                      className="text-sm"
+                    >
+                      <Search className="w-4 h-4 mr-1" />
+                      Search
+                    </Button>
+                  )}
                 </div>
 
                 {/* Notifications */}

@@ -19,7 +19,6 @@ import ApprovalRouting from "./pages/ApprovalRouting";
 import Analytics from "./pages/Analytics";
 
 import Emergency from "./pages/Emergency";
-import Search from "./pages/Search";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
@@ -81,11 +80,6 @@ const App = () => (
                 <Route path="/emergency" element={
                   <ProtectedRoute>
                     <Emergency />
-                  </ProtectedRoute>
-                } />
-                <Route path="/search" element={
-                  <ProtectedRoute>
-                    <Search />
                   </ProtectedRoute>
                 } />
                 <Route path="/profile" element={
