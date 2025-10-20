@@ -201,6 +201,7 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
   const [comment, setComment] = useState('');
   const [submittedDocuments, setSubmittedDocuments] = useState<Document[]>([]);
   const [removedDocuments, setRemovedDocuments] = useState<string[]>([]);
+  const [recentlyRemoved, setRecentlyRemoved] = useState<string[]>([]);
   const [currentUserProfile, setCurrentUserProfile] = useState({
     name: 'Current User',
     department: '',
@@ -216,6 +217,18 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
     const loadSubmittedDocuments = () => {
       const stored = JSON.parse(localStorage.getItem('submitted-documents') || '[]');
       setSubmittedDocuments(stored);
+    };
+    
+    // Save track documents to localStorage for search
+    const saveTrackDocuments = () => {
+      const trackDocuments = [...submittedDocuments, ...mockDocuments].map(doc => ({
+        id: doc.id,
+        title: doc.title,
+        description: doc.description || '',
+        type: doc.type,
+        status: doc.status
+      }));
+      localStorage.setItem('trackDocuments', JSON.stringify(trackDocuments));
     };
     
     const loadUserProfile = () => {
@@ -242,6 +255,7 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
     loadSubmittedDocuments();
     loadUserProfile();
     loadApprovalComments();
+    saveTrackDocuments();
     
     // Listen for storage changes
     const handleStorageChange = (e: StorageEvent) => {
@@ -370,13 +384,14 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
     
     // Add to removed list for mock documents
     setRemovedDocuments(prev => [...prev, docId]);
+    setRecentlyRemoved(prev => [...prev, docId]);
     
     // Trigger real-time update for Approval Center
     window.dispatchEvent(new CustomEvent('document-removed', { detail: { docId } }));
     
     toast({
       title: "Document Removed",
-      description: `Document ${docId} has been permanently removed from both pages`,
+      description: `Document ${docId} has been removed. Click 'Undo Remove' to restore it.`,
       variant: "destructive"
     });
   };
@@ -385,6 +400,37 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
 
   return (
     <div className="space-y-6">
+      {/* Undo Remove Button */}
+      {recentlyRemoved.length > 0 && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-800">
+                  {recentlyRemoved.length} document(s) recently removed
+                </span>
+              </div>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => {
+                  setRemovedDocuments(prev => prev.filter(id => !recentlyRemoved.includes(id)));
+                  setRecentlyRemoved([]);
+                  toast({
+                    title: "Documents Restored",
+                    description: "Recently removed documents have been restored",
+                  });
+                }}
+                className="text-blue-600 border-blue-300 hover:bg-blue-100"
+              >
+                Undo Remove
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Search and Filter Controls */}
       <Card>
         <CardHeader>

@@ -117,7 +117,28 @@ const Approvals = () => {
       const stored = JSON.parse(localStorage.getItem('pending-approvals') || '[]');
       setPendingApprovals(stored);
     };
+    
+    // Save approval data to localStorage for search
+    const saveApprovalData = () => {
+      const pendingData = [
+        { id: 'faculty-meeting', title: 'Faculty Meeting Minutes – Q4 2024', description: 'Add a risk-mitigation section to highlight potential delays or issues.' },
+        { id: 'budget-request', title: 'Budget Request – Lab Equipment', description: 'Consider revising the scope to focus on priority items within this quarter\'s budget.' },
+        { id: 'student-event', title: 'Student Event Proposal – Tech Fest 2024', description: 'Annual technology festival proposal including budget allocation, venue requirements, and guest speaker arrangements.' },
+        { id: 'research-methodology', title: 'Research Methodology Guidelines – Academic Review', description: 'Comprehensive guidelines for research methodology standards and academic review processes.' }
+      ];
+      localStorage.setItem('pendingApprovals', JSON.stringify(pendingData));
+      
+      const historyData = recentApprovals.map(doc => ({
+        id: doc.id,
+        title: doc.title,
+        description: doc.description,
+        status: doc.status
+      }));
+      localStorage.setItem('approvalHistory', JSON.stringify(historyData));
+    };
+    
     loadPendingApprovals();
+    saveApprovalData();
     
     const handleStorageChange = () => loadPendingApprovals();
     

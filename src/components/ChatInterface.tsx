@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
@@ -53,7 +54,6 @@ import {
   BarChart3,
   Zap,
   Shield,
-  Wifi,
   CheckCircle2,
   AlertTriangle,
   Mic,
@@ -64,7 +64,9 @@ import {
   X,
   Plus,
   UserPlus,
-  UserRoundPlus
+  UserRoundPlus,
+  Copy,
+  CheckSquare
 } from 'lucide-react';
 
 interface ChatInterfaceProps {
@@ -127,6 +129,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className, channel
   const [activeVideoCallId, setActiveVideoCallId] = useState<string | null>(null);
   const [showChannelMembersModal, setShowChannelMembersModal] = useState(false);
   const [selectedChannelForMembers, setSelectedChannelForMembers] = useState<ChatChannel | null>(null);
+  const [selectedMessages, setSelectedMessages] = useState<string[]>([]);
+  const [pinnedMessages, setPinnedMessages] = useState<string[]>([]);
+  const [polls, setPolls] = useState<{[key: string]: ChatPoll}>({});
+  const [showPollVotesModal, setShowPollVotesModal] = useState(false);
+  const [selectedPollId, setSelectedPollId] = useState<string | null>(null);
+  const [privateReplyTo, setPrivateReplyTo] = useState<ChatMessage | null>(null);
+  const [showPrivateReplyModal, setShowPrivateReplyModal] = useState(false);
+  const [privateReplyMessage, setPrivateReplyMessage] = useState('');
 
   // Handle click outside emoji picker
   useEffect(() => {
@@ -145,222 +155,199 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className, channel
     };
   }, [showEmojiPicker]);
 
-  // Initialize chat service
-  useEffect(() => {
-    if (!user) return;
-
-    const initChat = async () => {
-      try {
-        // Initialize role-based channels
-        await chatService.initializeRoleBasedChannels(user as ChatUser);
-        
-        // Load user channels
-        const userChannels = await chatService.getChannels(user.id);
-        
-        // Load document channels from localStorage
-        const documentChannels = JSON.parse(localStorage.getItem('document-channels') || '[]');
-        const userDocumentChannels = documentChannels.filter((channel: any) => 
-          channel.members.includes(user.id) || channel.createdBy === user.id
-        );
-        
-        // Combine all channels and ensure they have members
-        const allChannels = [...userDocumentChannels, ...userChannels].map(channel => ({
-          ...channel,
-          members: channel.members?.length > 0 ? channel.members : [user.id, 'principal', 'registrar', 'dean']
-        }));
-        setChannels(allChannels);
-        
-        if (allChannels.length > 0) {
-          setActiveChannel(allChannels[0]);
-        }
-      } catch (error) {
-        // Load document channels even if service fails
-        const documentChannels = JSON.parse(localStorage.getItem('document-channels') || '[]');
-        const userDocumentChannels = documentChannels.filter((channel: any) => 
-          channel.members.includes(user.id) || channel.createdBy === user.id
-        );
-        
-        // Fallback: create default channels
-        const defaultChannels = [
-          {
-            id: 'general',
-            name: 'General',
-            members: [user.id, 'principal', 'registrar', 'hod-cse', 'dean'],
-            isPrivate: false,
-            createdAt: new Date(),
-            createdBy: user.id
-          },
-          {
-            id: 'admin-council',
-            name: 'Administrative Council',
-            members: [user.id, 'principal', 'registrar', 'dean'],
-            isPrivate: false,
-            createdAt: new Date(),
-            createdBy: user.id
-          },
-          {
-            id: 'faculty-board',
-            name: 'Faculty Board',
-            members: [user.id, 'hod-cse', 'hod-eee', 'dean'],
-            isPrivate: false,
-            createdAt: new Date(),
-            createdBy: user.id
-          }
-        ];
-        
-        const allChannels = [...userDocumentChannels, ...defaultChannels].map(channel => ({
-          ...channel,
-          members: channel.members?.length > 0 ? channel.members : [user.id, 'principal', 'registrar', 'dean']
-        }));
-        setChannels(allChannels);
-        setActiveChannel(allChannels[0]);
+  // Memoized default channels for instant loading
+  const defaultChannels = useMemo(() => {
+    if (!user) return [];
+    return [
+      {
+        id: 'general',
+        name: 'General',
+        members: [user.id, 'principal', 'registrar', 'hod-cse', 'dean'],
+        isPrivate: false,
+        createdAt: new Date(),
+        createdBy: user.id
+      },
+      {
+        id: 'admin-council',
+        name: 'Administrative Council',
+        members: [user.id, 'principal', 'registrar', 'dean'],
+        isPrivate: false,
+        createdAt: new Date(),
+        createdBy: user.id
+      },
+      {
+        id: 'faculty-board',
+        name: 'Faculty Board',
+        members: [user.id, 'hod-cse', 'hod-eee', 'dean'],
+        isPrivate: false,
+        createdAt: new Date(),
+        createdBy: user.id
       }
-    };
+    ];
+  }, [user]);
 
-    initChat();
-    
-    // Add sample users
-    setUsers([
+  // Memoized users for instant loading
+  const defaultUsers = useMemo(() => {
+    if (!user) return [];
+    return [
       { id: 'user-1', fullName: 'Dr. Principal', role: 'Principal', avatar: '' },
       { id: 'user-2', fullName: 'Prof. Registrar', role: 'Registrar', avatar: '' },
       { id: user.id, fullName: user.fullName || 'You', role: user.role, avatar: '' }
-    ]);
+    ];
+  }, [user]);
 
-    // Set up event listeners
-    chatService.on('connected', () => {
-      setConnectionStatus('connected');
-      toast({
-        title: 'Connected',
-        description: 'Chat service connected successfully',
-        variant: 'default'
-      });
-    });
+  // Optimized initialization for instant loading
+  useEffect(() => {
+    if (!user) return;
 
-    chatService.on('disconnected', () => {
-      setConnectionStatus('disconnected');
-    });
+    // Instant setup with default data
+    setUsers(defaultUsers);
+    setChannels(defaultChannels);
+    if (defaultChannels.length > 0) {
+      setActiveChannel(defaultChannels[0]);
+    }
+    setConnectionStatus('connected');
 
-
-
-    chatService.on('message-received', (message: ChatMessage) => {
-      if (!activeChannel || message.channelId === activeChannel.id) {
-        setMessages(prev => [...prev, message]);
+    // Background initialization (non-blocking)
+    const initChatBackground = async () => {
+      try {
+        const documentChannels = JSON.parse(localStorage.getItem('document-channels') || '[]');
+        const userDocumentChannels = documentChannels.filter((channel: any) => 
+          channel.members.includes(user.id) || channel.createdBy === user.id
+        );
+        
+        if (userDocumentChannels.length > 0) {
+          const allChannels = [...userDocumentChannels, ...defaultChannels].map(channel => ({
+            ...channel,
+            members: channel.members?.length > 0 ? channel.members : [user.id, 'principal', 'registrar', 'dean']
+          }));
+          setChannels(allChannels);
+        }
+      } catch (error) {
+        // Keep default channels on error
       }
-      
-      // Show notification if not in active channel
-      if (!activeChannel || message.channelId !== activeChannel.id) {
-        showNotification({
-          title: 'New Message',
-          message: message.content,
-          channelId: message.channelId
-        });
-      }
-    });
+    };
 
-    chatService.on('user-typing', (data: { userId: string, channelId: string }) => {
-      if (activeChannel?.id === data.channelId) {
-        setTypingUsers(prev => [...prev.filter(id => id !== data.userId), data.userId]);
-        setTimeout(() => {
-          setTypingUsers(prev => prev.filter(id => id !== data.userId));
-        }, 3000);
-      }
-    });
+    // Run background init after component is mounted
+    setTimeout(initChatBackground, 0);
 
-    chatService.on('notification', (notification: ChatNotification) => {
-      setNotifications(prev => [notification, ...prev]);
-      if (notification.priority === 'high' || notification.priority === 'urgent') {
-        toast({
-          title: notification.title,
-          description: notification.message,
-          variant: notification.priority === 'urgent' ? 'destructive' : 'default'
-        });
-      }
-    });
-
-    // Listen for storage changes to update channels in real-time
+    // Optimized event listeners
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'document-channels') {
-        initChat(); // Reload channels when document channels change
+        initChatBackground();
       }
     };
     
     window.addEventListener('storage', handleStorageChange);
     
     return () => {
-      chatService.disconnect();
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [user]);
+  }, [user, defaultChannels, defaultUsers]);
+
+  // Memoized sample messages for instant loading
+  const getSampleMessages = useCallback((channelId: string) => [
+    {
+      id: 'msg-1',
+      channelId,
+      senderId: 'user-1',
+      content: 'Here are the project documents',
+      type: 'file' as MessageType,
+      timestamp: new Date(Date.now() - 3600000),
+      status: 'delivered',
+      reactions: [],
+      attachments: [
+        {
+          id: 'att-1',
+          name: 'project-report.pdf',
+          url: 'mock://project-report.pdf',
+          type: 'document' as MessageType,
+          size: 2048576,
+          mimeType: 'application/pdf'
+        }
+      ],
+      metadata: {}
+    },
+    {
+      id: 'msg-2',
+      channelId,
+      senderId: 'user-2',
+      content: 'Meeting photos from yesterday',
+      type: 'image' as MessageType,
+      timestamp: new Date(Date.now() - 1800000),
+      status: 'delivered',
+      reactions: [],
+      attachments: [
+        {
+          id: 'att-2',
+          name: 'meeting-photo.jpg',
+          url: 'mock://meeting-photo.jpg',
+          type: 'image' as MessageType,
+          size: 1024000,
+          mimeType: 'image/jpeg'
+        }
+      ],
+      metadata: {}
+    }
+  ], []);
+
+  const scrollToBottom = useCallback((force = false) => {
+    if (force) {
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      });
+    }
+  }, []);
+
+  const loadMessages = useCallback(async (channelId: string) => {
+    // Instant loading with sample messages
+    const sampleMessages = getSampleMessages(channelId);
+    setMessages(sampleMessages);
+    scrollToBottom(true);
+
+    // Background loading (non-blocking)
+    try {
+      const channelMessages = await chatService.getMessages(channelId);
+      if (channelMessages.length > 0) {
+        setMessages([...sampleMessages, ...channelMessages]);
+        scrollToBottom(true);
+      }
+    } catch (error) {
+      // Keep sample messages on error
+    }
+  }, [chatService, getSampleMessages, scrollToBottom]);
 
   // Load messages when active channel changes
   useEffect(() => {
     if (activeChannel) {
       loadMessages(activeChannel.id);
     }
-  }, [activeChannel]);
+  }, [activeChannel, loadMessages]);
 
-  const loadMessages = async (channelId: string) => {
-    try {
-      const channelMessages = await chatService.getMessages(channelId);
-      // Add sample messages with attachments for demo
-      const sampleMessages = [
-        {
-          id: 'msg-1',
-          channelId,
-          senderId: 'user-1',
-          content: 'Here are the project documents',
-          type: 'file' as MessageType,
-          timestamp: new Date(Date.now() - 3600000),
-          status: 'delivered',
-          reactions: [],
-          attachments: [
-            {
-              id: 'att-1',
-              name: 'project-report.pdf',
-              url: 'mock://project-report.pdf',
-              type: 'document' as MessageType,
-              size: 2048576,
-              mimeType: 'application/pdf'
-            }
-          ],
-          metadata: {}
-        },
-        {
-          id: 'msg-2',
-          channelId,
-          senderId: 'user-2',
-          content: 'Meeting photos from yesterday',
-          type: 'image' as MessageType,
-          timestamp: new Date(Date.now() - 1800000),
-          status: 'delivered',
-          reactions: [],
-          attachments: [
-            {
-              id: 'att-2',
-              name: 'meeting-photo.jpg',
-              url: 'mock://meeting-photo.jpg',
-              type: 'image' as MessageType,
-              size: 1024000,
-              mimeType: 'image/jpeg'
-            }
-          ],
-          metadata: {}
-        }
-      ];
-      setMessages([...sampleMessages, ...channelMessages]);
-    } catch (error) {
-      setMessages([]);
-    }
-    scrollToBottom(true);
-  };
+  // Optimized cleanup function for auto-delete messages after 24 hours
+  const cleanupMessages = useCallback(() => {
+    const now = new Date();
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    
+    setMessages(prev => {
+      const filtered = prev.filter(message => {
+        const messageTime = new Date(message.timestamp);
+        return messageTime > twentyFourHoursAgo;
+      });
+      return filtered.length !== prev.length ? filtered : prev;
+    });
+  }, []);
 
-  const scrollToBottom = (force = false) => {
-    if (force) {
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-      }, 50);
-    }
-  };
+  // Auto-delete messages after 24 hours
+  useEffect(() => {
+    // Run cleanup every hour
+    const interval = setInterval(cleanupMessages, 60 * 60 * 1000);
+    
+    // Initial cleanup
+    cleanupMessages();
+
+    return () => clearInterval(interval);
+  }, [cleanupMessages]);
 
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !activeChannel || !user) return;
@@ -571,7 +558,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className, channel
   const handleCreatePoll = async (title: string, options: string[]) => {
     if (!activeChannel || !user) return;
 
+    const pollId = `poll-${Date.now()}`;
     const poll = {
+      id: pollId,
       channelId: activeChannel.id,
       createdBy: user.id,
       title,
@@ -584,7 +573,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className, channel
     };
 
     try {
-      const createdPoll = await chatService.createPoll(poll);
+      setPolls(prev => ({...prev, [pollId]: poll}));
       
       const messageData = {
         channelId: activeChannel.id,
@@ -592,7 +581,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className, channel
         type: 'poll' as MessageType,
         content: `Poll created: ${title}`,
         metadata: {
-          pollId: createdPoll.id
+          pollId
         }
       };
 
@@ -605,6 +594,53 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className, channel
         variant: 'destructive'
       });
     }
+  };
+
+  const handleVoteOnPoll = (pollId: string, optionId: string) => {
+    if (!user) return;
+    
+    setPolls(prev => {
+      const poll = prev[pollId];
+      if (!poll) return prev;
+      
+      const updatedOptions = poll.options.map(option => {
+        if (option.id === optionId) {
+          const hasVoted = option.votes.includes(user.id);
+          return {
+            ...option,
+            votes: hasVoted 
+              ? option.votes.filter(id => id !== user.id)
+              : [...option.votes.filter(id => id !== user.id), user.id]
+          };
+        } else {
+          return {
+            ...option,
+            votes: option.votes.filter(id => id !== user.id)
+          };
+        }
+      });
+      
+      return {
+        ...prev,
+        [pollId]: {
+          ...poll,
+          options: updatedOptions
+        }
+      };
+    });
+  };
+
+  const getPollResults = (pollId: string) => {
+    const poll = polls[pollId];
+    if (!poll) return { totalVotes: 0, options: [] };
+    
+    const totalVotes = poll.options.reduce((sum, option) => sum + option.votes.length, 0);
+    const optionsWithPercentage = poll.options.map(option => ({
+      ...option,
+      percentage: totalVotes > 0 ? Math.round((option.votes.length / totalVotes) * 100) : 0
+    }));
+    
+    return { totalVotes, options: optionsWithPercentage };
   };
 
   const showNotification = (notification: Partial<ChatNotification>) => {
@@ -702,13 +738,6 @@ Generated on: ${new Date().toLocaleString()}`;
     }
   };
 
-  const getConnectionIcon = () => {
-    switch (connectionStatus) {
-      case 'connected': return <Wifi className="w-4 h-4 text-green-500" />;
-      default: return null;
-    }
-  };
-
   const handleDeleteChannels = () => {
     if (selectedChannelsToDelete.length === 0) return;
     
@@ -751,6 +780,164 @@ Generated on: ${new Date().toLocaleString()}`;
     }
   };
 
+  const handleCopyMessage = (message: ChatMessage) => {
+    navigator.clipboard.writeText(message.content);
+    toast({
+      title: 'Copied',
+      description: 'Message copied to clipboard',
+      variant: 'default'
+    });
+  };
+
+  const handleSelectMessage = (messageId: string) => {
+    setSelectedMessages(prev => 
+      prev.includes(messageId) 
+        ? prev.filter(id => id !== messageId)
+        : [...prev, messageId]
+    );
+  };
+
+  const handlePinMessage = (messageId: string) => {
+    setPinnedMessages(prev => 
+      prev.includes(messageId)
+        ? prev.filter(id => id !== messageId)
+        : [...prev, messageId]
+    );
+    const isPinned = pinnedMessages.includes(messageId);
+    toast({
+      title: isPinned ? 'Unpinned' : 'Pinned',
+      description: `Message ${isPinned ? 'unpinned' : 'pinned'} successfully`,
+      variant: 'default'
+    });
+  };
+
+  const handleReplyPrivately = (message: ChatMessage) => {
+    setPrivateReplyTo(message);
+    setShowPrivateReplyModal(true);
+    
+    toast({
+      title: 'Private Reply',
+      description: `Starting private conversation with ${users.find(u => u.id === message.senderId)?.fullName || 'user'}`,
+      variant: 'default'
+    });
+  };
+
+  const handleSendPrivateReply = async () => {
+    if (!privateReplyTo || !privateReplyMessage.trim() || !user) return;
+
+    try {
+      // Create or find private channel with the sender
+      const recipientId = privateReplyTo.senderId;
+      const recipient = users.find(u => u.id === recipientId);
+      
+      if (!recipient) {
+        toast({
+          title: 'Error',
+          description: 'Could not find the recipient user',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      // Create a private channel name that's consistent regardless of who creates it
+      const channelName = [user.id, recipientId].sort().join('-private-');
+      
+      // Check if private channel already exists
+      let privateChannel = channels.find(ch => ch.name === channelName && ch.isPrivate);
+      
+      if (!privateChannel) {
+        // Create new private channel
+        privateChannel = {
+          id: `private-${Date.now()}`,
+          name: channelName,
+          description: `Private chat between ${user.fullName || user.name || 'You'} and ${recipient.fullName}`,
+          type: 'private',
+          isPrivate: true,
+          members: [user.id, recipientId],
+          admins: [user.id, recipientId],
+          createdAt: new Date(),
+          createdBy: user.id,
+          updatedAt: new Date(),
+          settings: {
+            allowFileSharing: true,
+            allowPolls: false,
+            allowVideoCall: true,
+            notificationsEnabled: true
+          }
+        };
+        
+        setChannels(prev => [...prev, privateChannel]);
+      }
+
+      // Send the private reply with reference to original message
+      const privateReplyMessageData = {
+        channelId: privateChannel.id,
+        senderId: user.id,
+        type: 'text' as MessageType,
+        content: privateReplyMessage,
+        metadata: {
+          replyToPrivate: privateReplyTo.id,
+          originalChannelId: privateReplyTo.channelId,
+          originalMessageContent: privateReplyTo.content.substring(0, 100) + (privateReplyTo.content.length > 100 ? '...' : '')
+        }
+      };
+
+      const message = await chatService.sendMessage(privateReplyMessageData);
+      setMessages(prev => [...prev, message]);
+      
+      // Switch to the private channel
+      setActiveChannel(privateChannel);
+      
+      // Clear the private reply state
+      setPrivateReplyMessage('');
+      setPrivateReplyTo(null);
+      setShowPrivateReplyModal(false);
+      
+      toast({
+        title: 'Private Reply Sent',
+        description: `Your private message was sent to ${recipient.fullName}`,
+        variant: 'default'
+      });
+      
+    } catch (error) {
+      console.error('Failed to send private reply:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to send private reply',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleReactToMessage = (messageId: string, emoji: string = '👍') => {
+    setMessages(prev => prev.map(msg => {
+      if (msg.id === messageId) {
+        const existingReaction = msg.reactions.find(r => r.emoji === emoji);
+        if (existingReaction) {
+          return {
+            ...msg,
+            reactions: msg.reactions.map(r => 
+              r.emoji === emoji 
+                ? { ...r, count: r.count + 1 }
+                : r
+            )
+          };
+        } else {
+          return {
+            ...msg,
+            reactions: [...msg.reactions, { emoji, count: 1 }]
+          };
+        }
+      }
+      return msg;
+    }));
+    toast({
+      title: 'Reaction Added',
+      description: `Added ${emoji} reaction to message`,
+      variant: 'default'
+    });
+  };
+
   const MessageComponent: React.FC<{ message: ChatMessage }> = ({ message }) => {
     const isOwnMessage = message.senderId === user?.id;
     const isSystemMessage = message.senderId === 'system';
@@ -760,7 +947,9 @@ Generated on: ${new Date().toLocaleString()}`;
       <div className={cn(
         "flex gap-3 p-2 hover:bg-muted/50 group",
         isOwnMessage && "flex-row-reverse",
-        isSystemMessage && "justify-center"
+        isSystemMessage && "justify-center",
+        selectedMessages.includes(message.id) && "bg-blue-50 border-l-4 border-l-blue-500",
+        pinnedMessages.includes(message.id) && "bg-yellow-50 border border-yellow-200"
       )}>
         {!isSystemMessage && (
           <Avatar className="w-8 h-8">
@@ -794,6 +983,16 @@ Generated on: ${new Date().toLocaleString()}`;
           {message.parentMessageId && (
             <div className="text-xs text-muted-foreground mb-2 p-2 bg-muted rounded">
               Replying to a message
+            </div>
+          )}
+          
+          {message.metadata?.replyToPrivate && (
+            <div className="text-xs text-purple-600 mb-2 p-2 bg-purple-50 border border-purple-200 rounded flex items-center gap-1">
+              <Lock className="w-3 h-3" />
+              <span className="font-medium">Private Reply</span>
+              <span className="text-purple-500">
+                • Re: "{message.metadata.originalMessageContent}"
+              </span>
             </div>
           )}
           
@@ -893,43 +1092,59 @@ Generated on: ${new Date().toLocaleString()}`;
                   </div>
                 )}
                 
-                {message.metadata.pollId && (
-                  <div className="mt-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <BarChart3 className="w-4 h-4 text-blue-600" />
-                        <h4 className="font-semibold text-base">Poll</h4>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        {['Option 1', 'Option 2', 'Option 3'].map((option, idx) => {
-                          const voteCount = Math.floor(Math.random() * 10);
-                          const percentage = Math.floor(Math.random() * 100);
-                          return (
-                            <div key={idx} className="space-y-1">
-                              <div className="flex items-center gap-2 cursor-pointer hover:bg-white/50 p-2 rounded">
-                                <div className="w-4 h-4 border-2 border-blue-600 rounded-full flex items-center justify-center">
-                                  {idx === 0 && <div className="w-2 h-2 bg-blue-600 rounded-full" />}
+                {message.metadata.pollId && (() => {
+                  const pollResults = getPollResults(message.metadata.pollId);
+                  const poll = polls[message.metadata.pollId];
+                  const userVote = poll?.options.find(opt => opt.votes.includes(user?.id || ''));
+                  
+                  return (
+                    <div className="mt-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <BarChart3 className="w-4 h-4 text-blue-600" />
+                          <h4 className="font-semibold text-base">{poll?.title || 'Poll'}</h4>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          {pollResults.options.map((option) => {
+                            const isSelected = userVote?.id === option.id;
+                            return (
+                              <div key={option.id} className="space-y-1">
+                                <div 
+                                  className="flex items-center gap-2 cursor-pointer hover:bg-white/50 p-2 rounded"
+                                  onClick={() => handleVoteOnPoll(message.metadata.pollId, option.id)}
+                                >
+                                  <div className="w-4 h-4 border-2 border-blue-600 rounded-full flex items-center justify-center">
+                                    {isSelected && <div className="w-2 h-2 bg-blue-600 rounded-full" />}
+                                  </div>
+                                  <span className="text-sm flex-1">{option.text}</span>
+                                  <span className="text-xs text-muted-foreground">{option.votes.length}</span>
                                 </div>
-                                <span className="text-sm flex-1">{option}</span>
-                                <span className="text-xs text-muted-foreground">{voteCount}</span>
-                              </div>
-                              <div className="ml-6">
-                                <div className="w-full bg-gray-200 rounded-full h-1.5">
-                                  <div className="bg-blue-600 h-1.5 rounded-full" style={{width: `${percentage}%`}}></div>
+                                <div className="ml-6">
+                                  <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                    <div className="bg-blue-600 h-1.5 rounded-full" style={{width: `${option.percentage}%`}}></div>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
+                        
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="w-full mt-3"
+                          onClick={() => {
+                            setSelectedPollId(message.metadata.pollId);
+                            setShowPollVotesModal(true);
+                          }}
+                        >
+                          View votes ({pollResults.totalVotes})
+                        </Button>
                       </div>
-                      
-                      <Button size="sm" variant="outline" className="w-full mt-3">
-                        View votes
-                      </Button>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
             </div>
           )}
           
@@ -958,10 +1173,28 @@ Generated on: ${new Date().toLocaleString()}`;
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handleCopyMessage(message)}>
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleSelectMessage(message.id)}>
+                  <CheckSquare className="w-4 h-4 mr-2" />
+                  {selectedMessages.includes(message.id) ? 'Deselect' : 'Select'}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handlePinMessage(message.id)}>
+                  <Pin className="w-4 h-4 mr-2" />
+                  {pinnedMessages.includes(message.id) ? 'Unpin' : 'Pin'}
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setReplyingTo(message)}>
                   <Reply className="w-4 h-4 mr-2" />
                   Reply
                 </DropdownMenuItem>
+                {!isOwnMessage && (
+                  <DropdownMenuItem onClick={() => handleReplyPrivately(message)}>
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    Reply Privately
+                  </DropdownMenuItem>
+                )}
                 {isOwnMessage && (
                   <>
                     <DropdownMenuItem onClick={() => setEditingMessage(message)}>
@@ -977,7 +1210,7 @@ Generated on: ${new Date().toLocaleString()}`;
                     </DropdownMenuItem>
                   </>
                 )}
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleReactToMessage(message.id)}>
                   <ThumbsUp className="w-4 h-4 mr-2" />
                   React
                 </DropdownMenuItem>
@@ -1034,7 +1267,6 @@ Generated on: ${new Date().toLocaleString()}`;
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
-                {getConnectionIcon()}
               </>
             )}
           </div>
@@ -1071,7 +1303,7 @@ Generated on: ${new Date().toLocaleString()}`;
                 disabled={deleteMode}
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  {channel.isPrivate ? <Lock className="w-4 h-4 flex-shrink-0" /> : <Hash className="w-4 h-4 flex-shrink-0" />}
+                  <Lock className="w-4 h-4 flex-shrink-0" />
                   <span className="truncate">{channel.name}</span>
                   {channelMessageCounts[channel.name] && (
                     <Badge variant="destructive" className="px-1 py-0 text-xs ml-auto flex-shrink-0">
@@ -1116,7 +1348,7 @@ Generated on: ${new Date().toLocaleString()}`;
                 disabled={deleteMode}
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  {channel.isPrivate ? <Lock className="w-4 h-4 flex-shrink-0" /> : <Hash className="w-4 h-4 flex-shrink-0" />}
+                  <Lock className="w-4 h-4 flex-shrink-0" />
                   <span className="truncate">{channel.name}</span>
                   {channelMessageCounts[channel.name] && (
                     <Badge variant="destructive" className="ml-auto px-1 py-0 text-xs flex-shrink-0">
@@ -1186,18 +1418,12 @@ Generated on: ${new Date().toLocaleString()}`;
           <div className="p-4 border-b bg-background">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                {activeChannel.isPrivate ? (
-                  <>
-                    {!showSidebar && (
-                      <Button size="sm" variant="ghost" onClick={() => setShowSidebar(true)}>
-                        <PanelRightOpen className="w-5 h-5" />
-                      </Button>
-                    )}
-                    <Lock className="w-5 h-5" />
-                  </>
-                ) : (
-                  <Hash className="w-5 h-5" />
+                {!showSidebar && (
+                  <Button size="sm" variant="ghost" onClick={() => setShowSidebar(true)}>
+                    <PanelRightOpen className="w-5 h-5" />
+                  </Button>
                 )}
+                <Lock className="w-5 h-5" />
                 <div>
                   <h2 className="font-semibold">{activeChannel.name}</h2>
                   <p className="text-sm text-muted-foreground">
@@ -1250,15 +1476,17 @@ Generated on: ${new Date().toLocaleString()}`;
         {/* Messages Area */}
         <ScrollArea className="flex-1 p-4">
           <div className="space-y-2">
-            {messages
-              .filter(message => 
-                !searchQuery || 
-                message.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (users.find(u => u.id === message.senderId)?.fullName || '').toLowerCase().includes(searchQuery.toLowerCase())
-              )
-              .map(message => (
-                <MessageComponent key={message.id} message={message} />
-              ))}
+            {useMemo(() => 
+              messages
+                .filter(message => 
+                  !searchQuery || 
+                  message.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  (users.find(u => u.id === message.senderId)?.fullName || '').toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map(message => (
+                  <MessageComponent key={message.id} message={message} />
+                )), [messages, searchQuery, users]
+            )}
             <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
@@ -1742,6 +1970,74 @@ Generated on: ${new Date().toLocaleString()}`;
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Poll Votes Modal */}
+      <AlertDialog open={showPollVotesModal} onOpenChange={setShowPollVotesModal}>
+        <AlertDialogContent className="max-w-2xl">
+          <button
+            onClick={() => setShowPollVotesModal(false)}
+            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-blue-500" />
+              Poll Results
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedPollId && polls[selectedPollId] ? polls[selectedPollId].title : 'Poll Results'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4">
+            {selectedPollId && polls[selectedPollId] && (() => {
+              const pollResults = getPollResults(selectedPollId);
+              return (
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Votes by Option</label>
+                  <ScrollArea className="h-64 border rounded-md p-2">
+                    {pollResults.options.map((option) => (
+                      <div key={option.id} className="mb-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium text-sm">{option.text}</span>
+                          <Badge variant="secondary">{option.votes.length} votes ({option.percentage}%)</Badge>
+                        </div>
+                        <div className="space-y-1">
+                          {option.votes.map(userId => {
+                            const voter = users.find(u => u.id === userId) || 
+                              { id: userId, fullName: userId.charAt(0).toUpperCase() + userId.slice(1), role: 'Member' };
+                            return (
+                              <div key={userId} className="flex items-center gap-2 p-2 hover:bg-accent rounded-md">
+                                <Avatar className="w-6 h-6">
+                                  <AvatarFallback className="text-xs">
+                                    {voter.fullName.substring(0, 2).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="text-sm font-medium">{voter.fullName}</p>
+                                  <p className="text-xs text-muted-foreground">{voter.role}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {option.votes.length === 0 && (
+                            <p className="text-xs text-muted-foreground italic p-2">No votes yet</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </ScrollArea>
+                </div>
+              );
+            })()}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowPollVotesModal(false)}>
+              Close
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Video Call Modal */}
       <VideoCallModal
         isOpen={showVideoCall}
@@ -1810,6 +2106,71 @@ Generated on: ${new Date().toLocaleString()}`;
           setActiveVideoCallId(null);
         }}
       />
+
+      {/* Private Reply Modal */}
+      <Dialog open={showPrivateReplyModal} onOpenChange={setShowPrivateReplyModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Reply Privately</DialogTitle>
+            <DialogDescription>
+              Send a private message to {privateReplyTo ? users.find(u => u.id === privateReplyTo.senderId)?.fullName || 'user' : 'user'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* Original message reference */}
+          {privateReplyTo && (
+            <div className="bg-muted/50 rounded-lg p-3 border-l-4 border-blue-500 mb-4">
+              <div className="text-sm text-muted-foreground mb-1">
+                Original message from {users.find(u => u.id === privateReplyTo.senderId)?.fullName || 'user'}:
+              </div>
+              <div className="text-sm">
+                {privateReplyTo.content.length > 150 
+                  ? privateReplyTo.content.substring(0, 150) + '...' 
+                  : privateReplyTo.content
+                }
+              </div>
+            </div>
+          )}
+          
+          {/* Private reply input */}
+          <div className="space-y-4">
+            <Textarea
+              placeholder="Type your private reply..."
+              value={privateReplyMessage}
+              onChange={(e) => setPrivateReplyMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && privateReplyMessage.trim()) {
+                  e.preventDefault();
+                  handleSendPrivateReply();
+                }
+              }}
+              className="min-h-[120px]"
+            />
+            <div className="text-xs text-muted-foreground">
+              Press Ctrl+Enter to send
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowPrivateReplyModal(false);
+                setPrivateReplyMessage('');
+                setPrivateReplyTo(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSendPrivateReply}
+              disabled={!privateReplyMessage.trim()}
+            >
+              Send Private Reply
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -32,7 +32,7 @@ import {
   MapPin,
   Globe
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
@@ -44,83 +44,114 @@ const Messages = () => {
     import.meta.env.VITE_WS_URL || 'ws://localhost:8080',
     import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
   ));
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Communication stats with real-time message counts
-  const [stats, setStats] = useState({
-    unreadMessages: 26, // Total from all channels
+  // Memoized initial data for instant loading
+  const initialStats = useMemo(() => ({
+    unreadMessages: 26,
     pendingSignatures: 2,
     activePolls: 1,
     onlineUsers: 23,
     totalChannels: 5,
     notifications: 4,
     liveMeetingRequests: 3
-  });
+  }), []);
 
-  // Channel message counts
-  const [channelMessageCounts, setChannelMessageCounts] = useState({
+  const initialChannelCounts = useMemo(() => ({
     'Administrative Council': 9,
     'Faculty Board': 5,
     'General': 12
-  });
+  }), []);
 
-  // LiveMeet+ requests state
+  const [stats, setStats] = useState(initialStats);
+  const [channelMessageCounts, setChannelMessageCounts] = useState(initialChannelCounts);
   const [liveMeetRequests, setLiveMeetRequests] = useState<any[]>([]);
 
+  // Memoized data initialization for instant loading
+  const messagesData = useMemo(() => ({
+    meetings: [
+      { id: 'team-standup', title: 'Daily Team Standup', description: 'Daily sync at 9:00 AM' },
+      { id: 'client-review', title: 'Client Quarterly Review Meeting', description: 'Quarterly business review' },
+      { id: 'product-planning', title: 'Product Roadmap Planning Session', description: 'Roadmap discussion' },
+      { id: 'all-hands', title: 'Monthly All Hands Meeting', description: 'Company updates' }
+    ],
+    reminders: [
+      { id: 'project-deadline', title: 'Project Milestone Deadline', description: 'Due tomorrow' },
+      { id: 'client-followup', title: 'Client Follow-up Call Reminder', description: 'Schedule for next week' },
+      { id: 'performance-review', title: 'Annual Performance Review Due', description: 'Submit by Friday' },
+      { id: 'contract-renewal', title: 'Contract Renewal Reminder', description: 'Review terms' }
+    ],
+    stickyNotes: [
+      { id: 'contract-review', title: 'Review Legal Contract Terms', description: 'Legal feedback needed' },
+      { id: 'timeline-update', title: 'Update Project Timeline', description: 'Adjust milestones' },
+      { id: 'presentation-prep', title: 'Prepare Board Presentation', description: 'Board meeting prep' },
+      { id: 'budget-analysis', title: 'Complete Budget Analysis', description: 'Financial review' }
+    ],
+    channels: [
+      { id: 'engineering', name: 'Engineering Team', description: '24 members online' },
+      { id: 'marketing', name: 'Marketing Department', description: '18 members online' },
+      { id: 'general', name: 'General Discussion', description: '45 members online' },
+      { id: 'product', name: 'Product Updates', description: '32 members online' },
+      { id: 'hr', name: 'HR Announcements', description: '67 members online' }
+    ]
+  }), []);
+
+  // Optimized callbacks
+  const updateMessageCounts = useCallback(() => {
+    setChannelMessageCounts(prev => {
+      const channels = Object.keys(prev);
+      const randomChannel = channels[Math.floor(Math.random() * channels.length)];
+      const newCounts = { ...prev };
+      newCounts[randomChannel] = prev[randomChannel] + 1;
+      
+      const totalMessages = Object.values(newCounts).reduce((sum, count) => sum + count, 0);
+      setStats(prevStats => ({ ...prevStats, unreadMessages: totalMessages }));
+      
+      return newCounts;
+    });
+  }, []);
+
+  const loadLiveMeetRequests = useCallback(() => {
+    const requests = JSON.parse(localStorage.getItem('livemeet-requests') || '[]');
+    setLiveMeetRequests(requests);
+    setStats(prev => ({ ...prev, liveMeetingRequests: requests.length }));
+  }, []);
+
+  // Instant initialization effect
   useEffect(() => {
     if (!user) return;
 
-    // Simulate real-time message updates
-    const messageInterval = setInterval(() => {
-      setChannelMessageCounts(prev => {
-        const channels = Object.keys(prev);
-        const randomChannel = channels[Math.floor(Math.random() * channels.length)];
-        const newCounts = { ...prev };
-        newCounts[randomChannel] = prev[randomChannel] + 1;
-        
-        // Update total unread messages
-        const totalMessages = Object.values(newCounts).reduce((sum, count) => sum + count, 0);
-        setStats(prevStats => ({ ...prevStats, unreadMessages: totalMessages }));
-        
-        return newCounts;
-      });
-    }, 5000); // Update every 5 seconds
-
-    return () => {
-      clearInterval(messageInterval);
-    };
-
-    // Load LiveMeet+ requests from localStorage
-    const loadLiveMeetRequests = () => {
-      const requests = JSON.parse(localStorage.getItem('livemeet-requests') || '[]');
-      setLiveMeetRequests(requests);
-      setStats(prev => ({ ...prev, liveMeetingRequests: requests.length }));
-    };
-
+    // Immediate data setup for instant loading
+    Object.entries(messagesData).forEach(([key, data]) => {
+      localStorage.setItem(key, JSON.stringify(data));
+    });
+    
     loadLiveMeetRequests();
+    setIsInitialized(true);
 
-    // Listen for storage changes to update requests in real-time
+    // Background updates (non-blocking)
+    const messageInterval = setInterval(updateMessageCounts, 5000);
+
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'livemeet-requests') {
         loadLiveMeetRequests();
       }
     };
 
-    window.addEventListener('storage', handleStorageChange);
-
-    // Listen for document removal from Track Documents
     const handleDocumentRemoval = (event: any) => {
       const { docId } = event.detail;
-      setPendingApprovals(prev => prev.filter(doc => doc.id !== docId));
+      // Handle document removal if needed
     };
-    
+
+    window.addEventListener('storage', handleStorageChange);
     window.addEventListener('document-removed', handleDocumentRemoval);
     
     return () => {
-      chatService.disconnect();
+      clearInterval(messageInterval);
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('document-removed', handleDocumentRemoval);
     };
-  }, [user, chatService]);
+  }, [user, messagesData, updateMessageCounts, loadLiveMeetRequests]);
 
   const handleLogout = () => {
     logout();
@@ -178,6 +209,8 @@ const Messages = () => {
             <LiveMeetingRequestManager />
           </TabsContent>
           
+
+
           <TabsContent value="chat" className="space-y-6">
             {/* Communication Stats Overview */}
             <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">

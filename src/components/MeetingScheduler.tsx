@@ -227,7 +227,20 @@ export function MeetingScheduler({ userRole, className }: MeetingSchedulerProps)
   // Mock data for development - replace with API calls
   useEffect(() => {
     loadMeetings();
+    saveCalendarData();
   }, []);
+  
+  // Save calendar data to localStorage for search
+  const saveCalendarData = () => {
+    const calendarEvents = [
+      { id: 'event1', title: 'Faculty Recruitment Board Meeting', description: 'Review applications for new faculty positions', type: 'meeting' },
+      { id: 'event2', title: 'Budget Review - Q1 2024', description: 'Quarterly budget analysis and financial planning', type: 'meeting' },
+      { id: 'event3', title: 'Team Building Workshop', description: 'Annual team building activities', type: 'event' },
+      { id: 'event4', title: 'Academic Committee Meeting', description: 'Monthly academic review session' },
+      { id: 'event5', title: 'Training Session - Digital Tools', description: 'Staff training on new digital platforms' }
+    ];
+    localStorage.setItem('calendarEvents', JSON.stringify(calendarEvents));
+  };
 
   const loadMeetings = async () => {
     setLoading(true);
