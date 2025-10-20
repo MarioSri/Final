@@ -27,7 +27,7 @@ const Emergency = () => {
       <div className="container mx-auto p-6">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-foreground mb-2">Emergency Management</h1>
-          <p className="text-muted-foreground">Priority document submission and emergency response</p>
+          <p className="text-muted-foreground">Priority Document Submission and Emergency Response</p>
         </div>
         
         <EmergencyWorkflowInterface userRole={user.role} />

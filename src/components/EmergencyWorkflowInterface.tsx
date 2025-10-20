@@ -413,10 +413,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
                 <Siren className="w-5 h-5" />
                 EMERGENCY MODE ACTIVE
               </div>
-              <p className="text-red-700 text-sm">
-                This will bypass normal approval workflows and send directly to all selected recipients.
-                Use only for genuine emergencies requiring immediate attention.
-              </p>
+
             </div>
           )}
         </CardHeader>

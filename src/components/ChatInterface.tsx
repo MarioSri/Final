@@ -991,7 +991,7 @@ Generated on: ${new Date().toLocaleString()}`;
 
   const ChannelSidebar: React.FC = () => (
     <div className={cn(
-      "border-r bg-background flex flex-col transition-all duration-300 ease-in-out",
+      "border-r bg-background flex flex-col",
       showSidebar ? "w-64" : "w-0 overflow-hidden"
     )}>
       <div className="p-4 border-t">

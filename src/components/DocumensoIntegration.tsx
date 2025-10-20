@@ -209,40 +209,10 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl max-h-[90vh] p-0 bg-gradient-to-br from-green-50 to-blue-50 overflow-hidden">
-        <div className="flex h-[85vh]">
-          {/* Left Column - Document Viewer */}
-          <div className="w-1/2 p-6 border-r border-gray-200">
-            <div className="bg-white rounded-lg shadow-sm h-full p-6 overflow-y-auto">
-              <div className="flex items-center gap-2 mb-4 pb-4 border-b">
-                <FileText className="h-5 w-5 text-blue-600" />
-                <h3 className="text-lg font-semibold text-gray-800">The Pledge</h3>
-              </div>
-              
-              <div className="prose prose-sm max-w-none">
-                <h4 className="text-base font-medium mb-3">{document.title}</h4>
-                <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-                  {document.content || `
-I, ${signerName}, in my capacity as ${user.role}, hereby approve and digitally sign this document.
-
-This approval signifies my agreement with the contents and my authorization for the proposed actions outlined in this document.
-
-By signing this document electronically, I acknowledge that this digital signature has the same legal effect as a handwritten signature.
-
-Document ID: ${document.id}
-Approval Date: ${currentDate}
-Approved By: ${signerName}
-Role: ${user.role}
-
-This document has been processed through the Institutional Academic Operations Management System (IAOMS) and secured with Documenso's AI-powered signature placement technology.
-                  `}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column - Signature Interaction */}
-          <div className="w-1/2 p-6 flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0 bg-gradient-to-br from-green-50 to-blue-50 overflow-hidden">
+        <div className="h-[85vh]">
+          {/* Signature Interaction */}
+          <div className="p-6 flex flex-col h-full">
             <Card className="flex-1 shadow-lg border-0 bg-white/80 backdrop-blur-sm overflow-hidden flex flex-col">
               <CardContent className="p-6 flex-1 flex flex-col overflow-hidden">
                 <DialogHeader className="mb-4 flex-shrink-0">

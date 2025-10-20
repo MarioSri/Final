@@ -348,39 +348,10 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl max-h-[90vh] p-0 bg-gradient-to-br from-green-50 to-blue-50 overflow-hidden">
-        <div className="flex h-[85vh]">
-          {/* Left Column - Document Viewer */}
-          <div className="w-1/2 p-6 border-r border-gray-200">
-            <div className="bg-white rounded-lg shadow-sm h-full p-6 overflow-y-auto">
-              <div className="flex items-center gap-2 mb-4 pb-4 border-b">
-                <FileText className="h-5 w-5 text-blue-600" />
-                <h3 className="text-lg font-semibold text-gray-800">Document Preview</h3>
-              </div>
-              
-              <div className="prose prose-sm max-w-none">
-                <h4 className="text-base font-medium mb-3">{document.title}</h4>
-                <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-                  {document.content || `
-This is a sample document that will receive the watermark treatment.
-
-The watermark will be applied according to your specifications on the right panel.
-
-You can preview how the watermark will appear on your document before applying it.
-
-Document ID: ${document.id}
-Document Type: ${document.type}
-Created for: ${user.name}
-
-This document is part of the Institutional Academic Operations Management System (IAOMS) and will be processed with your custom watermark settings.
-                  `}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column - Watermark Controls */}
-          <div className="w-1/2 p-6 flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0 bg-gradient-to-br from-green-50 to-blue-50 overflow-hidden">
+        <div className="h-[85vh]">
+          {/* Watermark Controls */}
+          <div className="p-6 flex flex-col h-full">
             <Card className="flex-1 shadow-lg border-0 bg-white/80 backdrop-blur-sm overflow-hidden flex flex-col">
               <CardContent className="p-6 flex-1 flex flex-col overflow-hidden">
                 <DialogHeader className="mb-4 flex-shrink-0">

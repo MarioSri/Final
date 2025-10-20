@@ -148,7 +148,7 @@ const Documents = () => {
       <div className="container mx-auto p-6">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-foreground mb-2">Document Management</h1>
-          <p className="text-muted-foreground">Submit your permission reports, letters, and circulars</p>
+          <p className="text-muted-foreground">Submit Your Permission Reports, Letters, and Circulars</p>
         </div>
 
         <div className="space-y-6">

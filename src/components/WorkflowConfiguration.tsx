@@ -69,7 +69,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
   const [workflowName, setWorkflowName] = useState('');
   const [workflowDescription, setWorkflowDescription] = useState('');
   const [workflowType, setWorkflowType] = useState<'sequential' | 'parallel' | 'reverse' | 'bidirectional'>('sequential');
-  const [requiresCounterApproval, setRequiresCounterApproval] = useState(false);
+
   const [autoEscalation, setAutoEscalation] = useState(false);
   const [escalationTimeout, setEscalationTimeout] = useState(24);
   const [escalationTimeUnit, setEscalationTimeUnit] = useState<'seconds' | 'minutes' | 'hours' | 'days' | 'weeks' | 'months'>('hours');
@@ -92,7 +92,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
   const [documentAssignments, setDocumentAssignments] = useState<{[key: string]: string[]}>({});
   const [stepTimeoutHours, setStepTimeoutHours] = useState(24);
   const [stepEscalationRoles, setStepEscalationRoles] = useState<string[]>([]);
-  const [stepRequiresCounterApproval, setStepRequiresCounterApproval] = useState(false);
+
   const [showWatermarkModal, setShowWatermarkModal] = useState(false);
   const [pendingSubmissionData, setPendingSubmissionData] = useState<any>(null);
 
@@ -164,7 +164,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
     setWorkflowName('');
     setWorkflowDescription('');
     setWorkflowType('sequential');
-    setRequiresCounterApproval(false);
+
     setAutoEscalation(false);
     setEscalationTimeout(24);
     setEscalationTimeUnit('hours');
@@ -186,7 +186,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
     setStepRequiredApprovals(1);
     setStepTimeoutHours(24);
     setStepEscalationRoles([]);
-    setStepRequiresCounterApproval(false);
+
   };
 
   const loadWorkflow = (workflow: WorkflowRoute) => {
@@ -194,7 +194,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
     setWorkflowName(workflow.name);
     setWorkflowDescription(workflow.description);
     setWorkflowType(workflow.type);
-    setRequiresCounterApproval(workflow.requiresCounterApproval);
+
     setAutoEscalation(workflow.autoEscalation.enabled);
     setEscalationTimeout(workflow.autoEscalation.timeoutHours);
     setEscalationTimeUnit('hours');
@@ -208,7 +208,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
     setStepRequiredApprovals(step.requiredApprovals);
     setStepTimeoutHours(step.timeoutHours || 24);
     setStepEscalationRoles(step.escalationRoles || []);
-    setStepRequiresCounterApproval(step.requiresCounterApproval || false);
+
   };
 
   const handleSaveWorkflow = () => {
@@ -231,7 +231,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
       documentType: 'general',
       steps: selectedWorkflow?.steps || [],
       escalationPaths: selectedWorkflow?.escalationPaths || [],
-      requiresCounterApproval,
+
       autoEscalation: {
         enabled: autoEscalation,
         timeoutHours: escalationTimeout
@@ -290,7 +290,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
       requiredApprovals: stepRequiredApprovals,
       timeoutHours: stepTimeoutHours,
       escalationRoles: stepEscalationRoles.length > 0 ? stepEscalationRoles : undefined,
-      requiresCounterApproval: stepRequiresCounterApproval,
+
       isOptional: false,
       order: editingStep?.order || selectedWorkflow.steps.length + 1
     };
@@ -401,7 +401,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline">{workflow.type}</Badge>
-            <Badge variant={workflow.requiresCounterApproval ? 'default' : 'secondary'}>
+            <Badge variant="secondary">
               {workflow.steps.length} steps
             </Badge>
           </div>
@@ -411,12 +411,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
       <CardContent>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            {workflow.requiresCounterApproval && (
-              <div className="flex items-center gap-1">
-                <Shield className="w-4 h-4" />
-                Counter-Approval
-              </div>
-            )}
+
             {workflow.autoEscalation.enabled && (
               <div className="flex items-center gap-1">
                 <Clock className="w-4 h-4" />
@@ -509,12 +504,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
             </div>
           )}
           
-          {step.requiresCounterApproval && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Shield className="w-4 h-4" />
-              Requires counter-approval
-            </div>
-          )}
+
         </div>
       </CardContent>
       
@@ -531,9 +521,6 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-muted-foreground">
-            Configure Bi-Directional Approval Routing Workflows
-          </p>
         </div>
         {!hideWorkflowsTab && (
           <Button
@@ -822,22 +809,12 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
                     </div>
                   </div>
                   
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={requiresCounterApproval}
-                        onCheckedChange={setRequiresCounterApproval}
-                      />
-                      <label className="text-sm font-medium">Requires Counter-Approval</label>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        checked={autoEscalation}
-                        onCheckedChange={setAutoEscalation}
-                      />
-                      <label className="text-sm font-medium">Auto-Escalation</label>
-                    </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={autoEscalation}
+                      onCheckedChange={setAutoEscalation}
+                    />
+                    <label className="text-sm font-medium">Auto-Escalation</label>
                   </div>
                   
                   {autoEscalation && (
@@ -941,9 +918,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
                   <CardContent>
                     <div className="flex items-center gap-4 mb-6">
                       <Badge variant="outline">{selectedWorkflow.type}</Badge>
-                      {selectedWorkflow.requiresCounterApproval && (
-                        <Badge variant="default">Counter-Approval</Badge>
-                      )}
+
                       {selectedWorkflow.autoEscalation.enabled && (
                         <Badge variant="secondary">Auto-Escalation</Badge>
                       )}
@@ -1014,7 +989,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
                         />
                       </div>
                       
-                      <div className="grid gap-4 md:grid-cols-3">
+                      <div className="grid gap-4 md:grid-cols-2">
                         <div>
                           <label className="text-sm font-medium">Required Approvals</label>
                           <Input
@@ -1039,13 +1014,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
                           />
                         </div>
                         
-                        <div className="flex items-center space-x-2 pt-6">
-                          <Switch
-                            checked={stepRequiresCounterApproval}
-                            onCheckedChange={setStepRequiresCounterApproval}
-                          />
-                          <label className="text-sm font-medium">Counter-Approval</label>
-                        </div>
+
                       </div>
                       
                       <div>

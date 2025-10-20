@@ -129,10 +129,7 @@ const ApprovalRouting: React.FC = () => {
                 <ArrowRightLeft className="w-5 h-5" />
                 BYPASS MODE ACTIVE
               </div>
-              <p className="text-green-700 text-sm">
-                This will bypass normal approval workflows and send directly to all selected recipients.
-                Use only for genuine emergencies requiring immediate attention.
-              </p>
+
             </div>
           )}
         </CardHeader>
@@ -235,13 +232,7 @@ const ApprovalRouting: React.FC = () => {
       {/* Bypass Configuration - Show when bypass mode is active */}
       {isBypassMode && (
         <Card className="shadow-elegant border-green-500">
-          <CardHeader>
-            <CardTitle className="text-green-600 flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              Workflow Configuration
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <WorkflowConfiguration hideWorkflowsTab={true} />
           </CardContent>
         </Card>
