@@ -53,7 +53,7 @@ const Documents = () => {
       { name: 'Submission', status: 'completed', assignee: currentUserName, completedDate: new Date().toISOString().split('T')[0] }
     ];
     
-    // Add recipient-based workflow steps
+    // Add recipient-based workflow steps in sequence
     data.recipients.forEach((recipientId: string, index: number) => {
       const recipientName = getRecipientName(recipientId);
       const stepName = recipientId.includes('hod') ? 'HOD Review' :
@@ -66,7 +66,8 @@ const Documents = () => {
       workflowSteps.push({
         name: stepName,
         status: index === 0 ? 'current' : 'pending',
-        assignee: recipientName
+        assignee: recipientName,
+        recipientId: recipientId
       });
     });
     
@@ -85,8 +86,9 @@ const Documents = () => {
                data.priority === 'high' ? 'High Priority' : 'Urgent Priority',
       workflow: {
         currentStep: workflowSteps.length > 1 ? workflowSteps[1].name : 'Complete',
-        progress: 0,
-        steps: workflowSteps
+        progress: Math.round((1 / workflowSteps.length) * 100),
+        steps: workflowSteps,
+        recipients: data.recipients
       },
       requiresSignature: true,
       signedBy: [],

@@ -23,6 +23,7 @@ const Approvals = () => {
   const [documensoDocument, setDocumensoDocument] = useState<any>(null);
   const [comments, setComments] = useState<{[key: string]: string[]}>({});
   const [commentInputs, setCommentInputs] = useState<{[key: string]: string}>({});
+  const [approvalHistory, setApprovalHistory] = useState<any[]>([]);
   
   useEffect(() => {
     const savedInputs = JSON.parse(localStorage.getItem('comment-inputs') || '{}');
@@ -112,10 +113,185 @@ const Approvals = () => {
 
   const [pendingApprovals, setPendingApprovals] = useState<any[]>([]);
   
+  const handleAcceptDocument = (docId: string) => {
+    // Find the document in pending approvals
+    const doc = pendingApprovals.find(d => d.id === docId) || 
+                staticPendingDocs.find(d => d.id === docId);
+    
+    if (doc) {
+      // Update document in Track Documents with signature
+      const submittedDocs = JSON.parse(localStorage.getItem('submitted-documents') || '[]');
+      const updatedDocs = submittedDocs.map((trackDoc: any) => {
+        if (trackDoc.id === docId) {
+          const currentSignedBy = trackDoc.signedBy || [];
+          const newSignedBy = [...currentSignedBy, user?.fullName || user?.name || 'Approver'];
+          
+          // Update workflow to next step
+          const currentStepIndex = trackDoc.workflow.steps.findIndex((step: any) => step.status === 'current');
+          const updatedSteps = trackDoc.workflow.steps.map((step: any, index: number) => {
+            if (index === currentStepIndex) {
+              return { ...step, status: 'completed', completedDate: new Date().toISOString().split('T')[0] };
+            } else if (index === currentStepIndex + 1) {
+              return { ...step, status: 'current' };
+            }
+            return step;
+          });
+          
+          const isLastStep = currentStepIndex === trackDoc.workflow.steps.length - 1;
+          const newProgress = isLastStep ? 100 : Math.round(((currentStepIndex + 1) / trackDoc.workflow.steps.length) * 100);
+          const newCurrentStep = isLastStep ? 'Complete' : updatedSteps[currentStepIndex + 1]?.name;
+          const newStatus = isLastStep ? 'approved' : 'pending';
+          
+          return {
+            ...trackDoc,
+            signedBy: newSignedBy,
+            status: newStatus,
+            workflow: {
+              ...trackDoc.workflow,
+              currentStep: newCurrentStep,
+              progress: newProgress,
+              steps: updatedSteps
+            }
+          };
+        }
+        return trackDoc;
+      });
+      
+      localStorage.setItem('submitted-documents', JSON.stringify(updatedDocs));
+      
+      // Trigger real-time update for Track Documents
+      window.dispatchEvent(new CustomEvent('workflow-updated'));
+      
+      const approvedDoc = {
+        ...doc,
+        status: 'approved',
+        approvedBy: user?.fullName || user?.name || 'Principal',
+        approvedDate: new Date().toISOString().split('T')[0],
+        comment: comments[docId]?.join(' ') || 'Document approved successfully.'
+      };
+      
+      // Add to approval history
+      setApprovalHistory(prev => [approvedDoc, ...prev]);
+      
+      // Remove from pending approvals
+      setPendingApprovals(prev => prev.filter(d => d.id !== docId));
+      
+      toast({
+        title: "Document Signed & Approved",
+        description: `${doc.title} has been signed and forwarded to the next recipient.`,
+      });
+    }
+  };
+  
+  const handleRejectDocument = (docId: string) => {
+    const userComments = comments[docId];
+    if (!userComments || userComments.length === 0) {
+      toast({
+        title: "Comments Required",
+        description: "Please provide comments before rejecting the document.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Find the document in pending approvals
+    const doc = pendingApprovals.find(d => d.id === docId) || 
+                staticPendingDocs.find(d => d.id === docId);
+    
+    if (doc) {
+      // Update document in Track Documents with rejection status
+      const submittedDocs = JSON.parse(localStorage.getItem('submitted-documents') || '[]');
+      const updatedDocs = submittedDocs.map((trackDoc: any) => {
+        if (trackDoc.id === docId) {
+          return {
+            ...trackDoc,
+            status: 'rejected',
+            workflow: {
+              ...trackDoc.workflow,
+              currentStep: 'Rejected',
+              progress: 0
+            }
+          };
+        }
+        return trackDoc;
+      });
+      
+      localStorage.setItem('submitted-documents', JSON.stringify(updatedDocs));
+      
+      // Trigger real-time update for Track Documents
+      window.dispatchEvent(new CustomEvent('workflow-updated'));
+      
+      const rejectedDoc = {
+        ...doc,
+        status: 'rejected',
+        rejectedBy: user?.fullName || user?.name || 'Principal',
+        rejectedDate: new Date().toISOString().split('T')[0],
+        reason: 'Insufficient documentation',
+        comment: userComments.join(' ')
+      };
+      
+      // Add to approval history
+      setApprovalHistory(prev => [rejectedDoc, ...prev]);
+      
+      // Remove from pending approvals
+      setPendingApprovals(prev => prev.filter(d => d.id !== docId));
+      
+      toast({
+        title: "Document Rejected",
+        description: `${doc.title} has been rejected. Workflow stopped.`,
+        variant: "destructive"
+      });
+    }
+  };
+  
+  const staticPendingDocs = [
+    {
+      id: 'faculty-meeting',
+      title: 'Faculty Meeting Minutes – Q4 2024',
+      type: 'Circular',
+      submitter: 'Dr. Sarah Johnson',
+      submittedDate: '2024-01-15',
+      priority: 'high',
+      description: 'Add a risk-mitigation section to highlight potential delays or issues.'
+    },
+    {
+      id: 'budget-request',
+      title: 'Budget Request – Lab Equipment',
+      type: 'Letter',
+      submitter: 'Prof. David Brown',
+      submittedDate: '2024-01-13',
+      priority: 'medium',
+      description: 'Consider revising the scope to focus on priority items within this quarter\'s budget.'
+    },
+    {
+      id: 'student-event',
+      title: 'Student Event Proposal – Tech Fest 2024',
+      type: 'Circular',
+      submitter: 'Dr. Emily Davis',
+      submittedDate: '2024-01-14',
+      priority: 'medium',
+      description: 'Annual technology festival proposal including budget allocation, venue requirements, and guest speaker arrangements.'
+    },
+    {
+      id: 'research-methodology',
+      title: 'Research Methodology Guidelines – Academic Review',
+      type: 'Report',
+      submitter: 'Prof. Jessica Chen',
+      submittedDate: '2024-01-20',
+      priority: 'normal',
+      description: 'Comprehensive guidelines for research methodology standards and academic review processes.'
+    }
+  ];
+  
   useEffect(() => {
     const loadPendingApprovals = () => {
       const stored = JSON.parse(localStorage.getItem('pending-approvals') || '[]');
       setPendingApprovals(stored);
+    };
+    
+    const loadApprovalHistory = () => {
+      const stored = JSON.parse(localStorage.getItem('approval-history-new') || '[]');
+      setApprovalHistory(stored);
     };
     
     // Save approval data to localStorage for search
@@ -138,6 +314,7 @@ const Approvals = () => {
     };
     
     loadPendingApprovals();
+    loadApprovalHistory();
     saveApprovalData();
     
     const handleStorageChange = () => loadPendingApprovals();
@@ -156,6 +333,18 @@ const Approvals = () => {
       window.removeEventListener('document-removed', handleDocumentRemoval);
     };
   }, []);
+  
+  // Save approval history to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('approval-history-new', JSON.stringify(approvalHistory));
+  }, [approvalHistory]);
+  
+  // Handle Documenso completion
+  const handleDocumensoComplete = (docId: string) => {
+    handleAcceptDocument(docId);
+    setShowDocumenso(false);
+    setDocumensoDocument(null);
+  };
 
   const recentApprovals = [
     {
@@ -448,7 +637,11 @@ const Approvals = () => {
                               <CheckCircle2 className="h-4 w-4 mr-2" />
                               Accept & Sign
                             </Button>
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleRejectDocument(doc.id)}
+                            >
                               <XCircle className="h-4 w-4 mr-2" />
                               Reject
                             </Button>
@@ -608,7 +801,11 @@ const Approvals = () => {
                             <CheckCircle2 className="h-4 w-4 mr-2" />
                             Accept & Sign
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleRejectDocument('faculty-meeting')}
+                          >
                             <XCircle className="h-4 w-4 mr-2" />
                             Reject
                           </Button>
@@ -767,7 +964,11 @@ const Approvals = () => {
                             <CheckCircle2 className="h-4 w-4 mr-2" />
                             Accept & Sign
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleRejectDocument('budget-request')}
+                          >
                             <XCircle className="h-4 w-4 mr-2" />
                             Reject
                           </Button>
@@ -937,7 +1138,11 @@ const Approvals = () => {
                             <CheckCircle2 className="h-4 w-4 mr-2" />
                             Accept & Sign
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleRejectDocument('student-event')}
+                          >
                             <XCircle className="h-4 w-4 mr-2" />
                             Reject
                           </Button>
@@ -1088,7 +1293,11 @@ const Approvals = () => {
                             <CheckCircle2 className="h-4 w-4 mr-2" />
                             Accept & Sign
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleRejectDocument('research-methodology')}
+                          >
                             <XCircle className="h-4 w-4 mr-2" />
                             Reject
                           </Button>
@@ -1114,7 +1323,7 @@ const Approvals = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recentApprovals.map((doc) => (
+                  {[...approvalHistory, ...recentApprovals].map((doc) => (
                     <Card key={doc.id} className={`hover:shadow-md transition-shadow ${doc.title === 'Course Curriculum Update' ? 'border-destructive bg-red-50 animate-pulse' : ''}`}>
                       <CardContent className="p-6">
                         <div className="flex flex-col lg:flex-row gap-6">
@@ -1201,7 +1410,7 @@ const Approvals = () => {
                                 {doc.status === "approved" ? (
                                   <p>Approved by {doc.approvedBy} on {doc.approvedDate}</p>
                                 ) : (
-                                  <p>Rejected by {doc.rejectedBy} on {doc.rejectedDate} - {doc.reason}</p>
+                                  <p>Rejected by {doc.rejectedBy} on {doc.rejectedDate}</p>
                                 )}
                               </div>
                             </div>
@@ -1248,6 +1457,7 @@ const Approvals = () => {
           <DocumensoIntegration
             isOpen={showDocumenso}
             onClose={() => setShowDocumenso(false)}
+            onComplete={() => handleDocumensoComplete(documensoDocument.id)}
             document={documensoDocument}
             user={{
               name: user?.fullName || user?.name || 'User',

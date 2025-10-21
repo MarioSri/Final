@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/dialog";
 import { WatermarkFeature } from "@/components/WatermarkFeature";
 import { useAuth } from "@/contexts/AuthContext";
+import { FileViewer } from "@/components/FileViewer";
 
 interface DocumentUploaderProps {
   userRole: string;
@@ -60,6 +61,8 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
   const [documentAssignments, setDocumentAssignments] = useState<{[key: string]: string[]}>({});
   const [showWatermarkModal, setShowWatermarkModal] = useState(false);
   const [pendingSubmissionData, setPendingSubmissionData] = useState<any>(null);
+  const [viewingFile, setViewingFile] = useState<File | null>(null);
+  const [showFileViewer, setShowFileViewer] = useState(false);
 
   const documentTypeOptions = [
     { id: "letter", label: "Letter", icon: FileText },
@@ -98,10 +101,9 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
   };
 
   const handleViewFile = (file: File) => {
-    // Create a temporary URL for the file
-    const fileUrl = URL.createObjectURL(file);
-    // Open the file in a new tab
-    window.open(fileUrl, '_blank');
+    // Open the file in the FileViewer modal instead of a new tab
+    setViewingFile(file);
+    setShowFileViewer(true);
   };
 
   const handleSubmit = () => {
@@ -513,7 +515,7 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
       </Dialog>
       
       {/* Watermark Feature Modal */}
-      {showWatermarkModal && uploadedFiles.length > 0 && user && (
+      {showWatermarkModal && user && (
         <WatermarkFeature
           isOpen={showWatermarkModal}
           onClose={() => {
@@ -528,12 +530,20 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
           }}
           user={{
             id: user.id,
-            name: user.fullName || user.name || 'User',
+            name: user.name || 'User',
             email: user.email || 'user@example.com',
             role: user.role || 'Employee'
           }}
+          files={uploadedFiles}
         />
       )}
+
+      {/* File Viewer Modal */}
+      <FileViewer
+        file={viewingFile}
+        open={showFileViewer}
+        onOpenChange={setShowFileViewer}
+      />
     </div>
   );
 }

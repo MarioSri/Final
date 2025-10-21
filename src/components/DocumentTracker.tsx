@@ -219,6 +219,10 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
       setSubmittedDocuments(stored);
     };
     
+    const handleWorkflowUpdate = () => {
+      loadSubmittedDocuments();
+    };
+    
     // Save track documents to localStorage for search
     const saveTrackDocuments = () => {
       const trackDocuments = [...submittedDocuments, ...mockDocuments].map(doc => ({
@@ -274,11 +278,13 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
     };
     
     window.addEventListener('approval-comments-changed', handleApprovalChanges);
+    window.addEventListener('workflow-updated', handleWorkflowUpdate);
     
     window.addEventListener('storage', handleStorageChange);
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('approval-comments-changed', handleApprovalChanges);
+      window.removeEventListener('workflow-updated', handleWorkflowUpdate);
     };
   }, []);
 
@@ -568,7 +574,8 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
                     {document.workflow.steps.map((step, index) => (
                       <div key={index} className="flex items-center gap-2 text-sm">
-                        {step.status === 'completed' && <CheckCircle className="h-4 w-4 text-green-600" />}
+                        {step.status === 'completed' && document.id === 'DOC-003' && step.name === 'Principal Review' && <XCircle className="h-4 w-4 text-red-600" />}
+                        {step.status === 'completed' && !(document.id === 'DOC-003' && step.name === 'Principal Review') && <CheckCircle className="h-4 w-4 text-green-600" />}
                         {step.status === 'current' && <Clock className="h-4 w-4 text-blue-600" />}
                         {step.status === 'pending' && <div className="h-4 w-4 rounded-full border border-gray-300" />}
                         <div className="flex-1">
@@ -592,11 +599,20 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
                   {document.requiresSignature && (
                     <div className="flex items-center gap-2 text-sm">
                       <Signature className="h-4 w-4" />
-                      <span>Digital Signature Required</span>
-                      {document.signedBy && (
-                        <Badge variant="outline">
-                          Signed by {document.signedBy.length} Recipients
-                        </Badge>
+                      {document.signedBy && document.signedBy.length > 0 ? (
+                        <>
+                          <span>Signed by {document.signedBy.length} Recipient{document.signedBy.length > 1 ? 's' : ''}</span>
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                            {document.signedBy.length} Signature{document.signedBy.length > 1 ? 's' : ''}
+                          </Badge>
+                        </>
+                      ) : (
+                        <>
+                          <span>Digital Signature Required</span>
+                          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+                            Pending Signature
+                          </Badge>
+                        </>
                       )}
                     </div>
                   )}

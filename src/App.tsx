@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
+import { DocumentWorkflowProvider } from "@/contexts/DocumentWorkflowContext";
 import { ErrorBoundary } from "@/utils/errorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
@@ -30,7 +31,8 @@ const App = () => (
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
         <AuthProvider>
           <NotificationProvider>
-            <TooltipProvider>
+            <DocumentWorkflowProvider>
+              <TooltipProvider>
               <Toaster />
               <Sonner />
               <BrowserRouter>
@@ -91,9 +93,10 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
-          </TooltipProvider>
-        </NotificationProvider>
-      </AuthProvider>
+              </TooltipProvider>
+            </DocumentWorkflowProvider>
+          </NotificationProvider>
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   </ErrorBoundary>

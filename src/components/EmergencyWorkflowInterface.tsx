@@ -47,6 +47,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { WatermarkFeature } from "@/components/WatermarkFeature";
 import { useAuth } from "@/contexts/AuthContext";
+import { FileViewer } from "@/components/FileViewer";
 
 interface EmergencySubmission {
   id: string;
@@ -70,6 +71,8 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
   const { user } = useAuth();
   const [isEmergencyMode, setIsEmergencyMode] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
+  const [viewingFile, setViewingFile] = useState<File | null>(null);
+  const [showFileViewer, setShowFileViewer] = useState(false);
   const [emergencyData, setEmergencyData] = useState({
     title: '',
     description: '',
@@ -203,12 +206,9 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
   };
 
   const handleViewFile = (file: File) => {
-    // Create a URL for the file and open it in a new tab for viewing
-    const fileUrl = URL.createObjectURL(file);
-    window.open(fileUrl, '_blank');
-    
-    // Cleanup the URL after a delay to free memory
-    setTimeout(() => URL.revokeObjectURL(fileUrl), 1000);
+    // Open the file in the FileViewer modal instead of a new tab
+    setViewingFile(file);
+    setShowFileViewer(true);
   };
 
   const handleEmergencySubmit = () => {
@@ -1312,7 +1312,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
       )}
       
       {/* Watermark Feature Modal */}
-      {showWatermarkModal && emergencyData.uploadedFiles.length > 0 && user && (
+      {showWatermarkModal && user && (
         <WatermarkFeature
           isOpen={showWatermarkModal}
           onClose={() => {
@@ -1331,8 +1331,16 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
             email: user?.email || 'emergency@example.com',
             role: user?.role || userRole
           }}
+          files={emergencyData.uploadedFiles}
         />
       )}
+
+      {/* File Viewer Modal */}
+      <FileViewer
+        file={viewingFile}
+        open={showFileViewer}
+        onOpenChange={setShowFileViewer}
+      />
     </div>
   );
 };

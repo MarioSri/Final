@@ -48,6 +48,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { WatermarkFeature } from '@/components/WatermarkFeature';
+import { FileViewer } from '@/components/FileViewer';
 
 interface WorkflowConfigurationProps {
   className?: string;
@@ -95,6 +96,8 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
 
   const [showWatermarkModal, setShowWatermarkModal] = useState(false);
   const [pendingSubmissionData, setPendingSubmissionData] = useState<any>(null);
+  const [viewingFile, setViewingFile] = useState<File | null>(null);
+  const [showFileViewer, setShowFileViewer] = useState(false);
 
   const availableRoles = ['principal', 'registrar', 'program-head', 'hod', 'employee'];
 
@@ -137,8 +140,9 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
   };
 
   const handleViewFile = (file: File) => {
-    const fileUrl = URL.createObjectURL(file);
-    window.open(fileUrl, '_blank');
+    // Open the file in the FileViewer modal instead of a new tab
+    setViewingFile(file);
+    setShowFileViewer(true);
   };
 
   useEffect(() => {
@@ -1172,7 +1176,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
       </Dialog>
       
       {/* Watermark Feature Modal */}
-      {showWatermarkModal && uploadedFiles.length > 0 && user && (
+      {showWatermarkModal && user && (
         <WatermarkFeature
           isOpen={showWatermarkModal}
           onClose={() => {
@@ -1191,8 +1195,16 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
             email: user.email || 'user@example.com',
             role: user.role || 'Employee'
           }}
+          files={uploadedFiles}
         />
       )}
+
+      {/* File Viewer Modal */}
+      <FileViewer
+        file={viewingFile}
+        open={showFileViewer}
+        onOpenChange={setShowFileViewer}
+      />
     </div>
   );
 };

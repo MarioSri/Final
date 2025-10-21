@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { FileViewer } from '@/components/FileViewer';
 import {
   Settings,
   Clock,
@@ -31,6 +32,8 @@ const ApprovalRouting: React.FC = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('configuration');
   const [isBypassMode, setIsBypassMode] = useState(false);
+  const [viewingFile, setViewingFile] = useState<File | null>(null);
+  const [showFileViewer, setShowFileViewer] = useState(false);
 
   const handleLogout = () => {
     toast({
@@ -38,6 +41,12 @@ const ApprovalRouting: React.FC = () => {
       description: "You have been successfully logged out.",
     });
     navigate("/");
+  };
+
+  const handleViewFile = (file: File) => {
+    // Opens modal viewer instead of new tab
+    setViewingFile(file);
+    setShowFileViewer(true);
   };
 
   // Mock statistics - in a real app, these would come from the workflow engine
@@ -238,9 +247,14 @@ const ApprovalRouting: React.FC = () => {
         </Card>
       )}
 
-
-
       </div>
+
+      {/* File Viewer Modal */}
+      <FileViewer
+        file={viewingFile}
+        open={showFileViewer}
+        onOpenChange={setShowFileViewer}
+      />
     </DashboardLayout>
   );
 };
