@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { cn } from '@/lib/utils';
+import { AISummarizerModal } from '@/components/AISummarizerModal';
 import {
   FileText,
   Clock,
@@ -19,7 +20,8 @@ import {
   Building,
   Zap,
   Filter,
-  ArrowRight
+  ArrowRight,
+  Sparkles
 } from 'lucide-react';
 
 interface Document {
@@ -61,35 +63,97 @@ export const DocumentsWidget: React.FC<DocumentsWidgetProps> = ({
   const [documents, setDocuments] = useState<Document[]>([]);
   const [filter, setFilter] = useState<'all' | 'pending' | 'emergency'>('all');
   const [loading, setLoading] = useState(true);
+  const [showAISummarizer, setShowAISummarizer] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
 
   useEffect(() => {
-    // Simulate API call to fetch documents based on role
+    // Load Pending Approvals from Approval Center
     const fetchDocuments = async () => {
       setLoading(true);
       
-      const mockDocuments: Document[] = [];
-
-      // Filter documents based on role and permissions
-      const filteredDocs = mockDocuments.filter(doc => {
-        if (userRole === 'employee') {
-          return doc.submittedBy === user?.name || doc.department === user?.department;
-        }
-        if (userRole === 'hod') {
-          return doc.department === user?.department || doc.branch === user?.branch;
-        }
-        if (userRole === 'program-head') {
-          return doc.branch === user?.branch && doc.year === user?.year;
-        }
-        return true; // Principal and Registrar see all
-      });
+      // Only show pending approvals for non-employee roles
+      let allPendingDocs: Document[] = [];
+      
+      if (userRole !== 'employee') {
+        // Get pending approvals from localStorage and static data
+        const storedApprovals = JSON.parse(localStorage.getItem('pending-approvals') || '[]');
+        
+        const staticPendingDocs = [
+          {
+            id: 'faculty-meeting',
+            title: 'Faculty Meeting Minutes – Q4 2024',
+            type: 'Circular' as const,
+            status: 'pending' as const,
+            submittedBy: 'Dr. Sarah Johnson',
+            submittedByRole: 'Faculty',
+            department: 'Academic Affairs',
+            date: '2024-01-15',
+            priority: 'high' as const,
+            description: 'Add a risk-mitigation section to highlight potential delays or issues.',
+            requiresAction: true,
+            escalationLevel: 0
+          },
+          {
+            id: 'budget-request',
+            title: 'Budget Request – Lab Equipment',
+            type: 'Letter' as const,
+            status: 'pending' as const,
+            submittedBy: 'Prof. David Brown',
+            submittedByRole: 'Professor',
+            department: 'Engineering',
+            date: '2024-01-13',
+            priority: 'medium' as const,
+            description: 'Consider revising the scope to focus on priority items within this quarter\'s budget.',
+            requiresAction: true,
+            escalationLevel: 0
+          },
+          {
+            id: 'student-event',
+            title: 'Student Event Proposal – Tech Fest 2024',
+            type: 'Circular' as const,
+            status: 'emergency' as const,
+            submittedBy: 'Dr. Emily Davis',
+            submittedByRole: 'Faculty',
+            department: 'Student Affairs',
+            date: '2024-01-14',
+            priority: 'emergency' as const,
+            description: 'Annual technology festival proposal including budget allocation, venue requirements, and guest speaker arrangements.',
+            requiresAction: true,
+            escalationLevel: 2
+          },
+          {
+            id: 'research-methodology',
+            title: 'Research Methodology Guidelines – Academic Review',
+            type: 'Report' as const,
+            status: 'pending' as const,
+            submittedBy: 'Prof. Jessica Chen',
+            submittedByRole: 'Professor',
+            department: 'Research',
+            date: '2024-01-20',
+            priority: 'medium' as const,
+            description: 'Comprehensive guidelines for research methodology standards and academic review processes.',
+            requiresAction: true,
+            escalationLevel: 0
+          }
+        ];
+        
+        // Combine stored and static documents
+        allPendingDocs = [...storedApprovals, ...staticPendingDocs];
+      }
 
       setTimeout(() => {
-        setDocuments(filteredDocs);
+        setDocuments(allPendingDocs);
         setLoading(false);
-      }, 800);
+      }, 300);
     };
 
     fetchDocuments();
+    
+    // Listen for storage changes to update in real-time
+    const handleStorageChange = () => fetchDocuments();
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, [userRole, user]);
 
   const getFilteredDocuments = () => {
@@ -165,7 +229,7 @@ export const DocumentsWidget: React.FC<DocumentsWidgetProps> = ({
     );
   }
 
-  return (
+  const cardContent = (
     <Card className={cn(
       "shadow-elegant hover:shadow-glow transition-all duration-300",
       isSelected && "border-primary",
@@ -205,7 +269,7 @@ export const DocumentsWidget: React.FC<DocumentsWidgetProps> = ({
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => navigate("/documents")}
+              onClick={() => navigate("/approvals")}
               className={cn(isMobile && "text-xs")}
             >
               <Eye className="w-4 h-4 mr-1" />
@@ -227,7 +291,7 @@ export const DocumentsWidget: React.FC<DocumentsWidgetProps> = ({
                   doc.requiresAction && "border-l-4 border-l-warning"
                 )}
                 style={{ animationDelay: `${index * 100}ms` }}
-                onClick={() => navigate(`/documents/${doc.id}`)}
+                onClick={() => navigate("/approvals")}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1 min-w-0">
@@ -264,8 +328,8 @@ export const DocumentsWidget: React.FC<DocumentsWidgetProps> = ({
                     <span>{doc.submittedBy}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Building className="w-3 h-3" />
-                    <span>{doc.department}</span>
+                    <FileText className="w-3 h-3" />
+                    <span>{doc.type}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
@@ -310,40 +374,21 @@ export const DocumentsWidget: React.FC<DocumentsWidgetProps> = ({
                   </div>
                 )}
 
-                {/* Quick Actions for Approvers */}
-                {doc.requiresAction && (userRole === 'principal' || userRole === 'registrar' || userRole === 'hod') && (
-                  <div className="flex gap-2 mt-3">
-                    {doc.id === 'DOC-2024-006' ? (
-                      // Demo Document specific buttons
-                      <>
-                        <Button size="sm" variant="outline" className="flex-1">
-                          <ArrowRight className="w-3 h-3 mr-1" />
-                          Approval Chain with Bypass
-                        </Button>
-                        <Button size="sm" variant="outline">
-                          <ArrowRight className="w-3 h-3 mr-1" />
-                          Escalate
-                        </Button>
-                      </>
-                    ) : (
-                      // Default buttons for other documents
-                      <>
-                        <Button size="sm" variant="default" className="flex-1">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Approve
-                        </Button>
-                        <Button size="sm" variant="destructive" className="flex-1">
-                          <XCircle className="w-3 h-3 mr-1" />
-                          Reject
-                        </Button>
-                        <Button size="sm" variant="outline">
-                          <ArrowRight className="w-3 h-3 mr-1" />
-                          Escalate
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                )}
+                {/* Quick Actions */}
+                <div className="flex gap-2 mt-3">
+                  <Button size="sm" variant="outline" className="flex-1" onClick={() => navigate("/approvals")}>
+                    <Eye className="w-3 h-3 mr-1" />
+                    View Details
+                  </Button>
+                  <Button size="sm" variant="outline" className="flex-1" onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedDoc(doc);
+                    setShowAISummarizer(true);
+                  }}>
+                    <Sparkles className="w-3 h-3 mr-1" />
+                    AI Summarizer
+                  </Button>
+                </div>
               </div>
             ))}
             
@@ -375,7 +420,7 @@ export const DocumentsWidget: React.FC<DocumentsWidgetProps> = ({
           <Button 
             variant="ghost" 
             size="sm"
-            onClick={() => navigate("/documents")}
+            onClick={() => navigate("/approvals")}
           >
             View All
             <ArrowRight className="w-4 h-4 ml-1" />
@@ -383,5 +428,21 @@ export const DocumentsWidget: React.FC<DocumentsWidgetProps> = ({
         </div>
       </CardContent>
     </Card>
+  );
+
+  return (
+    <>
+      {cardContent}
+      {selectedDoc && (
+        <AISummarizerModal
+          isOpen={showAISummarizer}
+          onClose={() => {
+            setShowAISummarizer(false);
+            setSelectedDoc(null);
+          }}
+          document={selectedDoc}
+        />
+      )}
+    </>
   );
 };

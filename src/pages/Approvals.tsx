@@ -600,7 +600,13 @@ const Approvals = () => {
                             </div>
                           </div>
                           <div className="flex flex-col gap-2 min-w-[150px]">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => {
+                              toast({
+                                title: "Document Viewer",
+                                description: `Opening ${doc.title} for review`,
+                              });
+                              window.open(`data:text/html,<html><head><title>${doc.title}</title></head><body><h1>${doc.title}</h1><p><strong>Type:</strong> ${doc.type}</p><p><strong>Submitted by:</strong> ${doc.submitter}</p><p><strong>Date:</strong> ${doc.submittedDate}</p><p><strong>Description:</strong> ${doc.description}</p></body></html>`, '_blank');
+                            }}>
                               <Eye className="h-4 w-4 mr-2" />
                               View
                             </Button>
@@ -764,7 +770,13 @@ const Approvals = () => {
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 min-w-[150px]">
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => {
+                            toast({
+                              title: "Document Viewer",
+                              description: "Opening Faculty Meeting Minutes – Q4 2024 for review",
+                            });
+                            window.open(`data:text/html,<html><head><title>Faculty Meeting Minutes – Q4 2024</title></head><body><h1>Faculty Meeting Minutes – Q4 2024</h1><p><strong>Type:</strong> Circular</p><p><strong>Submitted by:</strong> Dr. Sarah Johnson</p><p><strong>Date:</strong> 2024-01-15</p><p><strong>Description:</strong> Add a risk-mitigation section to highlight potential delays or issues.</p></body></html>`, '_blank');
+                          }}>
                             <Eye className="h-4 w-4 mr-2" />
                             View
                           </Button>
@@ -927,7 +939,13 @@ const Approvals = () => {
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 min-w-[150px]">
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => {
+                            toast({
+                              title: "Document Viewer",
+                              description: "Opening Budget Request – Lab Equipment for review",
+                            });
+                            window.open(`data:text/html,<html><head><title>Budget Request – Lab Equipment</title></head><body><h1>Budget Request – Lab Equipment</h1><p><strong>Type:</strong> Letter</p><p><strong>Submitted by:</strong> Prof. David Brown</p><p><strong>Date:</strong> 2024-01-13</p><p><strong>Description:</strong> Consider revising the scope to focus on priority items within this quarter's budget.</p></body></html>`, '_blank');
+                          }}>
                             <Eye className="h-4 w-4 mr-2" />
                             View
                           </Button>
@@ -1101,7 +1119,13 @@ const Approvals = () => {
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 min-w-[150px]">
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => {
+                            toast({
+                              title: "Document Viewer",
+                              description: "Opening Student Event Proposal – Tech Fest 2024 for review",
+                            });
+                            window.open(`data:text/html,<html><head><title>Student Event Proposal – Tech Fest 2024</title></head><body><h1>Student Event Proposal – Tech Fest 2024</h1><p><strong>Type:</strong> Circular</p><p><strong>Submitted by:</strong> Dr. Emily Davis</p><p><strong>Date:</strong> 2024-01-14</p><p><strong>Description:</strong> Annual technology festival proposal including budget allocation, venue requirements, and guest speaker arrangements.</p></body></html>`, '_blank');
+                          }}>
                             <Eye className="h-4 w-4 mr-2" />
                             View
                           </Button>
@@ -1256,7 +1280,13 @@ const Approvals = () => {
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 min-w-[150px]">
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => {
+                            toast({
+                              title: "Document Viewer",
+                              description: "Opening Research Methodology Guidelines – Academic Review for review",
+                            });
+                            window.open(`data:text/html,<html><head><title>Research Methodology Guidelines – Academic Review</title></head><body><h1>Research Methodology Guidelines – Academic Review</h1><p><strong>Type:</strong> Report</p><p><strong>Submitted by:</strong> Prof. Jessica Chen</p><p><strong>Date:</strong> 2024-01-20</p><p><strong>Description:</strong> Comprehensive guidelines for research methodology standards and academic review processes.</p></body></html>`, '_blank');
+                          }}>
                             <Eye className="h-4 w-4 mr-2" />
                             View
                           </Button>

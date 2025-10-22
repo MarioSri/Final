@@ -452,7 +452,7 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
         </div>
 
         {/* Widget Footer */}
-        <div className="flex items-center justify-between pt-4 border-t">
+        <div className="flex items-center justify-center pt-4 border-t">
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span>{meetings.length} meetings</span>
             {pendingApprovals > 0 && (
@@ -461,15 +461,6 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({
               </span>
             )}
           </div>
-          
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => navigate("/calendar")}
-          >
-            Full Calendar
-            <ArrowRight className="w-4 h-4 ml-1" />
-          </Button>
         </div>
       </CardContent>
     </Card>
