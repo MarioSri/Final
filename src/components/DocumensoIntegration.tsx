@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { aiSignaturePlacement, SignatureZone, DocumentAnalysis } from '@/services/aiSignaturePlacement';
 import { SignaturePlacementPreview } from '@/components/SignaturePlacementPreview';
 import { useDocumensoAPI } from '@/hooks/useDocumensoAPI';
+import { FileViewer } from '@/components/FileViewer';
 
 interface DocumensoIntegrationProps {
   isOpen: boolean;
@@ -29,6 +30,7 @@ interface DocumensoIntegrationProps {
     email: string;
     role: string;
   };
+  file?: File; // Document file to preview
 }
 
 export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
@@ -36,7 +38,8 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
   onClose,
   onComplete,
   document,
-  user
+  user,
+  file
 }) => {
   const [signingProgress, setSigningProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -53,6 +56,7 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
   const [documentAnalysis, setDocumentAnalysis] = useState<DocumentAnalysis | null>(null);
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showFileViewer, setShowFileViewer] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
@@ -62,6 +66,12 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
     baseUrl: 'https://api.documenso.com',
     webhookUrl: 'https://iaoms.edu/webhooks/documenso'
   });
+
+  const handleViewFile = () => {
+    if (file) {
+      setShowFileViewer(true);
+    }
+  };
 
   const analyzeDocumentForSignatures = async () => {
     setIsAnalyzing(true);
@@ -127,7 +137,7 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
             email: user.email,
             role: user.role
           },
-          signatureMethod,
+          signatureMethod: signatureMethod as 'digital' | 'draw' | 'camera' | 'upload',
           signatureData: capturedSignature || signatureData
         };
         
@@ -256,7 +266,7 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
     const video = videoRef.current;
     if (!video) return;
     
-    const canvas = document.createElement('canvas');
+    const canvas = window.document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     
@@ -294,6 +304,7 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
   };
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden">
         <DialogHeader>
@@ -304,38 +315,96 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
         </DialogHeader>
         
         <div className="grid grid-cols-2 gap-6 h-[80vh]">
-          {/* Left Column - Document Viewer */}
+          {/* Left Column - Document Preview */}
           <div className="border-r pr-6">
-            <Card className="h-full">
-              <CardContent className="h-full overflow-y-auto p-6">
-                <div className="bg-muted p-4 rounded-lg text-sm h-full overflow-y-auto relative">
-                  {document.content}
-                  
-                  {/* Signature Zones Overlay */}
-                  {detectedSignatureZones.map((zone) => (
-                    <div
-                      key={zone.id}
-                      className="absolute border-2 border-dashed cursor-pointer transition-all duration-200"
-                      style={{
-                        left: `${(zone.x / 600) * 100}%`,
-                        top: `${(zone.y / 800) * 100}%`,
-                        width: `${(zone.width / 600) * 100}%`,
-                        height: `${(zone.height / 800) * 100}%`,
-                        borderColor: zone.id === selectedZone ? '#3b82f6' : '#6b7280',
-                        backgroundColor: zone.id === selectedZone ? '#3b82f620' : '#6b728020',
-                        zIndex: zone.id === selectedZone ? 10 : 5
-                      }}
-                      onClick={() => setSelectedZone(zone.id)}
-                    >
-                      <div 
-                        className="absolute -top-6 left-0 px-2 py-1 rounded text-xs font-medium text-white shadow-sm"
-                        style={{ backgroundColor: zone.id === selectedZone ? '#3b82f6' : '#6b7280' }}
-                      >
-                        {Math.round(zone.confidence * 100)}%
+            <Card className="h-full flex flex-col">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  Document Preview
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex-1 overflow-hidden p-6">
+                {file ? (
+                  <div className="h-full flex flex-col space-y-4">
+                    {/* File Info Card */}
+                    <div className="border rounded-lg p-4 bg-blue-50 flex-shrink-0">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <FileText className="w-8 h-8 text-blue-600 flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-sm truncate">{file.name}</p>
+                            <p className="text-xs text-gray-600">
+                              {(file.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={handleViewFile}
+                          className="flex-shrink-0"
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          View Full
+                        </Button>
                       </div>
                     </div>
-                  ))}
-                </div>
+
+                    {/* Document Information */}
+                    <div className="border rounded-lg p-4 flex-shrink-0">
+                      <h4 className="text-sm font-medium mb-3">Document Information</h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Title:</span>
+                          <span className="font-medium">{document.title}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Type:</span>
+                          <span className="font-medium">{document.type}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Status:</span>
+                          <Badge variant="outline">Ready for Signing</Badge>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Security Notice */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex-shrink-0">
+                      <div className="flex items-start gap-3">
+                        <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm">
+                          <p className="font-medium text-blue-900 mb-1">Secure Signing</p>
+                          <p className="text-blue-700 text-xs">
+                            This document will be signed using Documenso's enterprise-grade digital signature platform with full legal validity.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Preview Message */}
+                    <div className="flex-1 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg">
+                      <div className="text-center p-6">
+                        <Eye className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                        <p className="text-sm text-gray-600 mb-2">Click "View Full" to preview document</p>
+                        <p className="text-xs text-gray-500">
+                          Full document viewer with zoom and rotation controls
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-full flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg">
+                    <div className="text-center p-6">
+                      <FileText className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                      <p className="text-sm text-gray-600 mb-2">No document available</p>
+                      <p className="text-xs text-gray-500">
+                        Please provide a document file to preview
+                      </p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -722,9 +791,17 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
             </Tabs>
           </div>
         </div>
-
-
       </DialogContent>
     </Dialog>
+
+    {/* FileViewer Modal */}
+    {file && (
+      <FileViewer
+        file={file}
+        open={showFileViewer}
+        onOpenChange={setShowFileViewer}
+      />
+    )}
+  </>
   );
 };

@@ -33,6 +33,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface DocumentTrackerProps {
   userRole: string;
+  onViewFile?: (file: File) => void;
 }
 
 interface Document {
@@ -55,6 +56,7 @@ interface Document {
   };
   requiresSignature: boolean;
   signedBy?: string[];
+  description?: string;
   comments?: Array<{
     author: string;
     date: string;
@@ -70,7 +72,7 @@ const mockDocuments: Document[] = [
     submittedBy: 'Dr. Jennifer Park',
     submittedDate: '2024-01-22',
     status: 'approved',
-    priority: 'High Priority',
+    priority: 'high',
     workflow: {
       currentStep: 'Complete',
       progress: 100,
@@ -95,7 +97,7 @@ const mockDocuments: Document[] = [
     submittedBy: 'Prof. Alex Martinez',
     submittedDate: '2024-01-20',
     status: 'in-review',
-    priority: 'Medium Priority',
+    priority: 'medium',
     workflow: {
       currentStep: 'HOD Review',
       progress: 50,
@@ -119,7 +121,7 @@ const mockDocuments: Document[] = [
     submittedBy: 'Dr. Sarah Johnson',
     submittedDate: '2024-01-15',
     status: 'pending',
-    priority: 'High Priority',
+    priority: 'high',
     workflow: {
       currentStep: 'Principal Approval',
       progress: 75,
@@ -145,7 +147,7 @@ const mockDocuments: Document[] = [
     submittedBy: 'Dr. Emily Davis',
     submittedDate: '2024-01-14',
     status: 'approved',
-    priority: 'Urgent Priority',
+    priority: 'urgent',
     workflow: {
       currentStep: 'Complete',
       progress: 100,
@@ -172,7 +174,7 @@ const mockDocuments: Document[] = [
     submittedBy: 'Prof. David Brown',
     submittedDate: '2024-01-13',
     status: 'rejected',
-    priority: 'Medium Priority',
+    priority: 'medium',
     workflow: {
       currentStep: 'Rejected',
       progress: 50,
@@ -192,7 +194,7 @@ const mockDocuments: Document[] = [
   }
 ];
 
-export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) => {
+export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onViewFile }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -402,6 +404,92 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
     });
   };
 
+  // Helper function to create a demo PDF file for viewing
+  const createDocumentFile = (document: Document): File => {
+    // Create HTML content for the document
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${document.title}</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.6;
+      color: #333;
+    }
+    h1 {
+      color: #2563eb;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 10px;
+    }
+    h2 {
+      color: #374151;
+      margin-top: 30px;
+    }
+    p {
+      margin: 10px 0;
+    }
+    .info {
+      background: #f3f4f6;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .approved { background: #dcfce7; color: #166534; }
+    .pending { background: #fef3c7; color: #92400e; }
+    .rejected { background: #fee2e2; color: #991b1b; }
+    .in-review { background: #dbeafe; color: #1e40af; }
+  </style>
+</head>
+<body>
+  <h1>${document.title}</h1>
+  <div class="info">
+    <p><strong>Type:</strong> ${document.type}</p>
+    <p><strong>Submitted by:</strong> ${document.submittedBy}</p>
+    <p><strong>Date:</strong> ${document.submittedDate}</p>
+    <p><strong>Status:</strong> <span class="status ${document.status}">${document.status.toUpperCase()}</span></p>
+    <p><strong>Priority:</strong> ${document.priority}</p>
+  </div>
+  <h2>Workflow Progress</h2>
+  <p><strong>Current Step:</strong> ${document.workflow.currentStep}</p>
+  <p><strong>Progress:</strong> ${document.workflow.progress}%</p>
+  ${(document as any).description ? `<h2>Description</h2><p>${(document as any).description}</p>` : ''}
+  <h2>Workflow Steps</h2>
+  <ul>
+    ${document.workflow.steps.map(step => `
+      <li>
+        <strong>${step.name}</strong> - ${step.assignee} 
+        ${step.status === 'completed' ? '✓' : step.status === 'current' ? '⏳' : '⏸'}
+      </li>
+    `).join('')}
+  </ul>
+  ${document.requiresSignature ? `
+    <h2>Digital Signatures</h2>
+    <p>${document.signedBy && document.signedBy.length > 0 ? `Signed by: ${document.signedBy.join(', ')}` : 'Pending signature'}</p>
+  ` : ''}
+</body>
+</html>
+    `;
+
+    // Create a Blob from the HTML content
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    
+    // Create a File object with a .html extension
+    const fileName = `${document.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
+    return new File([blob], fileName, { type: 'text/html' });
+  };
 
 
   return (
@@ -672,14 +760,20 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole }) =>
                     Remove
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => {
-                    window.open(`data:text/html,<html><head><title>${document.title}</title><style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.6;color:#333;}h1{color:#2563eb;border-bottom:2px solid #e5e7eb;padding-bottom:10px;}h2{color:#374151;margin-top:30px;}p{margin:10px 0;}.info{background:#f3f4f6;padding:15px;border-radius:8px;margin:20px 0;}.status{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:bold;}.approved{background:#dcfce7;color:#166534;}.pending{background:#fef3c7;color:#92400e;}.rejected{background:#fee2e2;color:#991b1b;}.in-review{background:#dbeafe;color:#1e40af;}</style></head><body><h1>${document.title}</h1><div class="info"><p><strong>Type:</strong> ${document.type}</p><p><strong>Submitted by:</strong> ${document.submittedBy}</p><p><strong>Date:</strong> ${document.submittedDate}</p><p><strong>Status:</strong> <span class="status ${document.status}">${document.status.toUpperCase()}</span></p><p><strong>Priority:</strong> ${document.priority}</p></div><h2>Workflow Progress</h2><p><strong>Current Step:</strong> ${document.workflow.currentStep}</p><p><strong>Progress:</strong> ${document.workflow.progress}%</p>${(document as any).description ? `<h2>Description</h2><p>${(document as any).description}</p>` : ''}<h2>Workflow Steps</h2><ul>${document.workflow.steps.map(step => `<li><strong>${step.name}</strong> - ${step.assignee} ${step.status === 'completed' ? '✓' : step.status === 'current' ? '⏳' : '⏸'}</li>`).join('')}</ul>${document.requiresSignature ? `<h2>Digital Signatures</h2><p>${document.signedBy && document.signedBy.length > 0 ? `Signed by: ${document.signedBy.join(', ')}` : 'Pending signature'}</p>` : ''}</body></html>`, '_blank');
+                    if (onViewFile) {
+                      const file = createDocumentFile(document);
+                      onViewFile(file);
+                    } else {
+                      // Fallback to opening in new window if no viewer provided
+                      window.open(`data:text/html,<html><head><title>${document.title}</title><style>body{font-family:Arial,sans-serif;max-width:800px;margin:40px auto;padding:20px;line-height:1.6;color:#333;}h1{color:#2563eb;border-bottom:2px solid #e5e7eb;padding-bottom:10px;}h2{color:#374151;margin-top:30px;}p{margin:10px 0;}.info{background:#f3f4f6;padding:15px;border-radius:8px;margin:20px 0;}.status{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:bold;}.approved{background:#dcfce7;color:#166534;}.pending{background:#fef3c7;color:#92400e;}.rejected{background:#fee2e2;color:#991b1b;}.in-review{background:#dbeafe;color:#1e40af;}</style></head><body><h1>${document.title}</h1><div class="info"><p><strong>Type:</strong> ${document.type}</p><p><strong>Submitted by:</strong> ${document.submittedBy}</p><p><strong>Date:</strong> ${document.submittedDate}</p><p><strong>Status:</strong> <span class="status ${document.status}">${document.status.toUpperCase()}</span></p><p><strong>Priority:</strong> ${document.priority}</p></div><h2>Workflow Progress</h2><p><strong>Current Step:</strong> ${document.workflow.currentStep}</p><p><strong>Progress:</strong> ${document.workflow.progress}%</p>${(document as any).description ? `<h2>Description</h2><p>${(document as any).description}</p>` : ''}<h2>Workflow Steps</h2><ul>${document.workflow.steps.map(step => `<li><strong>${step.name}</strong> - ${step.assignee} ${step.status === 'completed' ? '✓' : step.status === 'current' ? '⏳' : '⏸'}</li>`).join('')}</ul>${document.requiresSignature ? `<h2>Digital Signatures</h2><p>${document.signedBy && document.signedBy.length > 0 ? `Signed by: ${document.signedBy.join(', ')}` : 'Pending signature'}</p>` : ''}</body></html>`, '_blank');
+                    }
                   }}>
                     <Eye className="h-4 w-4 mr-2" />
                     View
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => {
                     // Simulate document download
-                    const link = document.createElement('a');
+                    const link = window.document.createElement('a');
                     link.href = `data:text/plain;charset=utf-8,Document: ${document.title}\nType: ${document.type}\nSubmitted By: ${document.submittedBy}\nDate: ${document.submittedDate}\nStatus: ${document.status}`;
                     link.download = `${document.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.txt`;
                     link.click();

@@ -1,17 +1,19 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { AdvancedDigitalSignature } from "@/components/AdvancedDigitalSignature";
 import { LiveMeetingRequestModal } from "@/components/LiveMeetingRequestModal";
+import { FileViewer } from "@/components/FileViewer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle2, XCircle, Clock, FileText, User, Calendar, MessageSquare, Video, Eye, ChevronRight, CircleAlert, Undo2, SquarePen, AlertTriangle, Zap } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, FileText, User, Calendar, MessageSquare, Video, Eye, ChevronRight, CircleAlert, Undo2, SquarePen, AlertTriangle, Zap, Sparkles, Loader2, X } from "lucide-react";
 import { DocumensoIntegration } from "@/components/DocumensoIntegration";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const Approvals = () => {
   const { user, logout } = useAuth();
@@ -24,6 +26,12 @@ const Approvals = () => {
   const [comments, setComments] = useState<{[key: string]: string[]}>({});
   const [commentInputs, setCommentInputs] = useState<{[key: string]: string}>({});
   const [approvalHistory, setApprovalHistory] = useState<any[]>([]);
+  const [showDocumentViewer, setShowDocumentViewer] = useState(false);
+  const [viewingDocument, setViewingDocument] = useState<any>(null);
+  const [viewingFile, setViewingFile] = useState<File | null>(null);
+  const [aiSummary, setAiSummary] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [animatedText, setAnimatedText] = useState('');
   
   useEffect(() => {
     const savedInputs = JSON.parse(localStorage.getItem('comment-inputs') || '{}');
@@ -105,6 +113,115 @@ const Approvals = () => {
       // Trigger real-time update for Track Documents
       window.dispatchEvent(new CustomEvent('approval-comments-changed'));
     }
+  };
+
+  // Create a demo file for the document
+  const createDocumentFile = (doc: any): File => {
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${doc.title}</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.6;
+      color: #333;
+    }
+    h1 {
+      color: #2563eb;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 10px;
+    }
+    .info {
+      background: #f3f4f6;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    .section {
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+</body>
+</html>
+    `;
+
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const fileName = `${doc.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
+    return new File([blob], fileName, { type: 'text/html' });
+  };
+
+  // Generate AI summary
+  const generateAISummary = async (doc: any) => {
+    setAiLoading(true);
+    setAiSummary('');
+    setAnimatedText('');
+
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyDC41PALf1ZZ4IxRBwUcQFK7p3lw93SIyE`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `Please provide a concise summary of this document:
+
+Title: ${doc.title}
+Type: ${doc.type}
+Submitted by: ${doc.submitter || doc.submittedBy}
+Date: ${doc.submittedDate || doc.date}
+Description: ${doc.description}
+
+Generate a professional summary highlighting key points, objectives, and any action items. Keep it under 150 words.`
+            }]
+          }]
+        })
+      });
+
+      const data = await response.json();
+      const generatedSummary = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Unable to generate summary at this time.';
+      
+      setAiSummary(generatedSummary);
+      animateText(generatedSummary);
+    } catch (error) {
+      const fallbackSummary = `This ${doc.type.toLowerCase()} titled "${doc.title}" was submitted by ${doc.submitter || doc.submittedBy} on ${doc.submittedDate || doc.date}. ${doc.description} The document requires review and appropriate action from the relevant authorities.`;
+      setAiSummary(fallbackSummary);
+      animateText(fallbackSummary);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const animateText = (text: string) => {
+    const words = text.split(' ');
+    let currentIndex = 0;
+
+    const interval = setInterval(() => {
+      if (currentIndex < words.length) {
+        setAnimatedText(prev => prev + (currentIndex === 0 ? '' : ' ') + words[currentIndex]);
+        currentIndex++;
+      } else {
+        clearInterval(interval);
+      }
+    }, 100);
+  };
+
+  // Handle view document with AI summarizer
+  const handleViewDocument = (doc: any) => {
+    const file = createDocumentFile(doc);
+    setViewingDocument(doc);
+    setViewingFile(file);
+    setShowDocumentViewer(true);
+    generateAISummary(doc);
   };
 
   if (!user) {
@@ -600,13 +717,7 @@ const Approvals = () => {
                             </div>
                           </div>
                           <div className="flex flex-col gap-2 min-w-[150px]">
-                            <Button variant="outline" size="sm" onClick={() => {
-                              toast({
-                                title: "Document Viewer",
-                                description: `Opening ${doc.title} for review`,
-                              });
-                              window.open(`data:text/html,<html><head><title>${doc.title}</title></head><body><h1>${doc.title}</h1><p><strong>Type:</strong> ${doc.type}</p><p><strong>Submitted by:</strong> ${doc.submitter}</p><p><strong>Date:</strong> ${doc.submittedDate}</p><p><strong>Description:</strong> ${doc.description}</p></body></html>`, '_blank');
-                            }}>
+                            <Button variant="outline" size="sm" onClick={() => handleViewDocument(doc)}>
                               <Eye className="h-4 w-4 mr-2" />
                               View
                             </Button>
@@ -770,13 +881,17 @@ const Approvals = () => {
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 min-w-[150px]">
-                          <Button variant="outline" size="sm" onClick={() => {
-                            toast({
-                              title: "Document Viewer",
-                              description: "Opening Faculty Meeting Minutes – Q4 2024 for review",
-                            });
-                            window.open(`data:text/html,<html><head><title>Faculty Meeting Minutes – Q4 2024</title></head><body><h1>Faculty Meeting Minutes – Q4 2024</h1><p><strong>Type:</strong> Circular</p><p><strong>Submitted by:</strong> Dr. Sarah Johnson</p><p><strong>Date:</strong> 2024-01-15</p><p><strong>Description:</strong> Add a risk-mitigation section to highlight potential delays or issues.</p></body></html>`, '_blank');
-                          }}>
+                          <Button variant="outline" size="sm" onClick={() => handleViewDocument({
+                            id: 'faculty-meeting',
+                            title: 'Faculty Meeting Minutes – Q4 2024',
+                            type: 'Circular',
+                            submitter: 'Dr. Sarah Johnson',
+                            submittedDate: '2024-01-15',
+                            submittedBy: 'Dr. Sarah Johnson',
+                            date: '2024-01-15',
+                            status: 'pending',
+                            description: 'Add a risk-mitigation section to highlight potential delays or issues.'
+                          })}>
                             <Eye className="h-4 w-4 mr-2" />
                             View
                           </Button>
@@ -939,13 +1054,17 @@ const Approvals = () => {
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 min-w-[150px]">
-                          <Button variant="outline" size="sm" onClick={() => {
-                            toast({
-                              title: "Document Viewer",
-                              description: "Opening Budget Request – Lab Equipment for review",
-                            });
-                            window.open(`data:text/html,<html><head><title>Budget Request – Lab Equipment</title></head><body><h1>Budget Request – Lab Equipment</h1><p><strong>Type:</strong> Letter</p><p><strong>Submitted by:</strong> Prof. David Brown</p><p><strong>Date:</strong> 2024-01-13</p><p><strong>Description:</strong> Consider revising the scope to focus on priority items within this quarter's budget.</p></body></html>`, '_blank');
-                          }}>
+                          <Button variant="outline" size="sm" onClick={() => handleViewDocument({
+                            id: 'budget-request',
+                            title: 'Budget Request – Lab Equipment',
+                            type: 'Letter',
+                            submitter: 'Prof. David Brown',
+                            submittedDate: '2024-01-13',
+                            submittedBy: 'Prof. David Brown',
+                            date: '2024-01-13',
+                            status: 'pending',
+                            description: 'Consider revising the scope to focus on priority items within this quarter\'s budget.'
+                          })}>
                             <Eye className="h-4 w-4 mr-2" />
                             View
                           </Button>
@@ -1119,13 +1238,17 @@ const Approvals = () => {
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 min-w-[150px]">
-                          <Button variant="outline" size="sm" onClick={() => {
-                            toast({
-                              title: "Document Viewer",
-                              description: "Opening Student Event Proposal – Tech Fest 2024 for review",
-                            });
-                            window.open(`data:text/html,<html><head><title>Student Event Proposal – Tech Fest 2024</title></head><body><h1>Student Event Proposal – Tech Fest 2024</h1><p><strong>Type:</strong> Circular</p><p><strong>Submitted by:</strong> Dr. Emily Davis</p><p><strong>Date:</strong> 2024-01-14</p><p><strong>Description:</strong> Annual technology festival proposal including budget allocation, venue requirements, and guest speaker arrangements.</p></body></html>`, '_blank');
-                          }}>
+                          <Button variant="outline" size="sm" onClick={() => handleViewDocument({
+                            id: 'student-event',
+                            title: 'Student Event Proposal – Tech Fest 2024',
+                            type: 'Circular',
+                            submitter: 'Dr. Emily Davis',
+                            submittedDate: '2024-01-14',
+                            submittedBy: 'Dr. Emily Davis',
+                            date: '2024-01-14',
+                            status: 'pending',
+                            description: 'Annual technology festival proposal including budget allocation, venue requirements, and guest speaker arrangements.'
+                          })}>
                             <Eye className="h-4 w-4 mr-2" />
                             View
                           </Button>
@@ -1280,13 +1403,17 @@ const Approvals = () => {
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 min-w-[150px]">
-                          <Button variant="outline" size="sm" onClick={() => {
-                            toast({
-                              title: "Document Viewer",
-                              description: "Opening Research Methodology Guidelines – Academic Review for review",
-                            });
-                            window.open(`data:text/html,<html><head><title>Research Methodology Guidelines – Academic Review</title></head><body><h1>Research Methodology Guidelines – Academic Review</h1><p><strong>Type:</strong> Report</p><p><strong>Submitted by:</strong> Prof. Jessica Chen</p><p><strong>Date:</strong> 2024-01-20</p><p><strong>Description:</strong> Comprehensive guidelines for research methodology standards and academic review processes.</p></body></html>`, '_blank');
-                          }}>
+                          <Button variant="outline" size="sm" onClick={() => handleViewDocument({
+                            id: 'research-methodology',
+                            title: 'Research Methodology Guidelines – Academic Review',
+                            type: 'Report',
+                            submitter: 'Prof. Jessica Chen',
+                            submittedDate: '2024-01-20',
+                            submittedBy: 'Prof. Jessica Chen',
+                            date: '2024-01-20',
+                            status: 'pending',
+                            description: 'Comprehensive guidelines for research methodology standards and academic review processes.'
+                          })}>
                             <Eye className="h-4 w-4 mr-2" />
                             View
                           </Button>
@@ -1448,7 +1575,7 @@ const Approvals = () => {
 
                           </div>
                           <div className="flex flex-col gap-2 min-w-[150px]">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => handleViewDocument(doc)}>
                               <Eye className="h-4 w-4 mr-2" />
                               View Details
                             </Button>
@@ -1496,6 +1623,83 @@ const Approvals = () => {
             }}
           />
         )}
+
+        {/* Combined Document Viewer with AI Summarizer */}
+        <Dialog open={showDocumentViewer} onOpenChange={setShowDocumentViewer}>
+          <DialogContent className="max-w-[90vw] max-h-[90vh] overflow-hidden p-0">
+            <div className="grid grid-cols-[70%_30%] h-[85vh]">
+              {/* Left Panel: FileViewer */}
+              <div className="border-r overflow-hidden flex flex-col">
+                <DialogHeader className="p-6 pb-4 border-b">
+                  <DialogTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                    Document Preview
+                  </DialogTitle>
+                </DialogHeader>
+                
+                <div className="flex-1 overflow-auto p-6">
+                  {viewingFile && (
+                    <div className="h-full">
+                      <iframe
+                        src={URL.createObjectURL(viewingFile)}
+                        className="w-full h-full border rounded-lg"
+                        title="Document Preview"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Panel: AI Document Summarizer */}
+              <div className="overflow-auto">
+                <DialogHeader className="p-6 pb-4 border-b">
+                  <DialogTitle className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl">
+                      <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                    AI Document Summarizer
+                  </DialogTitle>
+                </DialogHeader>
+
+                <div className="p-6 space-y-6">
+                  {/* AI Summary */}
+                  <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-6 min-h-[200px]">
+                    <h3 className="font-semibold text-base text-gray-800 mb-4 flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-blue-500" />
+                      AI-Generated Summary
+                    </h3>
+                    
+                    {aiLoading ? (
+                      <div className="flex items-center justify-center py-12">
+                        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                        <span className="ml-3 text-gray-600">Generating summary...</span>
+                      </div>
+                    ) : (
+                      <div className="prose prose-sm max-w-none">
+                        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-sm">
+                          {animatedText}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Regenerate Button */}
+                  <div className="flex justify-end">
+                    <Button 
+                      onClick={() => viewingDocument && generateAISummary(viewingDocument)} 
+                      disabled={aiLoading}
+                      size="sm"
+                      className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Regenerate Summary
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { DocumentTracker } from "@/components/DocumentTracker";
+import { FileViewer } from "@/components/FileViewer";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +10,13 @@ const TrackDocuments = () => {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [viewingFile, setViewingFile] = useState<File | null>(null);
+  const [showFileViewer, setShowFileViewer] = useState(false);
+
+  const handleViewFile = (file: File) => {
+    setViewingFile(file);
+    setShowFileViewer(true);
+  };
 
   const handleLogout = () => {
     logout();
@@ -31,9 +40,17 @@ const TrackDocuments = () => {
         </div>
 
         <div className="space-y-6">
-          <DocumentTracker userRole={user.role} />
+          <DocumentTracker userRole={user.role} onViewFile={handleViewFile} />
         </div>
       </div>
+      
+      {viewingFile && (
+        <FileViewer
+          file={viewingFile}
+          open={showFileViewer}
+          onOpenChange={setShowFileViewer}
+        />
+      )}
     </DashboardLayout>
   );
 };

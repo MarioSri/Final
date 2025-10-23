@@ -8,7 +8,7 @@ import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Slider } from './ui/slider';
 import { Badge } from './ui/badge';
-import { FileText, Droplets, Shuffle, Lock, Eye, Save, ZoomIn, ZoomOut, RotateCw, ChevronLeft, ChevronRight, Download, Loader2, AlertCircle, X } from 'lucide-react';
+import { FileText, Droplets, Shuffle, Lock, Eye, Save, ZoomIn, ZoomOut, RotateCw, ChevronLeft, ChevronRight, Download, Loader2, AlertCircle, X, Type, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
@@ -65,7 +65,7 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
   const [font, setFont] = useState('Helvetica');
   const [fontSize, setFontSize] = useState(49);
   const [color, setColor] = useState('#ff0000');
-  const [previewPage, setPreviewPage] = useState(1);
+  const [previewPage, setPreviewPage] = useState(0); // 0 = show all pages
   const [pageRange, setPageRange] = useState('1-10');
   const [isLocked, setIsLocked] = useState(false);
   const [generatedStyle, setGeneratedStyle] = useState<WatermarkStyle | null>(null);
@@ -76,6 +76,16 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
   const [fileError, setFileError] = useState<string | null>(null);
   const [fileZoom, setFileZoom] = useState(100);
   const [fileRotation, setFileRotation] = useState(0);
+  
+  // NEW STATES FOR REPEATING PATTERN
+  const [repeatMode, setRepeatMode] = useState<'none' | 'diagonal' | 'grid'>('none');
+  const [watermarkImage, setWatermarkImage] = useState<string | null>(null);
+  const [watermarkType, setWatermarkType] = useState<'text' | 'image'>('text');
+  const [imageScale, setImageScale] = useState(100);
+  const [spacingX, setSpacingX] = useState(200);
+  const [spacingY, setSpacingY] = useState(200);
+  const [diagonalAngle, setDiagonalAngle] = useState(-45);
+  
   const { toast } = useToast();
 
   // Debug: Log files prop
@@ -117,7 +127,7 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
         if (fileType.includes('pdf') || fileName.endsWith('.pdf')) {
           await loadPDF(viewingFile);
         } else if (fileType.includes('image')) {
-          await loadImage(viewingFile);
+          await loadImageFile(viewingFile);
         } else if (fileType.includes('word') || fileName.endsWith('.docx')) {
           await loadWord(viewingFile);
         } else if (fileType.includes('sheet') || fileName.endsWith('.xlsx')) {
@@ -173,7 +183,7 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
     setFileContent({ type: 'excel', html, sheetNames: workbook.SheetNames });
   };
 
-  const loadImage = async (file: File) => {
+  const loadImageFile = async (file: File) => {
     const url = URL.createObjectURL(file);
     setFileContent({ type: 'image', url });
   };
@@ -244,6 +254,49 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
     setIsLocked(!isLocked);
   };
 
+  // Image upload handler
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['image/png', 'image/jpg', 'image/jpeg'];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: 'Invalid file type',
+        description: 'Please upload a PNG or JPG image',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'File too large',
+        description: 'Image size must be less than 5MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setWatermarkImage(e.target?.result as string);
+      setWatermarkType('image');
+      toast({
+        title: 'Success',
+        description: 'Image uploaded successfully',
+      });
+    };
+    reader.onerror = () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to upload image',
+        variant: 'destructive',
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Helper function to get watermark position styles
   const getWatermarkPositionStyles = () => {
     const baseStyles: React.CSSProperties = {
@@ -284,21 +337,241 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
     }
   };
 
-  // Watermark Overlay Component
-  const WatermarkOverlay = () => {
-    if (!watermarkText.trim()) return null;
-    
+  // Helper function to render repeating watermarks
+  const renderRepeatingWatermarks = () => {
+    const watermarks: JSX.Element[] = [];
+    const containerWidth = 2000;
+    const containerHeight = 3000;
+
+    const cols = Math.ceil(containerWidth / spacingX) + 2;
+    const rows = Math.ceil(containerHeight / spacingY) + 2;
+
+    for (let row = -1; row < rows; row++) {
+      for (let col = -1; col < cols; col++) {
+        const x = col * spacingX;
+        const y = row * spacingY;
+        const key = `watermark-${row}-${col}`;
+        
+        const style: React.CSSProperties = {
+          position: 'absolute',
+          left: `${x}px`,
+          top: `${y}px`,
+          transform: `rotate(${repeatMode === 'diagonal' ? diagonalAngle : rotation}deg)`,
+          opacity: opacity[0],
+          color: color,
+          fontFamily: font,
+          fontSize: `${fontSize}px`,
+          fontWeight: 'bold',
+          whiteSpace: 'nowrap',
+          userSelect: 'none',
+          pointerEvents: 'none',
+        };
+
+        watermarks.push(
+          watermarkType === 'text' ? (
+            <span key={key} style={style}>
+              {watermarkText}
+            </span>
+          ) : watermarkImage ? (
+            <img
+              key={key}
+              src={watermarkImage}
+              alt=""
+              style={{
+                ...style,
+                width: `${imageScale}px`,
+                height: 'auto',
+              }}
+            />
+          ) : null
+        );
+      }
+    }
+
+    return watermarks;
+  };
+
+  // Watermark Overlay Component with Repeating Pattern Support
+  const WatermarkOverlay = ({ pageNumber }: { pageNumber?: number }) => {
+    if (watermarkType === 'text' && !watermarkText.trim()) return null;
+    if (watermarkType === 'image' && !watermarkImage) return null;
+
+    // Check if this page should have a watermark (only for PDF pages)
+    if (pageNumber !== undefined && fileContent?.type === 'pdf' && fileContent.totalPages) {
+      try {
+        const pagesToWatermark = parsePageRange(pageRange, fileContent.totalPages);
+        if (!pagesToWatermark.includes(pageNumber)) {
+          return null; // Don't show watermark on this page
+        }
+      } catch {
+        // If parsing fails, show watermark (default behavior)
+      }
+    }
+
+    // Single watermark rendering
+    if (repeatMode === 'none') {
+      return (
+        <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none z-10">
+          {watermarkType === 'text' ? (
+            <span style={getWatermarkPositionStyles()}>
+              {watermarkText}
+            </span>
+          ) : (
+            <img 
+              src={watermarkImage!} 
+              alt="Watermark" 
+              style={{
+                ...getWatermarkPositionStyles(),
+                width: `${imageScale}px`,
+                height: 'auto',
+              }}
+            />
+          )}
+        </div>
+      );
+    }
+
+    // Repeating pattern rendering
     return (
-      <div className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none z-10">
-        <span style={getWatermarkPositionStyles()}>
-          {watermarkText}
-        </span>
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
+        {renderRepeatingWatermarks()}
       </div>
     );
   };
 
+  // Helper: Load image from base64
+  const loadImage = (src: string): Promise<HTMLImageElement> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  };
+
+  // Apply single watermark to canvas
+  const applySingleWatermark = async (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    if (watermarkType === 'text') {
+      ctx.fillStyle = color;
+      ctx.font = `bold ${fontSize * 2}px ${font}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      let x = width / 2;
+      let y = height / 2;
+
+      switch (location) {
+        case 'Top Left':
+          x = width * 0.1;
+          y = height * 0.1;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          break;
+        case 'Top Center':
+          y = height * 0.1;
+          ctx.textBaseline = 'top';
+          break;
+        case 'Top Right':
+          x = width * 0.9;
+          y = height * 0.1;
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'top';
+          break;
+        case 'Middle Left':
+          x = width * 0.1;
+          ctx.textAlign = 'left';
+          break;
+        case 'Middle Right':
+          x = width * 0.9;
+          ctx.textAlign = 'right';
+          break;
+        case 'Bottom Left':
+          x = width * 0.1;
+          y = height * 0.9;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'bottom';
+          break;
+        case 'Bottom Center':
+          y = height * 0.9;
+          ctx.textBaseline = 'bottom';
+          break;
+        case 'Bottom Right':
+          x = width * 0.9;
+          y = height * 0.9;
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'bottom';
+          break;
+      }
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate((rotation * Math.PI) / 180);
+      ctx.fillText(watermarkText, 0, 0);
+      ctx.restore();
+    } else if (watermarkImage) {
+      const img = await loadImage(watermarkImage);
+      const scaledWidth = (img.width * imageScale) / 50;
+      const scaledHeight = (img.height * imageScale) / 50;
+
+      let x = width / 2 - scaledWidth / 2;
+      let y = height / 2 - scaledHeight / 2;
+
+      ctx.save();
+      ctx.translate(x + scaledWidth / 2, y + scaledHeight / 2);
+      ctx.rotate((rotation * Math.PI) / 180);
+      ctx.drawImage(img, -scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
+      ctx.restore();
+    }
+  };
+
+  // Apply repeating watermark pattern to canvas
+  const applyRepeatingWatermark = async (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    const scaleX = spacingX * 2;
+    const scaleY = spacingY * 2;
+    const cols = Math.ceil(width / scaleX) + 1;
+    const rows = Math.ceil(height / scaleY) + 1;
+
+    if (watermarkType === 'text') {
+      ctx.fillStyle = color;
+      ctx.font = `bold ${fontSize * 2}px ${font}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const x = col * scaleX;
+          const y = row * scaleY;
+
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(((repeatMode === 'diagonal' ? diagonalAngle : rotation) * Math.PI) / 180);
+          ctx.fillText(watermarkText, 0, 0);
+          ctx.restore();
+        }
+      }
+    } else if (watermarkImage) {
+      const img = await loadImage(watermarkImage);
+      const scaledWidth = (img.width * imageScale) / 50;
+      const scaledHeight = (img.height * imageScale) / 50;
+
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          const x = col * scaleX;
+          const y = row * scaleY;
+
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(((repeatMode === 'diagonal' ? diagonalAngle : rotation) * Math.PI) / 180);
+          ctx.drawImage(img, -scaledWidth / 2, -scaledHeight / 2, scaledWidth, scaledHeight);
+          ctx.restore();
+        }
+      }
+    }
+  };
+
   // Apply watermark to canvas (for PDF pages and images)
-  const applyWatermarkToCanvas = (sourceCanvas: HTMLCanvasElement): string => {
+  const applyWatermarkToCanvas = async (sourceCanvas: HTMLCanvasElement): Promise<string> => {
     const canvas = window.document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     if (!ctx) return sourceCanvas.toDataURL();
@@ -312,65 +585,41 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
     // Apply watermark
     ctx.save();
     ctx.globalAlpha = opacity[0];
-    ctx.fillStyle = color;
-    ctx.font = `bold ${fontSize * 2}px ${font}`; // Scale up for canvas resolution
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
 
-    // Calculate position based on location
-    let x = canvas.width / 2;
-    let y = canvas.height / 2;
-
-    switch (location) {
-      case 'Top Left':
-        x = canvas.width * 0.1;
-        y = canvas.height * 0.1;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
-        break;
-      case 'Top Center':
-        y = canvas.height * 0.1;
-        ctx.textBaseline = 'top';
-        break;
-      case 'Top Right':
-        x = canvas.width * 0.9;
-        y = canvas.height * 0.1;
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'top';
-        break;
-      case 'Middle Left':
-        x = canvas.width * 0.1;
-        ctx.textAlign = 'left';
-        break;
-      case 'Middle Right':
-        x = canvas.width * 0.9;
-        ctx.textAlign = 'right';
-        break;
-      case 'Bottom Left':
-        x = canvas.width * 0.1;
-        y = canvas.height * 0.9;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'bottom';
-        break;
-      case 'Bottom Center':
-        y = canvas.height * 0.9;
-        ctx.textBaseline = 'bottom';
-        break;
-      case 'Bottom Right':
-        x = canvas.width * 0.9;
-        y = canvas.height * 0.9;
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'bottom';
-        break;
+    if (repeatMode === 'none') {
+      await applySingleWatermark(ctx, canvas.width, canvas.height);
+    } else {
+      await applyRepeatingWatermark(ctx, canvas.width, canvas.height);
     }
 
-    // Apply rotation
-    ctx.translate(x, y);
-    ctx.rotate((rotation * Math.PI) / 180);
-    ctx.fillText(watermarkText, 0, 0);
     ctx.restore();
 
     return canvas.toDataURL('image/png');
+  };
+
+  // Parse page range string (e.g., "1-10, 13, 14, 100-")
+  const parsePageRange = (rangeStr: string, totalPages: number): number[] => {
+    const pages = new Set<number>();
+    const ranges = rangeStr.split(',').map(r => r.trim());
+
+    for (const range of ranges) {
+      if (range.includes('-')) {
+        const [start, end] = range.split('-').map(s => s.trim());
+        const startPage = start ? parseInt(start) : 1;
+        const endPage = end ? parseInt(end) : totalPages;
+
+        for (let i = startPage; i <= Math.min(endPage, totalPages); i++) {
+          if (i >= 1) pages.add(i);
+        }
+      } else {
+        const pageNum = parseInt(range);
+        if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= totalPages) {
+          pages.add(pageNum);
+        }
+      }
+    }
+
+    return Array.from(pages).sort((a, b) => a - b);
   };
 
   // Apply watermark to PDF and download
@@ -382,6 +631,19 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
       const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
       const watermarkedPages: string[] = [];
 
+      // Parse page range to determine which pages to watermark
+      const pagesToWatermark = parsePageRange(pageRange, pdf.numPages);
+
+      if (pagesToWatermark.length === 0) {
+        toast({
+          title: 'Invalid Page Range',
+          description: 'No valid pages found in the specified range.',
+          variant: 'destructive',
+        });
+        return null;
+      }
+
+      // Process all pages, but only apply watermark to specified pages
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 2.0 }); // Higher resolution
@@ -395,10 +657,20 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
 
         await page.render({ canvasContext: ctx, viewport: viewport } as any).promise;
         
-        // Apply watermark to this page
-        const watermarkedDataUrl = applyWatermarkToCanvas(canvas);
-        watermarkedPages.push(watermarkedDataUrl);
+        // Only apply watermark to pages in the specified range
+        if (pagesToWatermark.includes(i)) {
+          const watermarkedDataUrl = await applyWatermarkToCanvas(canvas);
+          watermarkedPages.push(watermarkedDataUrl);
+        } else {
+          // For pages not in range, just convert to image without watermark
+          watermarkedPages.push(canvas.toDataURL('image/png'));
+        }
       }
+
+      toast({
+        title: 'Pages Processed',
+        description: `Watermark applied to ${pagesToWatermark.length} of ${pdf.numPages} pages.`,
+      });
 
       return watermarkedPages;
     } catch (error) {
@@ -427,8 +699,9 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
           canvas.height = img.height;
           ctx.drawImage(img, 0, 0);
 
-          const watermarkedDataUrl = applyWatermarkToCanvas(canvas);
-          resolve(watermarkedDataUrl);
+          applyWatermarkToCanvas(canvas).then(watermarkedDataUrl => {
+            resolve(watermarkedDataUrl);
+          }).catch(() => resolve(null));
         };
         img.onerror = () => resolve(null);
         img.src = fileContent.url;
@@ -470,10 +743,19 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
       return;
     }
 
-    if (!watermarkText.trim()) {
+    if (watermarkType === 'text' && !watermarkText.trim()) {
       toast({
         title: "No Watermark Text",
         description: "Please enter watermark text.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (watermarkType === 'image' && !watermarkImage) {
+      toast({
+        title: "No Watermark Image",
+        description: "Please upload a watermark image.",
         variant: "destructive"
       });
       return;
@@ -561,15 +843,97 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
       case 'basic':
         return (
           <div className="space-y-4">
-            <div>
-              <Label className="text-sm font-medium">Watermark Text</Label>
-              <Textarea
-                value={watermarkText}
-                onChange={(e) => setWatermarkText(e.target.value)}
-                placeholder="Click to edit watermark text..."
-                className="mt-1 min-h-[80px]"
-              />
+            {/* Watermark Type Selection */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Watermark Type</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={watermarkType === 'text' ? 'default' : 'outline'}
+                  onClick={() => setWatermarkType('text')}
+                  className="flex-1"
+                >
+                  <Type className="w-4 h-4 mr-2" />
+                  Text
+                </Button>
+                <Button
+                  type="button"
+                  variant={watermarkType === 'image' ? 'default' : 'outline'}
+                  onClick={() => setWatermarkType('image')}
+                  className="flex-1"
+                >
+                  <ImageIcon className="w-4 h-4 mr-2" />
+                  Image
+                </Button>
+              </div>
             </div>
+
+            {/* Text Watermark Input */}
+            {watermarkType === 'text' && (
+              <div>
+                <Label className="text-sm font-medium">Watermark Text</Label>
+                <Textarea
+                  value={watermarkText}
+                  onChange={(e) => setWatermarkText(e.target.value)}
+                  placeholder="Click to edit watermark text..."
+                  className="mt-1 min-h-[80px]"
+                />
+              </div>
+            )}
+
+            {/* Image Upload */}
+            {watermarkType === 'image' && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Upload Watermark Image</Label>
+                <Input
+                  type="file"
+                  accept="image/png,image/jpg,image/jpeg"
+                  onChange={handleImageUpload}
+                  className="cursor-pointer"
+                />
+                {watermarkImage && (
+                  <div className="relative w-full h-24 border rounded-lg overflow-hidden bg-gray-50">
+                    <img
+                      src={watermarkImage}
+                      alt="Preview"
+                      className="w-full h-full object-contain"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-1 right-1"
+                      onClick={() => {
+                        setWatermarkImage(null);
+                        toast({
+                          title: 'Image removed',
+                          description: 'Watermark image has been removed',
+                        });
+                      }}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Image Scale Control */}
+            {watermarkType === 'image' && watermarkImage && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  Image Scale: {imageScale}%
+                </Label>
+                <Slider
+                  value={[imageScale]}
+                  onValueChange={(value) => setImageScale(value[0])}
+                  min={10}
+                  max={200}
+                  step={5}
+                  className="w-full"
+                />
+              </div>
+            )}
             <div>
               <Label className="text-sm font-medium">Location on Page</Label>
               <Select value={location} onValueChange={setLocation}>
@@ -652,24 +1016,137 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
                 />
               </div>
             </div>
+
+            {/* Repeat Mode Selection */}
+            <div className="space-y-2 pt-4 border-t">
+              <Label className="text-sm font-medium">Repeat Pattern</Label>
+              <Select 
+                value={repeatMode} 
+                onValueChange={(value: any) => {
+                  setRepeatMode(value);
+                  // Set good defaults when switching modes
+                  if (value === 'diagonal') {
+                    setSpacingX(250);
+                    setSpacingY(250);
+                    setDiagonalAngle(-45);
+                    setOpacity([0.15]); // Lower opacity for repeating patterns
+                  } else if (value === 'grid') {
+                    setSpacingX(300);
+                    setSpacingY(300);
+                    setOpacity([0.15]); // Lower opacity for repeating patterns
+                  } else {
+                    setOpacity([0.3]); // Higher opacity for single watermark
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Single (No Repeat)</SelectItem>
+                  <SelectItem value="diagonal">Diagonal Repeat</SelectItem>
+                  <SelectItem value="grid">Grid Repeat</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Spacing Controls */}
+            {repeatMode !== 'none' && (
+              <>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    Horizontal Spacing: {spacingX}px
+                  </Label>
+                  <Slider
+                    value={[spacingX]}
+                    onValueChange={(value) => setSpacingX(value[0])}
+                    min={100}
+                    max={500}
+                    step={10}
+                    className="w-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    Vertical Spacing: {spacingY}px
+                  </Label>
+                  <Slider
+                    value={[spacingY]}
+                    onValueChange={(value) => setSpacingY(value[0])}
+                    min={100}
+                    max={500}
+                    step={10}
+                    className="w-full"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Diagonal Angle Control */}
+            {repeatMode === 'diagonal' && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">
+                  Diagonal Angle: {diagonalAngle}°
+                </Label>
+                <Slider
+                  value={[diagonalAngle]}
+                  onValueChange={(value) => setDiagonalAngle(value[0])}
+                  min={-90}
+                  max={90}
+                  step={5}
+                  className="w-full"
+                />
+              </div>
+            )}
           </div>
         );
       
       case 'preview':
         return (
           <div className="space-y-4">
-            <div>
-              <Label className="text-sm font-medium">Preview Page</Label>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Preview Page</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPreviewPage(0)}
+                  className="h-7 text-xs"
+                >
+                  View All Pages
+                </Button>
+              </div>
               <Input
                 type="number"
-                value={previewPage}
-                onChange={(e) => setPreviewPage(Number(e.target.value))}
+                value={previewPage === 0 ? '' : previewPage}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setPreviewPage(val === '' ? 0 : Number(val));
+                }}
                 className="mt-1"
-                min={1}
+                min={0}
               />
             </div>
-            <div>
-              <Label className="text-sm font-medium">Apply to Pages</Label>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Apply to Pages</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    if (fileContent?.type === 'pdf' && fileContent.totalPages) {
+                      setPageRange(`1-${fileContent.totalPages}`);
+                    } else {
+                      setPageRange('1-');
+                    }
+                  }}
+                  className="h-7 text-xs"
+                >
+                  All Pages
+                </Button>
+              </div>
               <Input
                 value={pageRange}
                 onChange={(e) => setPageRange(e.target.value)}
@@ -678,7 +1155,9 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
               />
             </div>
             <div className="border rounded-lg p-4 bg-gray-50 min-h-[200px] relative overflow-hidden">
-              <div className="text-xs text-gray-500 mb-2">Preview (Page {previewPage})</div>
+              <div className="text-xs text-gray-500 mb-2">
+                Preview {previewPage === 0 ? '(All Pages)' : `(Page ${previewPage})`}
+              </div>
               <div className="relative w-full h-48 bg-white border rounded shadow-sm">
                 <div 
                   className="absolute inset-0 flex items-center justify-center pointer-events-none select-none"
@@ -838,27 +1317,34 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
 
                         {/* File Content Rendering with Overflow Protection */}
                         <div className="space-y-4 pb-4 w-full">
-                          {fileContent.type === 'pdf' && fileContent.pageCanvases?.map((pageDataUrl: string, index: number) => (
-                            <div key={index} className="relative mb-6 overflow-hidden">
-                              {/* Live Watermark Preview Overlay */}
-                              <WatermarkOverlay />
-                              <img
-                                src={pageDataUrl}
-                                alt={`Page ${index + 1}`}
-                                style={{
-                                  transform: `scale(${fileZoom / 100}) rotate(${fileRotation}deg)`,
-                                  transformOrigin: 'center',
-                                  transition: 'transform 0.3s ease',
-                                  maxWidth: '100%',
-                                  height: 'auto',
-                                }}
-                                className="border shadow-lg rounded mx-auto block"
-                              />
-                              <Badge variant="secondary" className="absolute top-2 right-2 bg-background/95 backdrop-blur z-20">
-                                Page {index + 1} of {fileContent.totalPages}
-                              </Badge>
-                            </div>
-                          ))}
+                          {fileContent.type === 'pdf' && fileContent.pageCanvases?.map((pageDataUrl: string, index: number) => {
+                            const pageNumber = index + 1;
+                            // Filter by preview page if set
+                            if (previewPage && previewPage > 0 && pageNumber !== previewPage) {
+                              return null; // Skip pages that don't match preview page
+                            }
+                            return (
+                              <div key={index} className="relative mb-6 overflow-hidden">
+                                {/* Live Watermark Preview Overlay */}
+                                <WatermarkOverlay pageNumber={pageNumber} />
+                                <img
+                                  src={pageDataUrl}
+                                  alt={`Page ${pageNumber}`}
+                                  style={{
+                                    transform: `scale(${fileZoom / 100}) rotate(${fileRotation}deg)`,
+                                    transformOrigin: 'center',
+                                    transition: 'transform 0.3s ease',
+                                    maxWidth: '100%',
+                                    height: 'auto',
+                                  }}
+                                  className="border shadow-lg rounded mx-auto block"
+                                />
+                                <Badge variant="secondary" className="absolute top-2 right-2 bg-background/95 backdrop-blur z-20">
+                                  Page {pageNumber} of {fileContent.totalPages}
+                                </Badge>
+                              </div>
+                            );
+                          })}
 
                           {fileContent.type === 'word' && (
                             <div className="w-full overflow-hidden relative">
