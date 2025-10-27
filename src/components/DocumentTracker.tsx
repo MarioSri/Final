@@ -785,38 +785,7 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
                     <Download className="h-4 w-4 mr-2" />
                     Download
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="text-blue-600 hover:text-blue-700 border-blue-300 hover:border-blue-400"
-                    onClick={() => {
-                      // Create channel for approval chain bypass
-                      const channelName = `${document.title.substring(0, 30)}${document.title.length > 30 ? '...' : ''}`;
-                      const newChannel = {
-                        id: `bypass-${document.id}`,
-                        name: channelName,
-                        members: [currentUserProfile.name, document.submittedBy],
-                        isPrivate: true,
-                        createdAt: new Date().toISOString(),
-                        createdBy: currentUserProfile.name,
-                        documentId: document.id,
-                        documentTitle: document.title
-                      };
-                      
-                      // Save channel to localStorage
-                      const existingChannels = JSON.parse(localStorage.getItem('document-channels') || '[]');
-                      existingChannels.unshift(newChannel);
-                      localStorage.setItem('document-channels', JSON.stringify(existingChannels));
-                      
-                      toast({
-                        title: "Approval Chain Bypassed",
-                        description: `Bypass channel created for ${document.title}. Check Messages > Department Chat for collaboration.`,
-                      });
-                    }}
-                  >
-                    <Shield className="h-4 w-4 mr-2" />
-                    Approval Chain with Bypass
-                  </Button>
+
                   {document.id === 'DOC-DEMO' && (
                     <Button variant="outline" size="sm">
                       <ArrowRight className="h-4 w-4 mr-2" />

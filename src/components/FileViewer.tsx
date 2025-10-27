@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Download, 
   X, 
   ZoomIn, 
   ZoomOut, 
@@ -221,23 +220,7 @@ export const FileViewer: React.FC<FileViewerProps> = ({ file, open, onOpenChange
     setContent({ type: 'image', url });
   };
 
-  const handleDownload = () => {
-    if (!file) return;
-    
-    const url = URL.createObjectURL(file);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = file.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: "Download Started",
-      description: `Downloading ${file.name}`,
-    });
-  };
+
 
   const handleZoomIn = () => {
     setZoom(prev => Math.min(prev + 25, 200));
@@ -274,11 +257,7 @@ export const FileViewer: React.FC<FileViewerProps> = ({ file, open, onOpenChange
           <div className="text-center">
             <AlertCircle className="h-12 w-12 mx-auto mb-4 text-destructive" />
             <p className="text-destructive font-medium mb-2">Error Loading File</p>
-            <p className="text-sm text-muted-foreground mb-4">{error}</p>
-            <Button onClick={handleDownload} variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              Download File Instead
-            </Button>
+            <p className="text-sm text-muted-foreground">{error}</p>
           </div>
         </div>
       );
@@ -454,14 +433,7 @@ export const FileViewer: React.FC<FileViewerProps> = ({ file, open, onOpenChange
                   </Button>
                 </>
               )}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleDownload}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Download
-              </Button>
+
             </div>
           </div>
         </DialogHeader>

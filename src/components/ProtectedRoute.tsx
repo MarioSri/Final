@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { HITAMTreeLoading } from '@/components/ui/loading-animation';
 
@@ -22,7 +22,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
+  const location = useLocation();
+
   if (!isAuthenticated || !user) {
+    // Store current location for redirect after login
+    if (location.pathname !== '/') {
+      localStorage.setItem('iaoms-redirect-path', location.pathname);
+    }
     return <Navigate to="/" replace />;
   }
 

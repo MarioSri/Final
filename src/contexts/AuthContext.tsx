@@ -40,7 +40,20 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  // Initialize user from sessionStorage immediately to avoid loading state
+  const [user, setUser] = useState<User | null>(() => {
+    const savedUser = sessionStorage.getItem('iaoms-user');
+    if (savedUser) {
+      try {
+        return JSON.parse(savedUser);
+      } catch (error) {
+        console.error('Failed to parse saved user:', error);
+        sessionStorage.removeItem('iaoms-user');
+        return null;
+      }
+    }
+    return null;
+  });
   const [isLoading, setIsLoading] = useState(false);
 
   const isAuthenticated = !!user;
@@ -112,8 +125,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       setUser(mockUser);
       
-      // Store in localStorage for persistence
-      localStorage.setItem('iaoms-user', JSON.stringify(mockUser));
+      // Store in sessionStorage for persistence during browser session only
+      sessionStorage.setItem('iaoms-user', JSON.stringify(mockUser));
+      
+      // Check if this is the first login for tutorial (use localStorage for this)
+      const hasLoggedInBefore = localStorage.getItem('hasLoggedInBefore');
+      if (!hasLoggedInBefore) {
+        localStorage.setItem('isFirstLogin', 'true');
+        localStorage.setItem('hasLoggedInBefore', 'true');
+      }
       
       // Success notification will be handled by the calling component
     } catch (error) {
@@ -128,23 +148,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     setUser(null);
     setIsLoading(false); // Ensure loading state is reset
-    localStorage.removeItem('iaoms-user');
+    sessionStorage.removeItem('iaoms-user');
     // Clear any cached data that might persist
     sessionStorage.clear();
     // Navigation will be handled by individual components
   };
 
-  // Check for existing session on mount
+  // Clean up any old localStorage sessions on mount
   useEffect(() => {
-    const savedUser = localStorage.getItem('iaoms-user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (error) {
-        console.error('Failed to parse saved user:', error);
-        localStorage.removeItem('iaoms-user');
-      }
-    }
+    localStorage.removeItem('iaoms-user');
   }, []);
 
   return (

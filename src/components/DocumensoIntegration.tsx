@@ -44,8 +44,8 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
   const [signingProgress, setSigningProgress] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [activeTab, setActiveTab] = useState('document');
-  const [signatureMethod, setSignatureMethod] = useState('digital');
+  const [activeTab, setActiveTab] = useState('signature');
+  const [signatureMethod, setSignatureMethod] = useState('draw');
   const [signatureData, setSignatureData] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [showVerification, setShowVerification] = useState(false);
@@ -412,75 +412,13 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
           {/* Right Column - Signature Interaction & CTA */}
           <div className="pl-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <TabsList className="grid w-full grid-cols-4 mb-4">
-                <TabsTrigger value="document">Review</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-3 mb-4">
                 <TabsTrigger value="signature">Sign</TabsTrigger>
                 <TabsTrigger value="verification">Verify</TabsTrigger>
                 <TabsTrigger value="complete">Complete</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="document" className="flex-1 overflow-y-auto">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Bot className="w-5 h-5 text-blue-600" />
-                      AI Analysis
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {!isAnalyzing && detectedSignatureZones.length === 0 && (
-                      <div className="text-center py-6">
-                        <Button onClick={analyzeDocumentForSignatures} className="bg-blue-600 hover:bg-blue-700">
-                          <Search className="w-4 h-4 mr-2" />
-                          Analyze Document
-                        </Button>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          AI will detect optimal signature zones
-                        </p>
-                      </div>
-                    )}
-                    
-                    {isAnalyzing && (
-                      <div className="text-center py-6">
-                        <Bot className="w-8 h-8 mx-auto mb-2 text-blue-600 animate-pulse" />
-                        <p className="text-sm font-medium">AI Analysis in Progress...</p>
-                        <Progress value={60} className="w-full mt-2" />
-                      </div>
-                    )}
-                    
-                    {detectedSignatureZones.length > 0 && (
-                      <div className="space-y-3">
-                        <div className="text-sm font-medium">Detected Zones ({detectedSignatureZones.length})</div>
-                        <div className="space-y-2 max-h-48 overflow-y-auto">
-                          {detectedSignatureZones.map((zone) => (
-                            <div
-                              key={zone.id}
-                              className={`p-3 border rounded cursor-pointer transition-all ${
-                                selectedZone === zone.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'
-                              }`}
-                              onClick={() => setSelectedZone(zone.id)}
-                            >
-                              <div className="flex justify-between items-center mb-1">
-                                <span className="text-sm font-medium">{zone.description}</span>
-                                <Badge variant={zone.confidence > 0.9 ? 'default' : 'secondary'}>
-                                  {Math.round(zone.confidence * 100)}%
-                                </Badge>
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {zone.type.replace('_', ' ')} • {zone.width}×{zone.height}px
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        
-                        <Button onClick={() => setActiveTab('signature')} className="w-full">
-                          Proceed to Sign
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
+
 
               <TabsContent value="signature" className="flex-1 overflow-y-auto">
             <Card>
@@ -504,15 +442,7 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Button
-                    variant={signatureMethod === 'digital' ? 'default' : 'outline'}
-                    onClick={() => setSignatureMethod('digital')}
-                    className="h-20 flex-col"
-                  >
-                    <PenTool className="w-6 h-6 mb-2" />
-                    Digital Certificate
-                  </Button>
+                <div className="grid grid-cols-3 gap-4">
                   <Button
                     variant={signatureMethod === 'draw' ? 'default' : 'outline'}
                     onClick={() => setSignatureMethod('draw')}
@@ -539,27 +469,7 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
                   </Button>
                 </div>
 
-                {signatureMethod === 'digital' && (
-                  <div className="space-y-4">
-                    <div className="p-4 border rounded-lg">
-                      <h4 className="font-medium mb-2">Digital Certificate Information</h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span>Certificate Authority:</span>
-                          <span>Documenso CA</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Valid Until:</span>
-                          <span>Dec 31, 2025</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Security Level:</span>
-                          <Badge variant="default">High (RSA-2048)</Badge>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+
 
                 {signatureMethod === 'draw' && (
                   <div className="space-y-4">
@@ -666,8 +576,7 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
                 
 
                 
-                <div className="flex justify-between mt-4">
-                  <Button variant="outline" onClick={() => setActiveTab('document')}>Back</Button>
+                <div className="flex justify-end mt-4">
                   <Button onClick={() => setActiveTab('verification')}>Continue</Button>
                 </div>
               </CardContent>

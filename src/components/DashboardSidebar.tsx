@@ -39,6 +39,7 @@ import {
   Eye
 } from "lucide-react";
 import { AdvancedSignatureIcon } from "@/components/ui/signature-icon";
+import { useTutorialContext } from "@/contexts/TutorialContext";
 import { cn } from "@/lib/utils";
 
 interface DashboardSidebarProps {
@@ -50,8 +51,10 @@ export function DashboardSidebar({ userRole }: DashboardSidebarProps) {
   const location = useLocation();
   const currentPath = location.pathname;
   const collapsed = state === "collapsed";
+  const { isCurrentRoute } = useTutorialContext();
 
   const isActive = (path: string) => currentPath === path;
+  const isTutorialHighlighted = (path: string) => isCurrentRoute(path);
 
   const getRoleInfo = () => {
     switch (userRole) {
@@ -172,16 +175,31 @@ export function DashboardSidebar({ userRole }: DashboardSidebarProps) {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <NavLink to={item.url}>
-                    {({ isActive }) => (
-                      <SidebarMenuButton
-                        isActive={isActive}
-                        tooltip={collapsed ? item.title : undefined}
-                        className="w-full justify-start"
-                      >
-                        <item.icon className="w-4 h-4" />
-                        {!collapsed && <span>{item.title}</span>}
-                      </SidebarMenuButton>
-                    )}
+                    {({ isActive }) => {
+                      const isTutorialActive = isTutorialHighlighted(item.url);
+                      return (
+                        <SidebarMenuButton
+                          isActive={isActive}
+                          tooltip={collapsed ? item.title : undefined}
+                          className={cn(
+                            "w-full justify-start transition-all duration-200",
+                            isTutorialActive && "bg-green-100 text-green-700 border-l-4 border-green-500 shadow-sm"
+                          )}
+                        >
+                          <item.icon className={cn(
+                            "w-4 h-4",
+                            isTutorialActive && "text-green-600"
+                          )} />
+                          {!collapsed && (
+                            <span className={cn(
+                              isTutorialActive && "text-green-700 font-medium"
+                            )}>
+                              {item.title}
+                            </span>
+                          )}
+                        </SidebarMenuButton>
+                      );
+                    }}
                   </NavLink>
                 </SidebarMenuItem>
               ))}

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle2, XCircle, Clock, FileText, User, Calendar, MessageSquare, Video, Eye, ChevronRight, CircleAlert, Undo2, SquarePen, AlertTriangle, Zap, Sparkles, Loader2, X } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, FileText, User, Calendar, MessageSquare, Video, Eye, ChevronRight, CircleAlert, Undo2, SquarePen, AlertTriangle, Zap, Sparkles, Loader2, X, Share2 } from "lucide-react";
 import { DocumensoIntegration } from "@/components/DocumensoIntegration";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -25,6 +25,7 @@ const Approvals = () => {
   const [documensoDocument, setDocumensoDocument] = useState<any>(null);
   const [comments, setComments] = useState<{[key: string]: string[]}>({});
   const [commentInputs, setCommentInputs] = useState<{[key: string]: string}>({});
+  const [sharedComments, setSharedComments] = useState<{[key: string]: Array<{comment: string, sharedBy: string, timestamp: string}>}>({});
   const [approvalHistory, setApprovalHistory] = useState<any[]>([]);
   const [showDocumentViewer, setShowDocumentViewer] = useState(false);
   const [viewingDocument, setViewingDocument] = useState<any>(null);
@@ -39,6 +40,9 @@ const Approvals = () => {
     
     const savedComments = JSON.parse(localStorage.getItem('approval-comments') || '{}');
     setComments(savedComments);
+    
+    const savedSharedComments = JSON.parse(localStorage.getItem('shared-comments') || '{}');
+    setSharedComments(savedSharedComments);
   }, []);
 
   const handleLogout = () => {
@@ -80,6 +84,32 @@ const Approvals = () => {
     }
   };
 
+  const handleShareComment = (cardId: string) => {
+    const comment = commentInputs[cardId]?.trim();
+    if (comment) {
+      const sharedComment = {
+        comment,
+        sharedBy: user?.fullName || user?.name || 'Previous Approver',
+        timestamp: new Date().toISOString()
+      };
+      
+      const newSharedComments = {
+        ...sharedComments,
+        [cardId]: [...(sharedComments[cardId] || []), sharedComment]
+      };
+      setSharedComments(newSharedComments);
+      localStorage.setItem('shared-comments', JSON.stringify(newSharedComments));
+      
+      // Also add to regular comments
+      handleAddComment(cardId);
+      
+      toast({
+        title: "Comment Shared",
+        description: "Your comment will be visible to the next recipient(s) in the approval chain.",
+      });
+    }
+  };
+
   const handleUndoComment = (cardId: string, index: number) => {
     // Remove from comments state
     const newComments = {
@@ -100,6 +130,25 @@ const Approvals = () => {
     
     // Trigger real-time update for Track Documents
     window.dispatchEvent(new CustomEvent('approval-comments-changed'));
+  };
+
+  const handleUndoSharedComment = (cardId: string, index: number) => {
+    const newSharedComments = {
+      ...sharedComments,
+      [cardId]: sharedComments[cardId]?.filter((_, i) => i !== index) || []
+    };
+    setSharedComments(newSharedComments);
+    localStorage.setItem('shared-comments', JSON.stringify(newSharedComments));
+  };
+
+  const handleEditSharedComment = (cardId: string, index: number) => {
+    const sharedComment = sharedComments[cardId]?.[index];
+    if (sharedComment) {
+      const newInputs = { ...commentInputs, [cardId]: sharedComment.comment };
+      setCommentInputs(newInputs);
+      localStorage.setItem('comment-inputs', JSON.stringify(newInputs));
+      handleUndoSharedComment(cardId, index);
+    }
   };
 
   const handleEditComment = (cardId: string, index: number) => {
@@ -689,31 +738,42 @@ Generate a professional summary highlighting key points, objectives, and any act
                               </div>
                             )}
                             
-                            <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors bg-white">
-                              <textarea
-                                className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none bg-white"
-                                placeholder="Add your comment..."
-                                rows={1}
-                                style={{ resize: 'none' }}
-                                value={commentInputs[doc.id] || ''}
-                                onChange={(e) => {
-                                const newInputs = { ...commentInputs, [doc.id]: e.target.value };
-                                setCommentInputs(newInputs);
-                                localStorage.setItem('comment-inputs', JSON.stringify(newInputs));
-                              }}
-                                onInput={(e) => {
-                                  const target = e.target as HTMLTextAreaElement;
-                                  target.style.height = 'auto';
-                                  target.style.height = target.scrollHeight + 'px';
+                            <div className="space-y-2">
+                              <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors bg-white">
+                                <textarea
+                                  className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none bg-white"
+                                  placeholder="Add your comment..."
+                                  rows={1}
+                                  style={{ resize: 'none' }}
+                                  value={commentInputs[doc.id] || ''}
+                                  onChange={(e) => {
+                                  const newInputs = { ...commentInputs, [doc.id]: e.target.value };
+                                  setCommentInputs(newInputs);
+                                  localStorage.setItem('comment-inputs', JSON.stringify(newInputs));
                                 }}
-                              />
-                              <button 
-                                className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors"
-                                title="Save comment"
-                                onClick={() => handleAddComment(doc.id)}
-                              >
-                                <ChevronRight className="h-4 w-4 text-gray-600" />
-                              </button>
+                                  onInput={(e) => {
+                                    const target = e.target as HTMLTextAreaElement;
+                                    target.style.height = 'auto';
+                                    target.style.height = target.scrollHeight + 'px';
+                                  }}
+                                />
+                                <div className="flex gap-1 m-2">
+                                  <button 
+                                    className="px-3 py-2 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+                                    title="Send comment"
+                                    onClick={() => handleAddComment(doc.id)}
+                                  >
+                                    <ChevronRight className="h-4 w-4 text-gray-600" />
+                                  </button>
+                                  <button 
+                                    className="px-3 py-2 bg-blue-100 rounded-full flex items-center justify-center hover:bg-blue-200 transition-colors"
+                                    title="Share comment with next recipient(s)"
+                                    onClick={() => handleShareComment(doc.id)}
+                                  >
+                                    <Share2 className="h-4 w-4 text-blue-600" />
+                                  </button>
+                                </div>
+                              </div>
                             </div>
                           </div>
                           <div className="flex flex-col gap-2 min-w-[150px]">
@@ -752,7 +812,7 @@ Generate a professional summary highlighting key points, objectives, and any act
                               }}
                             >
                               <CheckCircle2 className="h-4 w-4 mr-2" />
-                              Accept & Sign
+                              Approve & Sign
                             </Button>
                             <Button 
                               variant="outline" 
@@ -811,6 +871,42 @@ Generate a professional summary highlighting key points, objectives, and any act
                             </div>
                           </div>
                           
+                          {/* Shared Comments from Previous Approvers */}
+                          {sharedComments['faculty-meeting']?.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-1">
+                                <Share2 className="h-4 w-4 text-blue-600" />
+                                <span className="text-sm font-medium text-blue-700">Shared by Previous Recipient</span>
+                              </div>
+                              <div className="space-y-2">
+                                {sharedComments['faculty-meeting'].map((shared, index) => (
+                                  <div key={index} className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded text-sm flex justify-between items-start">
+                                    <div className="flex-1">
+                                      <p className="text-blue-800">{shared.comment}</p>
+                                      <p className="text-xs text-blue-600 mt-1">— {shared.sharedBy}</p>
+                                    </div>
+                                    <div className="flex gap-1 ml-2">
+                                      <button 
+                                        className="px-4 py-2 bg-blue-200 rounded-full flex items-center justify-center hover:bg-blue-300 transition-colors"
+                                        onClick={() => handleEditSharedComment('faculty-meeting', index)}
+                                        title="Edit"
+                                      >
+                                        <SquarePen className="h-4 w-4 text-blue-700" />
+                                      </button>
+                                      <button 
+                                        className="px-4 py-2 bg-blue-200 rounded-full flex items-center justify-center hover:bg-blue-300 transition-colors"
+                                        onClick={() => handleUndoSharedComment('faculty-meeting', index)}
+                                        title="Undo"
+                                      >
+                                        <Undo2 className="h-4 w-4 text-blue-700" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
                           {/* Your Comments */}
                           {comments['faculty-meeting']?.length > 0 && (
                             <div className="space-y-2">
@@ -853,31 +949,42 @@ Generate a professional summary highlighting key points, objectives, and any act
                           )}
                           
                           {/* Input Field */}
-                          <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors bg-white">
-                            <textarea
-                              className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none bg-white"
-                              placeholder="Add your comment..."
-                              rows={1}
-                              style={{ resize: 'none' }}
-                              value={commentInputs['faculty-meeting'] || ''}
-                              onChange={(e) => {
-                                const newInputs = { ...commentInputs, 'faculty-meeting': e.target.value };
-                                setCommentInputs(newInputs);
-                                localStorage.setItem('comment-inputs', JSON.stringify(newInputs));
-                              }}
-                              onInput={(e) => {
-                                const target = e.target as HTMLTextAreaElement;
-                                target.style.height = 'auto';
-                                target.style.height = target.scrollHeight + 'px';
-                              }}
-                            />
-                            <button 
-                              className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors"
-                              title="Save comment"
-                              onClick={() => handleAddComment('faculty-meeting')}
-                            >
-                              <ChevronRight className="h-4 w-4 text-gray-600" />
-                            </button>
+                          <div className="space-y-2">
+                            <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors bg-white">
+                              <textarea
+                                className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none bg-white"
+                                placeholder="Add your comment..."
+                                rows={1}
+                                style={{ resize: 'none' }}
+                                value={commentInputs['faculty-meeting'] || ''}
+                                onChange={(e) => {
+                                  const newInputs = { ...commentInputs, 'faculty-meeting': e.target.value };
+                                  setCommentInputs(newInputs);
+                                  localStorage.setItem('comment-inputs', JSON.stringify(newInputs));
+                                }}
+                                onInput={(e) => {
+                                  const target = e.target as HTMLTextAreaElement;
+                                  target.style.height = 'auto';
+                                  target.style.height = target.scrollHeight + 'px';
+                                }}
+                              />
+                              <div className="flex gap-1 m-2">
+                                <button 
+                                  className="px-3 py-2 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+                                  title="Send comment"
+                                  onClick={() => handleAddComment('faculty-meeting')}
+                                >
+                                  <ChevronRight className="h-4 w-4 text-gray-600" />
+                                </button>
+                                <button 
+                                  className="px-3 py-2 bg-blue-100 rounded-full flex items-center justify-center hover:bg-blue-200 transition-colors"
+                                  title="Share comment with next recipient(s)"
+                                  onClick={() => handleShareComment('faculty-meeting')}
+                                >
+                                  <Share2 className="h-4 w-4 text-blue-600" />
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 min-w-[150px]">
@@ -926,7 +1033,7 @@ Generate a professional summary highlighting key points, objectives, and any act
                             }}
                           >
                             <CheckCircle2 className="h-4 w-4 mr-2" />
-                            Accept & Sign
+                            Approve & Sign
                           </Button>
                           <Button 
                             variant="outline" 
@@ -984,6 +1091,42 @@ Generate a professional summary highlighting key points, objectives, and any act
                             </div>
                           </div>
                           
+                          {/* Shared Comments from Previous Approvers */}
+                          {sharedComments['budget-request']?.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-1">
+                                <Share2 className="h-4 w-4 text-blue-600" />
+                                <span className="text-sm font-medium text-blue-700">Shared by Previous Recipient</span>
+                              </div>
+                              <div className="space-y-2">
+                                {sharedComments['budget-request'].map((shared, index) => (
+                                  <div key={index} className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded text-sm flex justify-between items-start">
+                                    <div className="flex-1">
+                                      <p className="text-blue-800">{shared.comment}</p>
+                                      <p className="text-xs text-blue-600 mt-1">— {shared.sharedBy}</p>
+                                    </div>
+                                    <div className="flex gap-1 ml-2">
+                                      <button 
+                                        className="px-4 py-2 bg-blue-200 rounded-full flex items-center justify-center hover:bg-blue-300 transition-colors"
+                                        onClick={() => handleEditSharedComment('budget-request', index)}
+                                        title="Edit"
+                                      >
+                                        <SquarePen className="h-4 w-4 text-blue-700" />
+                                      </button>
+                                      <button 
+                                        className="px-4 py-2 bg-blue-200 rounded-full flex items-center justify-center hover:bg-blue-300 transition-colors"
+                                        onClick={() => handleUndoSharedComment('budget-request', index)}
+                                        title="Undo"
+                                      >
+                                        <Undo2 className="h-4 w-4 text-blue-700" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
                           {/* Your Comments */}
                           {comments['budget-request']?.length > 0 && (
                             <div className="space-y-2">
@@ -1026,31 +1169,42 @@ Generate a professional summary highlighting key points, objectives, and any act
                           )}
                           
                           {/* Input Field */}
-                          <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors bg-white">
-                            <textarea
-                              className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none bg-white"
-                              placeholder="Add your comment..."
-                              rows={1}
-                              style={{ resize: 'none' }}
-                              value={commentInputs['budget-request'] || ''}
-                              onChange={(e) => {
-                                const newInputs = { ...commentInputs, 'budget-request': e.target.value };
-                                setCommentInputs(newInputs);
-                                localStorage.setItem('comment-inputs', JSON.stringify(newInputs));
-                              }}
-                              onInput={(e) => {
-                                const target = e.target as HTMLTextAreaElement;
-                                target.style.height = 'auto';
-                                target.style.height = target.scrollHeight + 'px';
-                              }}
-                            />
-                            <button 
-                              className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors"
-                              title="Save comment"
-                              onClick={() => handleAddComment('budget-request')}
-                            >
-                              <ChevronRight className="h-4 w-4 text-gray-600" />
-                            </button>
+                          <div className="space-y-2">
+                            <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors bg-white">
+                              <textarea
+                                className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none bg-white"
+                                placeholder="Add your comment..."
+                                rows={1}
+                                style={{ resize: 'none' }}
+                                value={commentInputs['budget-request'] || ''}
+                                onChange={(e) => {
+                                  const newInputs = { ...commentInputs, 'budget-request': e.target.value };
+                                  setCommentInputs(newInputs);
+                                  localStorage.setItem('comment-inputs', JSON.stringify(newInputs));
+                                }}
+                                onInput={(e) => {
+                                  const target = e.target as HTMLTextAreaElement;
+                                  target.style.height = 'auto';
+                                  target.style.height = target.scrollHeight + 'px';
+                                }}
+                              />
+                              <div className="flex gap-1 m-2">
+                                <button 
+                                  className="px-3 py-2 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+                                  title="Send comment"
+                                  onClick={() => handleAddComment('budget-request')}
+                                >
+                                  <ChevronRight className="h-4 w-4 text-gray-600" />
+                                </button>
+                                <button 
+                                  className="px-3 py-2 bg-blue-100 rounded-full flex items-center justify-center hover:bg-blue-200 transition-colors"
+                                  title="Share comment with next recipient(s)"
+                                  onClick={() => handleShareComment('budget-request')}
+                                >
+                                  <Share2 className="h-4 w-4 text-blue-600" />
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 min-w-[150px]">
@@ -1099,7 +1253,7 @@ Generate a professional summary highlighting key points, objectives, and any act
                             }}
                           >
                             <CheckCircle2 className="h-4 w-4 mr-2" />
-                            Accept & Sign
+                            Approve & Sign
                           </Button>
                           <Button 
                             variant="outline" 
@@ -1283,7 +1437,7 @@ Generate a professional summary highlighting key points, objectives, and any act
                             }}
                           >
                             <CheckCircle2 className="h-4 w-4 mr-2" />
-                            Accept & Sign
+                            Approve & Sign
                           </Button>
                           <Button 
                             variant="outline" 
@@ -1448,7 +1602,7 @@ Generate a professional summary highlighting key points, objectives, and any act
                             }}
                           >
                             <CheckCircle2 className="h-4 w-4 mr-2" />
-                            Accept & Sign
+                            Approve & Sign
                           </Button>
                           <Button 
                             variant="outline" 

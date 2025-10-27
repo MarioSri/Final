@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { notificationService, type Notification } from "../services/NotificationService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,69 +27,70 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: "approval" | "submission" | "reminder" | "emergency" | "meeting";
-  timestamp: string;
-  read: boolean;
-  urgent: boolean;
-  documentId?: string;
-}
-
 interface NotificationCenterProps {
   userRole: string;
 }
 
 export function NotificationCenter({ userRole }: NotificationCenterProps) {
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: "1",
-      title: "Document Approved",
-      message: "Your Faculty Recruitment Authorization has been approved by Principal",
-      type: "approval",
-      timestamp: "2 minutes ago",
-      read: false,
-      urgent: false,
-      documentId: "DOC-2024-001"
-    },
-    {
-      id: "2", 
-      title: "New Document Submission",
-      message: "Dr. Sharma has submitted a new report for your review",
-      type: "submission",
-      timestamp: "15 minutes ago",
-      read: false,
-      urgent: true,
-      documentId: "DOC-2024-002"
-    },
-    {
-      id: "3",
-      title: "Meeting Reminder",
-      message: "Faculty meeting scheduled for tomorrow at 10:00 AM",
-      type: "meeting",
-      timestamp: "1 hour ago",
-      read: true,
-      urgent: false
-    },
-    {
-      id: "4",
-      title: "Emergency Document",
-      message: "Urgent circular requires immediate attention",
-      type: "emergency",
-      timestamp: "2 hours ago",
-      read: false,
-      urgent: true,
-      documentId: "DOC-2024-003"
-    }
-  ]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  useEffect(() => {
+    // Initialize with mock data
+    const mockNotifications = [
+      {
+        id: "1",
+        title: "Document Approved",
+        message: "Your Faculty Recruitment Authorization has been approved by Principal",
+        type: "approval" as const,
+        timestamp: "2 minutes ago",
+        read: false,
+        urgent: false,
+        documentId: "DOC-2024-001"
+      },
+      {
+        id: "2", 
+        title: "New Document Submission",
+        message: "Dr. Sharma has submitted a new report for your review",
+        type: "submission" as const,
+        timestamp: "15 minutes ago",
+        read: false,
+        urgent: true,
+        documentId: "DOC-2024-002"
+      },
+      {
+        id: "3",
+        title: "Meeting Reminder",
+        message: "Faculty meeting scheduled for tomorrow at 10:00 AM",
+        type: "meeting" as const,
+        timestamp: "1 hour ago",
+        read: true,
+        urgent: false
+      },
+      {
+        id: "4",
+        title: "Emergency Document",
+        message: "Urgent circular requires immediate attention",
+        type: "emergency" as const,
+        timestamp: "2 hours ago",
+        read: false,
+        urgent: true,
+        documentId: "DOC-2024-003"
+      }
+    ];
+    
+    // Get dynamic notifications and merge with mock data
+    const dynamicNotifications = notificationService.getNotifications();
+    setNotifications([...dynamicNotifications, ...mockNotifications]);
+
+    // Subscribe to notification updates
+    const unsubscribe = notificationService.subscribe((updatedNotifications) => {
+      setNotifications([...updatedNotifications, ...mockNotifications]);
+    });
+
+    return unsubscribe;
+  }, []);
 
   const [settings, setSettings] = useState({
-    emailNotifications: true,
-    pushNotifications: true,
-    smsAlerts: false,
-    whatsappNotifications: false,
     immediateAlerts: true,
     dailyDigest: false,
     weeklyReport: true
@@ -108,20 +110,27 @@ export function NotificationCenter({ userRole }: NotificationCenterProps) {
   };
 
   const markAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === id ? { ...n, read: true } : n)
+    const updatedNotifications = notifications.map(n => 
+      n.id === id ? { ...n, read: true } : n
     );
+    localStorage.setItem('notifications', JSON.stringify(updatedNotifications));
+    setNotifications(updatedNotifications);
   };
 
   const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    const updatedNotifications = notifications.map(n => ({ ...n, read: true }));
+    localStorage.setItem('notifications', JSON.stringify(updatedNotifications));
+    setNotifications(updatedNotifications);
   };
 
   const deleteNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    const updatedNotifications = notifications.filter(n => n.id !== id);
+    localStorage.setItem('notifications', JSON.stringify(updatedNotifications));
+    setNotifications(updatedNotifications);
   };
 
   const clearAll = () => {
+    localStorage.setItem('notifications', JSON.stringify([]));
     setNotifications([]);
   };
 
@@ -155,58 +164,6 @@ export function NotificationCenter({ userRole }: NotificationCenterProps) {
                       <h4 className="font-semibold">Notification Settings</h4>
                       
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Mail className="w-4 h-4" />
-                            <Label>Email Notifications</Label>
-                          </div>
-                          <Switch
-                            checked={settings.emailNotifications}
-                            onCheckedChange={(checked) => 
-                              setSettings(prev => ({ ...prev, emailNotifications: checked }))
-                            }
-                          />
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Smartphone className="w-4 h-4" />
-                            <Label>Push Notifications</Label>
-                          </div>
-                          <Switch
-                            checked={settings.pushNotifications}
-                            onCheckedChange={(checked) => 
-                              setSettings(prev => ({ ...prev, pushNotifications: checked }))
-                            }
-                          />
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Phone className="w-4 h-4" />
-                            <Label>SMS Alerts</Label>
-                          </div>
-                          <Switch
-                            checked={settings.smsAlerts}
-                            onCheckedChange={(checked) => 
-                              setSettings(prev => ({ ...prev, smsAlerts: checked }))
-                            }
-                          />
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <MessageCircle className="w-4 h-4 text-green-600" />
-                            <Label>WhatsApp Notifications</Label>
-                          </div>
-                          <Switch
-                            checked={settings.whatsappNotifications}
-                            onCheckedChange={(checked) => 
-                              setSettings(prev => ({ ...prev, whatsappNotifications: checked }))
-                            }
-                          />
-                        </div>
-                        
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <AlertTriangle className="w-4 h-4" />

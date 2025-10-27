@@ -11,6 +11,7 @@ import { LiveMeetingRequestCard } from './LiveMeetingRequestCard';
 import { liveMeetingService } from '../services/LiveMeetingService';
 import { LiveMeetingRequest, LiveMeetingStats, LiveMeetingResponse } from '../types/liveMeeting';
 import { useAuth } from '../contexts/AuthContext';
+import { notificationService } from '../services/NotificationService';
 
 interface StatsCardProps {
   title: string;
@@ -36,8 +37,6 @@ const StatsCard: React.FC<StatsCardProps> = ({ title, value, icon, color, descri
     </CardContent>
   </Card>
 );
-
-
 
 export const LiveMeetingRequestManager: React.FC = () => {
   const [activeRequests, setActiveRequests] = useState<LiveMeetingRequest[]>([]);
@@ -100,7 +99,6 @@ export const LiveMeetingRequestManager: React.FC = () => {
   const applyFilters = () => {
     let filtered = activeRequests;
 
-    // Apply status/urgency filter
     if (filter !== 'all') {
       filtered = filtered.filter(request => {
         switch (filter) {
@@ -119,7 +117,6 @@ export const LiveMeetingRequestManager: React.FC = () => {
       });
     }
 
-    // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(request =>
         request.documentTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -141,7 +138,6 @@ export const LiveMeetingRequestManager: React.FC = () => {
 
       await liveMeetingService.respondToRequest(response);
       
-      // Update local state
       setActiveRequests(prev => 
         prev.map(req => 
           req.id === requestId 
@@ -175,7 +171,6 @@ export const LiveMeetingRequestManager: React.FC = () => {
 
       await liveMeetingService.respondToRequest(response);
       
-      // Update local state
       setActiveRequests(prev => 
         prev.map(req => 
           req.id === requestId 
@@ -211,7 +206,6 @@ export const LiveMeetingRequestManager: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -242,7 +236,6 @@ export const LiveMeetingRequestManager: React.FC = () => {
         </Button>
       </div>
 
-      {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
@@ -276,7 +269,6 @@ export const LiveMeetingRequestManager: React.FC = () => {
         </div>
       )}
 
-      {/* Filters and Search */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex items-center gap-2 flex-1">
           <div className="relative flex-1">
@@ -321,17 +313,11 @@ export const LiveMeetingRequestManager: React.FC = () => {
         </div>
       </div>
 
-
-
-      {/* Requests List */}
       <div className="space-y-4">
-        {/* All LiveMeet+ Request Cards - Properly positioned below search bar */}
         <div className="space-y-4">
-          {/* Dynamic LiveMeet+ Request Cards from localStorage */}
           {JSON.parse(localStorage.getItem('livemeet-requests') || '[]')
             .filter((request: any) => !request.title.includes('Approval Request'))
             .map((request: any) => {
-            // Get source document data from Approval Center
             const sourceDocuments = {
               'Faculty Meeting Minutes – Q4 2024': { type: 'Circular', date: '2024-01-15' },
               'Budget Request – Lab Equipment': { type: 'Letter', date: '2024-01-13' },
@@ -445,11 +431,43 @@ export const LiveMeetingRequestManager: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex flex-col gap-2 min-w-[150px]">
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        toast({
+                          title: "LiveMeet+ Requests Accepted",
+                          description: `Meeting Request Accepted Successfully.`,
+                          variant: "default"
+                        });
+                        notificationService.addNotification({
+                          title: "LiveMeet+ Requests Accepted",
+                          message: `Your LiveMeet+ Requests for "${request.title}" has been Accepted By ${user?.name}.`,
+                          type: "meeting",
+                          urgent: false
+                        });
+                      }}
+                    >
                       <CheckCircle className="h-4 w-4 mr-2" />
                       Accept
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        toast({
+                          title: "LiveMeet+ Request Declined",
+                          description: `Meeting request has been declined. The requester will be notified.`,
+                          variant: "default"
+                        });
+                        notificationService.addNotification({
+                          title: "LiveMeet+ Request Declined",
+                          message: `Your LiveMeet+ Requests for "${request.title}" has been Declined By ${user?.name}.`,
+                          type: "meeting",
+                          urgent: false
+                        });
+                      }}
+                    >
                       <XCircle className="h-4 w-4 mr-2" />
                       Decline
                     </Button>
@@ -460,7 +478,6 @@ export const LiveMeetingRequestManager: React.FC = () => {
             );
           })}
           
-          {/* Original Dynamic Live Meeting Request Cards */}
           {filteredRequests.map(request => (
             <LiveMeetingRequestCard
               key={request.id}
@@ -469,221 +486,258 @@ export const LiveMeetingRequestManager: React.FC = () => {
               onDecline={handleDeclineRequest}
             />
           ))}
-            
-            {/* Additional Static Cards from Approval Center */}
-            {/* Faculty Meeting Minutes – Q4 2024 Card */}
-            {((!searchTerm || 
-              'Faculty Meeting Minutes – Q4 2024'.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              'Prof. Michael Chen'.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              'Need Clarification'.toLowerCase().includes(searchTerm.toLowerCase())
-            ) && (
-              filter === 'all' || 
-              filter === 'pending' || 
-              filter === 'immediate'
-            )) && (
-            <Card className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex flex-col lg:flex-row gap-6">
-                  <div className="flex-1 space-y-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-3 mb-0">
-                          <h3 className="font-semibold text-lg flex items-center gap-2">
-                            <div className="relative w-4 h-4">
-                              <div className="absolute inset-0 w-4 h-4 bg-green-400 rounded-full"></div>
-                              <div className="absolute inset-1 w-2 h-2 bg-red-500 rounded-full"></div>
-                            </div>
-                            Faculty Meeting Minutes – Q4 2024
-                          </h3>
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                              <FileText className="h-3 w-3" />
-                              Circular
-                            </div>
-                            <div className="flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">
-                              <Calendar className="h-3 w-3" />
-                              2024-01-15
-                            </div>
+
+          {/* Faculty Meeting Minutes Card */}
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex flex-col lg:flex-row gap-6">
+                <div className="flex-1 space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-3 mb-0">
+                        <h3 className="font-semibold text-lg flex items-center gap-2">
+                          <div className="relative w-4 h-4">
+                            <div className="absolute inset-0 w-4 h-4 bg-green-400 rounded-full"></div>
+                            <div className="absolute inset-1 w-2 h-2 bg-red-500 rounded-full"></div>
+                          </div>
+                          Faculty Meeting Minutes – Q4 2024
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                            <FileText className="h-3 w-3" />
+                            Circular
+                          </div>
+                          <div className="flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">
+                            <Calendar className="h-3 w-3" />
+                            2024-01-15
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-yellow-600" />
-                        <Badge variant="warning">Pending</Badge>
-                        <Badge variant="outline" className="text-red-600 font-semibold flex items-center gap-1">
-                          <Zap className="w-3 h-3" />
-                          Immediate
-                        </Badge>
                       </div>
                     </div>
-                    
-                    {/* Description */}
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-yellow-600" />
+                      <Badge variant="warning">Pending</Badge>
+                      <Badge variant="outline" className="text-red-600 font-semibold flex items-center gap-1">
+                        <Zap className="w-3 h-3" />
+                        Immediate
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div className="flex items-center gap-1">
+                        <User className="h-4 w-4" />
+                        <span className="font-medium">From:</span> {user?.name} • {user?.role.toUpperCase()}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        <span className="font-medium">Date:</span> 09/26/2025
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Settings className="h-4 w-4" />
+                        <span className="font-medium">Meeting Purpose:</span> 
                         <div className="flex items-center gap-1">
-                          <User className="h-4 w-4" />
-                          <span className="font-medium">From:</span> {user?.name} • {user?.role.toUpperCase()}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          <span className="font-medium">Date:</span> 09/26/2025
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Settings className="h-4 w-4" />
-                          <span className="font-medium">Meeting Purpose:</span> 
-                          <div className="flex items-center gap-1">
-                            <FileText className="h-4 w-4" />
-                            Need Clarification
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          <span className="font-medium">Time: From:</span> 10:56 AM — To: 11:56 AM
-                        </div>
-                        <div className="md:col-span-2 flex items-center gap-1">
-                          <Users className="h-4 w-4" />
-                          <span className="font-medium">Meeting Format:</span> 
-                          <div className="flex items-center gap-1">
-                            <Monitor className="h-4 w-4" />
-                            Online
-                          </div>
+                          <FileText className="h-4 w-4" />
+                          Need Clarification
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <MessageSquare className="h-4 w-4" />
-                        <span className="text-sm font-medium">Description & Agenda</span>
+                        <Clock className="h-4 w-4" />
+                        <span className="font-medium">Time: From:</span> 10:56 AM — To: 11:56 AM
                       </div>
-                      <div className="bg-muted p-3 rounded text-sm">
-                        <p>Add a risk-mitigation section to highlight potential delays or issues.</p>
+                      <div className="md:col-span-2 flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        <span className="font-medium">Meeting Format:</span> 
+                        <div className="flex items-center gap-1">
+                          <Monitor className="h-4 w-4" />
+                          Online
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex flex-col gap-2 min-w-[150px]">
-                    <Button variant="outline" size="sm">
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Accept
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Decline
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <MessageSquare className="h-4 w-4" />
+                      <span className="text-sm font-medium">Description & Agenda</span>
+                    </div>
+                    <div className="bg-muted p-3 rounded text-sm">
+                      <p>Add a risk-mitigation section to highlight potential delays or issues.</p>
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-            )}
+                <div className="flex flex-col gap-2 min-w-[150px]">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      toast({
+                        title: "LiveMeet+ Requests Accepted",
+                        description: `Meeting Request Accepted Successfully.`,
+                        variant: "default"
+                      });
+                      notificationService.addNotification({
+                        title: "LiveMeet+ Requests Accepted",
+                        message: `Your LiveMeet+ Requests for "Faculty Meeting Minutes – Q4 2024" has been Accepted By ${user?.name}.`,
+                        type: "meeting",
+                        urgent: false
+                      });
+                    }}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Accept
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      toast({
+                        title: "LiveMeet+ Request Declined",
+                        description: `Meeting request has been declined. The requester will be notified.`,
+                        variant: "default"
+                      });
+                      notificationService.addNotification({
+                        title: "LiveMeet+ Request Declined",
+                        message: `Your LiveMeet+ Requests for "Faculty Meeting Minutes – Q4 2024" has been Declined By ${user?.name}.`,
+                        type: "meeting",
+                        urgent: false
+                      });
+                    }}
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Decline
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Budget Request – Lab Equipment Card */}
-            {((!searchTerm || 
-              'Budget Request – Lab Equipment'.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              'Prof. David Brown'.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              'Need Clarification'.toLowerCase().includes(searchTerm.toLowerCase())
-            ) && (
-              filter === 'all' || 
-              filter === 'pending' || 
-              filter === 'urgent'
-            )) && (
-            <Card className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex flex-col lg:flex-row gap-6">
-                  <div className="flex-1 space-y-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-3 mb-0">
-                          <h3 className="font-semibold text-lg flex items-center gap-2">
-                            <div className="relative w-4 h-4">
-                              <div className="absolute inset-0 w-4 h-4 bg-green-400 rounded-full"></div>
-                              <div className="absolute inset-1 w-2 h-2 bg-red-500 rounded-full"></div>
-                            </div>
-                            Budget Request – Lab Equipment
-                          </h3>
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1 bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
-                              <FileText className="h-3 w-3" />
-                              Letter
-                            </div>
-                            <div className="flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">
-                              <Calendar className="h-3 w-3" />
-                              2024-01-13
-                            </div>
+          {/* Budget Request Card */}
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex flex-col lg:flex-row gap-6">
+                <div className="flex-1 space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-3 mb-0">
+                        <h3 className="font-semibold text-lg flex items-center gap-2">
+                          <div className="relative w-4 h-4">
+                            <div className="absolute inset-0 w-4 h-4 bg-green-400 rounded-full"></div>
+                            <div className="absolute inset-1 w-2 h-2 bg-red-500 rounded-full"></div>
+                          </div>
+                          Budget Request – Lab Equipment
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                            <FileText className="h-3 w-3" />
+                            Letter
+                          </div>
+                          <div className="flex items-center gap-1 bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs">
+                            <Calendar className="h-3 w-3" />
+                            2024-01-13
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-yellow-600" />
-                        <Badge variant="warning">Pending</Badge>
-                        <Badge variant="outline" className="text-orange-600 flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3" />
-                          Urgent
-                        </Badge>
                       </div>
                     </div>
-                    
-                    {/* Description */}
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-yellow-600" />
+                      <Badge variant="warning">Pending</Badge>
+                      <Badge variant="outline" className="text-orange-600 flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        Urgent
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div className="flex items-center gap-1">
+                        <User className="h-4 w-4" />
+                        <span className="font-medium">From:</span> {user?.name} • {user?.role.toUpperCase()}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        <span className="font-medium">Date:</span> 09/26/2025
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Settings className="h-4 w-4" />
+                        <span className="font-medium">Meeting Purpose:</span> 
                         <div className="flex items-center gap-1">
-                          <User className="h-4 w-4" />
-                          <span className="font-medium">From:</span> {user?.name} • {user?.role.toUpperCase()}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          <span className="font-medium">Date:</span> 09/26/2025
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Settings className="h-4 w-4" />
-                          <span className="font-medium">Meeting Purpose:</span> 
-                          <div className="flex items-center gap-1">
-                            <FileText className="h-4 w-4" />
-                            Need Clarification
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          <span className="font-medium">Time: From:</span> 10:56 AM — To: 11:56 AM
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Users className="h-4 w-4" />
-                          <span className="font-medium">Meeting Format:</span> 
-                          <div className="flex items-center gap-1">
-                            <Building className="h-4 w-4" />
-                            In-Person
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MapPin className="h-4 w-4" />
-                          <span className="font-medium">Meeting Location:</span> 
-                          <div className="flex items-center gap-1">
-                            <Globe className="h-4 w-4" />
-                            Conference Room A
-                          </div>
+                          <FileText className="h-4 w-4" />
+                          Need Clarification
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <MessageSquare className="h-4 w-4" />
-                        <span className="text-sm font-medium">Description & Agenda</span>
+                        <Clock className="h-4 w-4" />
+                        <span className="font-medium">Time: From:</span> 10:56 AM — To: 11:56 AM
                       </div>
-                      <div className="bg-muted p-3 rounded text-sm">
-                        <p>Consider revising the scope to focus on priority items within this quarter's budget.</p>
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        <span className="font-medium">Meeting Format:</span> 
+                        <div className="flex items-center gap-1">
+                          <Building className="h-4 w-4" />
+                          In-Person
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-4 w-4" />
+                        <span className="font-medium">Meeting Location:</span> 
+                        <div className="flex items-center gap-1">
+                          <Globe className="h-4 w-4" />
+                          Conference Room A
+                        </div>
                       </div>
                     </div>
-                    
-
-                  </div>
-                  <div className="flex flex-col gap-2 min-w-[150px]">
-                    <Button variant="outline" size="sm">
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Accept
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Decline
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <MessageSquare className="h-4 w-4" />
+                      <span className="text-sm font-medium">Description & Agenda</span>
+                    </div>
+                    <div className="bg-muted p-3 rounded text-sm">
+                      <p>Consider revising the scope to focus on priority items within this quarter's budget.</p>
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-            )}
+                <div className="flex flex-col gap-2 min-w-[150px]">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      toast({
+                        title: "LiveMeet+ Requests Accepted",
+                        description: `Meeting Request Accepted Successfully.`,
+                        variant: "default"
+                      });
+                      notificationService.addNotification({
+                        title: "LiveMeet+ Requests Accepted",
+                        message: `Your LiveMeet+ Requests for "Budget Request – Lab Equipment" has been Accepted By ${user?.name}.`,
+                        type: "meeting",
+                        urgent: false
+                      });
+                    }}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Accept
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      toast({
+                        title: "LiveMeet+ Request Declined",
+                        description: `Meeting request has been declined. The requester will be notified.`,
+                        variant: "default"
+                      });
+                      notificationService.addNotification({
+                        title: "LiveMeet+ Request Declined",
+                        message: `Your LiveMeet+ Requests for "Budget Request – Lab Equipment" has been Declined By ${user?.name}.`,
+                        type: "meeting",
+                        urgent: false
+                      });
+                    }}
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Decline
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

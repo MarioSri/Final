@@ -35,8 +35,7 @@ const Index = () => {
         duration: 3000,
       });
       
-      // Navigate to dashboard after successful login
-      navigate('/dashboard');
+      // Navigation will be handled by useEffect above
     } catch (error) {
       toast.error('Login Failed', {
         description: 'Unable to authenticate. Please try again.',
@@ -44,7 +43,19 @@ const Index = () => {
     }
   };
 
-  // Always show login page - no automatic redirect
+  // Redirect authenticated users to intended page or dashboard
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const redirectPath = localStorage.getItem('iaoms-redirect-path');
+      if (redirectPath) {
+        localStorage.removeItem('iaoms-redirect-path');
+        navigate(redirectPath, { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [isAuthenticated, user, navigate]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-subtle">
@@ -53,7 +64,7 @@ const Index = () => {
     );
   }
 
-  // Always show authentication card first
+  // Show authentication card only for unauthenticated users
   return <AuthenticationCard onLogin={handleLogin} />;
 };
 

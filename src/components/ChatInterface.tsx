@@ -968,7 +968,7 @@ Generated on: ${new Date().toLocaleString()}`;
           {!isSystemMessage && (
             <div className="flex items-center gap-2 mb-1">
               <span className="text-sm font-medium">
-                {isOwnMessage ? 'You' : sender?.fullName || 'Unknown'}
+                {isOwnMessage ? 'You' : sender?.fullName || 'You'}
               </span>
               <span className="text-xs text-muted-foreground">
                 {formatTimestamp(message.timestamp)}

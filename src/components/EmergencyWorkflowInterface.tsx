@@ -48,6 +48,8 @@ import { useToast } from "@/hooks/use-toast";
 import { WatermarkFeature } from "@/components/WatermarkFeature";
 import { useAuth } from "@/contexts/AuthContext";
 import { FileViewer } from "@/components/FileViewer";
+import { NotificationBehaviorPreview } from "@/components/NotificationBehaviorPreview";
+import type { EmergencyNotificationSettings } from "@/services/EmergencyNotificationService";
 
 interface EmergencySubmission {
   id: string;
@@ -211,7 +213,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
     setShowFileViewer(true);
   };
 
-  const handleEmergencySubmit = () => {
+  const handleEmergencySubmit = async () => {
     const recipientsToSend = useSmartDelivery && showRecipientSelection ? finalSelectedRecipients : selectedRecipients;
     
     if (!emergencyData.title || !emergencyData.description || selectedRecipients.length === 0) {
@@ -245,68 +247,104 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
       return;
     }
     
-    // Regular submission for non-circular documents
-    const newSubmission: EmergencySubmission = {
+    // Create emergency document
+    const emergencyDocument = {
       id: Date.now().toString(),
       title: emergencyData.title,
       description: emergencyData.description,
-      reason: '', // No longer captured from user input
       urgencyLevel: emergencyData.urgencyLevel,
-      recipients: recipientsToSend,
-      submittedBy: userRole,
-      submittedAt: new Date(),
-      status: 'submitted',
-      escalationLevel: 0
+      submittedBy: userRole
     };
 
-    setEmergencyHistory([newSubmission, ...emergencyHistory]);
-    
-    // Create channel for emergency collaboration
-    const channelName = `Emergency: ${emergencyData.title.substring(0, 25)}${emergencyData.title.length > 25 ? '...' : ''}`;
-    const newChannel = {
-      id: `emergency-${newSubmission.id}`,
-      name: channelName,
-      members: [userRole, ...recipientsToSend],
-      isPrivate: true,
-      createdAt: new Date().toISOString(),
-      createdBy: userRole,
-      emergencyId: newSubmission.id,
-      emergencyTitle: emergencyData.title,
-      urgencyLevel: emergencyData.urgencyLevel
+    // Prepare notification settings
+    const emergencyNotificationSettings = {
+      useProfileDefaults,
+      overrideForEmergency: overrideNotifications,
+      notificationStrategy: notificationSettings.notificationLogic,
+      channels: [
+        { type: 'email' as const, enabled: notificationSettings.emailNotifications, interval: parseInt(notificationSettings.emailInterval), unit: notificationSettings.emailUnit },
+        { type: 'sms' as const, enabled: notificationSettings.smsAlerts, interval: parseInt(notificationSettings.smsInterval), unit: notificationSettings.smsUnit },
+        { type: 'push' as const, enabled: notificationSettings.pushNotifications, interval: parseInt(notificationSettings.pushInterval), unit: notificationSettings.pushUnit },
+        { type: 'whatsapp' as const, enabled: notificationSettings.whatsappNotifications, interval: parseInt(notificationSettings.whatsappInterval), unit: notificationSettings.whatsappUnit }
+      ].filter(channel => channel.enabled),
+      schedulingOptions: {
+        interval: parseInt(notificationSettings.emailInterval),
+        unit: notificationSettings.emailUnit
+      }
     };
-    
-    // Save channel to localStorage
-    const existingChannels = JSON.parse(localStorage.getItem('document-channels') || '[]');
-    existingChannels.unshift(newChannel);
-    localStorage.setItem('document-channels', JSON.stringify(existingChannels));
-    
-    // Reset form
-    resetEmergencyForm();
 
-    // Simulate immediate batch notifications
-    toast({
-      title: "EMERGENCY SUBMITTED",
-      description: `Emergency document sent immediately to ${recipientsToSend.length} recipient(s) at once`,
-      duration: 10000,
-    });
+    // Send emergency notifications using the service
+    try {
+      const { emergencyNotificationService } = await import('@/services/EmergencyNotificationService');
+      await emergencyNotificationService.sendEmergencyNotification(
+        recipientsToSend,
+        emergencyDocument,
+        emergencyNotificationSettings
+      );
 
-    // Show batch sending confirmation
-    setTimeout(() => {
+      // Create submission record
+      const newSubmission: EmergencySubmission = {
+        id: emergencyDocument.id,
+        title: emergencyData.title,
+        description: emergencyData.description,
+        reason: '',
+        urgencyLevel: emergencyData.urgencyLevel,
+        recipients: recipientsToSend,
+        submittedBy: userRole,
+        submittedAt: new Date(),
+        status: 'submitted',
+        escalationLevel: 0
+      };
+
+      setEmergencyHistory([newSubmission, ...emergencyHistory]);
+      
+      // Create channel for emergency collaboration
+      const channelName = `Emergency: ${emergencyData.title.substring(0, 25)}${emergencyData.title.length > 25 ? '...' : ''}`;
+      const newChannel = {
+        id: `emergency-${newSubmission.id}`,
+        name: channelName,
+        members: [userRole, ...recipientsToSend],
+        isPrivate: true,
+        createdAt: new Date().toISOString(),
+        createdBy: userRole,
+        emergencyId: newSubmission.id,
+        emergencyTitle: emergencyData.title,
+        urgencyLevel: emergencyData.urgencyLevel
+      };
+      
+      // Save channel to localStorage
+      const existingChannels = JSON.parse(localStorage.getItem('document-channels') || '[]');
+      existingChannels.unshift(newChannel);
+      localStorage.setItem('document-channels', JSON.stringify(existingChannels));
+      
+      // Reset form
+      resetEmergencyForm();
+
+      // Show success notification
+      const notificationBehavior = useProfileDefaults ? 'profile-based' : 'emergency override';
       toast({
-        title: "Batch Delivery Confirmed",
-        description: `All documents successfully delivered to ${recipientsToSend.length} recipients simultaneously`,
-        variant: "default"
+        title: "EMERGENCY SUBMITTED",
+        description: `Emergency sent to ${recipientsToSend.length} recipients using ${notificationBehavior} notifications`,
+        duration: 10000,
       });
-    }, 2000);
 
-    // Simulate escalation after delay
-    setTimeout(() => {
+      // Show delivery confirmation
+      setTimeout(() => {
+        toast({
+          title: "Notifications Delivered",
+          description: `Emergency notifications sent via ${emergencyNotificationSettings.channels.map(c => c.type).join(', ')}`,
+          variant: "default"
+        });
+      }, 2000);
+
+    } catch (error) {
+      console.error('Emergency notification failed:', error);
       toast({
-        title: "Emergency Escalated",
-        description: "Emergency has been escalated to higher authorities",
+        title: "Notification Error",
+        description: "Failed to send emergency notifications. Please try again.",
         variant: "destructive"
       });
-    }, 5000);
+    }
   };
   
   const resetEmergencyForm = () => {
@@ -718,43 +756,59 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
                 Emergency Notification Settings
               </h3>
               
-              {/* Use Profile Defaults Toggle */}
-              <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
-                <div className="flex items-center gap-3">
-                  <Settings className="w-5 h-5 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">Use Profile Defaults</p>
-                    <p className="text-sm text-muted-foreground">Apply notification preferences from your profile settings</p>
+              {/* Notification Behavior Options */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-base">🔔 Notification Behavior Options</h4>
+                
+                {/* Use Profile Defaults */}
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                  <div className="flex items-center gap-3">
+                    <Settings className="w-5 h-5 text-muted-foreground" />
+                    <div>
+                      <p className="font-medium">Receive Notifications Based on Selected Recipients' Profile Settings</p>
+                      <p className="text-sm text-muted-foreground">Each selected recipient receives notifications according to their own profile preferences (Email, SMS, Push, WhatsApp)</p>
+                    </div>
                   </div>
+                  <Switch
+                    checked={useProfileDefaults}
+                    onCheckedChange={(checked) => {
+                      setUseProfileDefaults(checked);
+                      if (checked) setOverrideNotifications(false);
+                    }}
+                  />
                 </div>
-                <Switch
-                  checked={useProfileDefaults}
-                  onCheckedChange={setUseProfileDefaults}
-                />
-              </div>
 
-              {/* Override for Emergency Toggle */}
-              <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
-                <div className="flex items-center gap-3">
-                  <AlertTriangle className="w-5 h-5 text-orange-600" />
-                  <div>
-                    <p className="font-medium">Override for Emergency</p>
-                    <p className="text-sm text-muted-foreground">Customize notification settings specifically for this emergency</p>
+                {/* Override for Emergency */}
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle className="w-5 h-5 text-orange-600" />
+                    <div>
+                      <p className="font-medium">Override for Emergency (Takes Priority)</p>
+                      <p className="text-sm text-muted-foreground">Manually define emergency-specific notification channels and custom scheduling for alerts</p>
+                    </div>
                   </div>
+                  <Switch
+                    checked={overrideNotifications}
+                    onCheckedChange={(checked) => {
+                      setOverrideNotifications(checked);
+                      if (checked) setUseProfileDefaults(false);
+                    }}
+                  />
                 </div>
-                <Switch
-                  checked={overrideNotifications}
-                  onCheckedChange={setOverrideNotifications}
-                  disabled={useProfileDefaults}
-                />
               </div>
 
               {/* Custom Notification Settings */}
               {overrideNotifications && !useProfileDefaults && (
                 <div className="space-y-4 p-4 bg-white rounded-lg border">
+                  {/* ⏱️ Scheduling Options */}
+                  <div className="space-y-3 pt-4 border-t">
+                    <h4 className="text-base font-semibold">⏱️ Scheduling Options</h4>
+                    <p className="text-sm text-muted-foreground">Support customizable scheduling intervals for emergency notifications</p>
+                  </div>
+
                   {/* Notification Strategy */}
                   <div className="space-y-3 pt-4 border-t">
-                    <Label className="text-base font-medium">Notification Strategy</Label>
+                    <Label className="text-base font-medium">Override Configuration</Label>
                     <div className="space-y-3">
                       <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors">
                         <div className="flex items-center space-x-3">
@@ -768,7 +822,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
                           />
                           <Label htmlFor="logic-recipient" className="cursor-pointer flex-1">
                             <span className="font-medium">Recipient-Based (Recommended)</span>
-                            <p className="text-xs text-muted-foreground mt-1">Send notifications based on individual recipient preferences and roles</p>
+                            <p className="text-xs text-muted-foreground mt-1">Send notifications based on individual recipient roles and responsibilities</p>
                           </Label>
                         </div>
                         {notificationSettings.notificationLogic === 'recipient' && selectedRecipients.length > 0 && (
@@ -795,205 +849,221 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
                           />
                           <Label htmlFor="logic-document" className="cursor-pointer flex-1">
                             <span className="font-medium">Document-Based</span>
-                            <p className="text-xs text-muted-foreground mt-1">Send uniform notifications to all recipients</p>
+                            <p className="text-xs text-muted-foreground mt-1">Send the same type of notification uniformly to all recipients</p>
                           </Label>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Alert Channels Title */}
-                  <div className="pt-4 border-t">
-                    <h4 className="text-base font-semibold mb-4">Alert Channels</h4>
-                  </div>
-
-                  {/* Email Notifications */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between py-2">
-                      <div className="flex items-center gap-3">
-                        <Mail className="w-5 h-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">Email Notifications</p>
-                          <p className="text-sm text-muted-foreground">Receive updates via email</p>
+                  {/* Alert Channels - Show when Document-Based is selected */}
+                  {notificationSettings.notificationLogic === 'document' && (
+                    <>
+                      {/* Alert Channels Title */}
+                      <div className="pt-4 border-t">
+                        <h4 className="text-base font-semibold mb-4">Alert Channels</h4>
+                      </div>
+                      {/* Email Notifications */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between py-2">
+                          <div className="flex items-center gap-3">
+                            <Mail className="w-5 h-5 text-muted-foreground" />
+                            <div>
+                              <p className="font-medium">Email Notifications</p>
+                              <p className="text-sm text-muted-foreground">Receive updates via email</p>
+                            </div>
+                          </div>
+                          <Switch
+                            checked={notificationSettings.emailNotifications}
+                            onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, emailNotifications: checked})}
+                          />
                         </div>
+                        {notificationSettings.emailNotifications && (
+                          <div className="grid grid-cols-2 gap-3 ml-8">
+                            <select
+                              value={`${notificationSettings.emailInterval}-${notificationSettings.emailUnit}`}
+                              onChange={(e) => {
+                                const [interval, unit] = e.target.value.split('-');
+                                setNotificationSettings({...notificationSettings, emailInterval: interval, emailUnit: unit as any});
+                              }}
+                              className="h-10 px-3 py-2 border rounded-md"
+                            >
+                              <option value="1-minutes">Every 1 minute</option>
+                              <option value="15-minutes">Every 15 minutes</option>
+                              <option value="1-hours">Hourly</option>
+                              <option value="1-days">Daily</option>
+                              <option value="1-weeks">Weekly</option>
+                            </select>
+                            <Input
+                              type="number"
+                              value={notificationSettings.emailInterval}
+                              onChange={(e) => setNotificationSettings({...notificationSettings, emailInterval: e.target.value})}
+                              min={1}
+                              placeholder="Custom (X)"
+                            />
+                          </div>
+                        )}
                       </div>
-                      <Switch
-                        checked={notificationSettings.emailNotifications}
-                        onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, emailNotifications: checked})}
-                      />
-                    </div>
-                    {notificationSettings.emailNotifications && (
-                      <div className="grid grid-cols-2 gap-3 ml-8">
-                        <Input
-                          type="number"
-                          value={notificationSettings.emailInterval}
-                          onChange={(e) => setNotificationSettings({...notificationSettings, emailInterval: e.target.value})}
-                          min={1}
-                          placeholder="Interval"
-                        />
-                        <Select
-                          value={notificationSettings.emailUnit}
-                          onValueChange={(value: any) => setNotificationSettings({...notificationSettings, emailUnit: value})}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="seconds">Seconds</SelectItem>
-                            <SelectItem value="minutes">Minutes</SelectItem>
-                            <SelectItem value="hours">Hours</SelectItem>
-                            <SelectItem value="days">Days</SelectItem>
-                            <SelectItem value="weeks">Weeks</SelectItem>
-                            <SelectItem value="months">Months</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                  </div>
 
-                  {/* SMS Alerts */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between py-2">
-                      <div className="flex items-center gap-3">
-                        <Phone className="w-5 h-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">SMS Alerts</p>
-                          <p className="text-sm text-muted-foreground">Critical updates via SMS</p>
+                      {/* SMS Alerts */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between py-2">
+                          <div className="flex items-center gap-3">
+                            <Phone className="w-5 h-5 text-muted-foreground" />
+                            <div>
+                              <p className="font-medium">SMS Alerts</p>
+                              <p className="text-sm text-muted-foreground">Critical updates via SMS</p>
+                            </div>
+                          </div>
+                          <Switch
+                            checked={notificationSettings.smsAlerts}
+                            onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, smsAlerts: checked})}
+                          />
                         </div>
+                        {notificationSettings.smsAlerts && (
+                          <div className="grid grid-cols-2 gap-3 ml-8">
+                            <Input
+                              type="number"
+                              value={notificationSettings.smsInterval}
+                              onChange={(e) => setNotificationSettings({...notificationSettings, smsInterval: e.target.value})}
+                              min={1}
+                              placeholder="Interval"
+                            />
+                            <Select
+                              value={notificationSettings.smsUnit}
+                              onValueChange={(value: any) => setNotificationSettings({...notificationSettings, smsUnit: value})}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="seconds">Seconds</SelectItem>
+                                <SelectItem value="minutes">Minutes</SelectItem>
+                                <SelectItem value="hours">Hours</SelectItem>
+                                <SelectItem value="days">Days</SelectItem>
+                                <SelectItem value="weeks">Weeks</SelectItem>
+                                <SelectItem value="months">Months</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                       </div>
-                      <Switch
-                        checked={notificationSettings.smsAlerts}
-                        onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, smsAlerts: checked})}
-                      />
-                    </div>
-                    {notificationSettings.smsAlerts && (
-                      <div className="grid grid-cols-2 gap-3 ml-8">
-                        <Input
-                          type="number"
-                          value={notificationSettings.smsInterval}
-                          onChange={(e) => setNotificationSettings({...notificationSettings, smsInterval: e.target.value})}
-                          min={1}
-                          placeholder="Interval"
-                        />
-                        <Select
-                          value={notificationSettings.smsUnit}
-                          onValueChange={(value: any) => setNotificationSettings({...notificationSettings, smsUnit: value})}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="seconds">Seconds</SelectItem>
-                            <SelectItem value="minutes">Minutes</SelectItem>
-                            <SelectItem value="hours">Hours</SelectItem>
-                            <SelectItem value="days">Days</SelectItem>
-                            <SelectItem value="weeks">Weeks</SelectItem>
-                            <SelectItem value="months">Months</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                  </div>
 
-                  {/* Push Notifications */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between py-2">
-                      <div className="flex items-center gap-3">
-                        <Smartphone className="w-5 h-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">Push Notifications</p>
-                          <p className="text-sm text-muted-foreground">Browser and mobile notifications</p>
+                      {/* Push Notifications */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between py-2">
+                          <div className="flex items-center gap-3">
+                            <Smartphone className="w-5 h-5 text-muted-foreground" />
+                            <div>
+                              <p className="font-medium">Push Notifications</p>
+                              <p className="text-sm text-muted-foreground">Browser and mobile notifications</p>
+                            </div>
+                          </div>
+                          <Switch
+                            checked={notificationSettings.pushNotifications}
+                            onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, pushNotifications: checked})}
+                          />
                         </div>
+                        {notificationSettings.pushNotifications && (
+                          <div className="grid grid-cols-2 gap-3 ml-8">
+                            <Input
+                              type="number"
+                              value={notificationSettings.pushInterval}
+                              onChange={(e) => setNotificationSettings({...notificationSettings, pushInterval: e.target.value})}
+                              min={1}
+                              placeholder="Interval"
+                            />
+                            <Select
+                              value={notificationSettings.pushUnit}
+                              onValueChange={(value: any) => setNotificationSettings({...notificationSettings, pushUnit: value})}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="seconds">Seconds</SelectItem>
+                                <SelectItem value="minutes">Minutes</SelectItem>
+                                <SelectItem value="hours">Hours</SelectItem>
+                                <SelectItem value="days">Days</SelectItem>
+                                <SelectItem value="weeks">Weeks</SelectItem>
+                                <SelectItem value="months">Months</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                       </div>
-                      <Switch
-                        checked={notificationSettings.pushNotifications}
-                        onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, pushNotifications: checked})}
-                      />
-                    </div>
-                    {notificationSettings.pushNotifications && (
-                      <div className="grid grid-cols-2 gap-3 ml-8">
-                        <Input
-                          type="number"
-                          value={notificationSettings.pushInterval}
-                          onChange={(e) => setNotificationSettings({...notificationSettings, pushInterval: e.target.value})}
-                          min={1}
-                          placeholder="Interval"
-                        />
-                        <Select
-                          value={notificationSettings.pushUnit}
-                          onValueChange={(value: any) => setNotificationSettings({...notificationSettings, pushUnit: value})}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="seconds">Seconds</SelectItem>
-                            <SelectItem value="minutes">Minutes</SelectItem>
-                            <SelectItem value="hours">Hours</SelectItem>
-                            <SelectItem value="days">Days</SelectItem>
-                            <SelectItem value="weeks">Weeks</SelectItem>
-                            <SelectItem value="months">Months</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                  </div>
 
-                  {/* WhatsApp Notifications */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between py-2">
-                      <div className="flex items-center gap-3">
-                        <MessageCircle className="w-5 h-5 text-green-600" />
-                        <div>
-                          <p className="font-medium">WhatsApp Notifications</p>
-                          <p className="text-sm text-muted-foreground">Receive updates via WhatsApp</p>
+                      {/* WhatsApp Notifications */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between py-2">
+                          <div className="flex items-center gap-3">
+                            <MessageCircle className="w-5 h-5 text-green-600" />
+                            <div>
+                              <p className="font-medium">WhatsApp Notifications</p>
+                              <p className="text-sm text-muted-foreground">Receive updates via WhatsApp</p>
+                            </div>
+                          </div>
+                          <Switch
+                            checked={notificationSettings.whatsappNotifications}
+                            onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, whatsappNotifications: checked})}
+                          />
                         </div>
+                        {notificationSettings.whatsappNotifications && (
+                          <div className="grid grid-cols-2 gap-3 ml-8">
+                            <Input
+                              type="number"
+                              value={notificationSettings.whatsappInterval}
+                              onChange={(e) => setNotificationSettings({...notificationSettings, whatsappInterval: e.target.value})}
+                              min={1}
+                              placeholder="Interval"
+                            />
+                            <Select
+                              value={notificationSettings.whatsappUnit}
+                              onValueChange={(value: any) => setNotificationSettings({...notificationSettings, whatsappUnit: value})}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="seconds">Seconds</SelectItem>
+                                <SelectItem value="minutes">Minutes</SelectItem>
+                                <SelectItem value="hours">Hours</SelectItem>
+                                <SelectItem value="days">Days</SelectItem>
+                                <SelectItem value="weeks">Weeks</SelectItem>
+                                <SelectItem value="months">Months</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                       </div>
-                      <Switch
-                        checked={notificationSettings.whatsappNotifications}
-                        onCheckedChange={(checked) => setNotificationSettings({...notificationSettings, whatsappNotifications: checked})}
-                      />
-                    </div>
-                    {notificationSettings.whatsappNotifications && (
-                      <div className="grid grid-cols-2 gap-3 ml-8">
-                        <Input
-                          type="number"
-                          value={notificationSettings.whatsappInterval}
-                          onChange={(e) => setNotificationSettings({...notificationSettings, whatsappInterval: e.target.value})}
-                          min={1}
-                          placeholder="Interval"
-                        />
-                        <Select
-                          value={notificationSettings.whatsappUnit}
-                          onValueChange={(value: any) => setNotificationSettings({...notificationSettings, whatsappUnit: value})}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="seconds">Seconds</SelectItem>
-                            <SelectItem value="minutes">Minutes</SelectItem>
-                            <SelectItem value="hours">Hours</SelectItem>
-                            <SelectItem value="days">Days</SelectItem>
-                            <SelectItem value="weeks">Weeks</SelectItem>
-                            <SelectItem value="months">Months</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                  </div>
-
+                    </>
+                  )}
 
                 </div>
               )}
 
-              {/* Active Settings Indicator */}
-              {useProfileDefaults && (
-                <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" />
-                  Using notification preferences from your Profile Settings
-                </div>
-              )}
+              {/* ⚙️ Behavior Summary */}
+              <div className="space-y-3 pt-4 border-t">
+                <h4 className="text-base font-semibold">⚙️ Behavior Summary</h4>
+                {useProfileDefaults && (
+                  <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <div>
+                      <p className="font-medium">Following Recipients' Profile Settings</p>
+                      <p className="text-xs">System follows recipients' profile-based notification settings</p>
+                    </div>
+                  </div>
+                )}
+                {overrideNotifications && (
+                  <div className="text-sm text-orange-600 bg-orange-50 p-3 rounded flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4" />
+                    <div>
+                      <p className="font-medium">Emergency Override Active</p>
+                      <p className="text-xs">Default preferences are bypassed. Emergency alerts will follow manually configured settings, ensuring critical updates reach recipients immediately through selected channels.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Smart Recipient Delivery Option */}
@@ -1101,6 +1171,25 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
                     )}
                   </>
                 )}
+              </div>
+            )}
+
+            {/* Notification Behavior Preview */}
+            {selectedRecipients.length > 0 && (
+              <div className="space-y-4">
+                <NotificationBehaviorPreview
+                  useProfileDefaults={useProfileDefaults}
+                  overrideForEmergency={overrideNotifications}
+                  notificationStrategy={notificationSettings.notificationLogic as 'recipient-based' | 'document-based'}
+                  selectedRecipients={selectedRecipients}
+                  emergencyChannels={{
+                    email: notificationSettings.emailNotifications,
+                    sms: notificationSettings.smsAlerts,
+                    push: notificationSettings.pushNotifications,
+                    whatsapp: notificationSettings.whatsappNotifications
+                  }}
+                  schedulingInterval={`Every ${notificationSettings.emailInterval} ${notificationSettings.emailUnit}`}
+                />
               </div>
             )}
 

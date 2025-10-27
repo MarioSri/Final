@@ -416,9 +416,6 @@ export const RecipientSelector: React.FC<RecipientSelectorProps> = ({
             <ArrowRight className="h-4 w-4" />
             <span className="font-medium">Principal</span>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Documents flow through this hierarchy for approval. Select recipients based on your role permissions.
-          </p>
         </div>
 
         <Separator />

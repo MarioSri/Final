@@ -7,6 +7,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { DocumentWorkflowProvider } from "@/contexts/DocumentWorkflowContext";
+import { TutorialProvider } from "@/contexts/TutorialContext";
 import { ErrorBoundary } from "@/utils/errorBoundary";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
@@ -36,6 +37,7 @@ const App = () => (
               <Toaster />
               <Sonner />
               <BrowserRouter>
+                <TutorialProvider>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/dashboard" element={
@@ -92,7 +94,8 @@ const App = () => (
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </BrowserRouter>
+                </TutorialProvider>
+              </BrowserRouter>
               </TooltipProvider>
             </DocumentWorkflowProvider>
           </NotificationProvider>

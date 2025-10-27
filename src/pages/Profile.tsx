@@ -63,7 +63,18 @@ const Profile = () => {
         console.error('Error loading saved profile:', error);
       }
     }
-  }, []);
+
+    // Load notification preferences
+    const savedNotificationPrefs = localStorage.getItem(`user-preferences-${user?.id || 'default'}`);
+    if (savedNotificationPrefs) {
+      try {
+        const parsedPrefs = JSON.parse(savedNotificationPrefs);
+        setNotificationPreferences(parsedPrefs);
+      } catch (error) {
+        console.error('Error loading notification preferences:', error);
+      }
+    }
+  }, [user?.id]);
 
   const [preferences, setPreferences] = useState({
     emailNotifications: true,
@@ -72,6 +83,13 @@ const Profile = () => {
     whatsappNotifications: false,
     autoSave: true,
     twoFactorAuth: false
+  });
+
+  const [notificationPreferences, setNotificationPreferences] = useState({
+    email: { enabled: true, interval: 15, unit: 'minutes' },
+    sms: { enabled: false, interval: 30, unit: 'minutes' },
+    push: { enabled: true, interval: 5, unit: 'minutes' },
+    whatsapp: { enabled: false, interval: 1, unit: 'hours' }
   });
 
   const { toast } = useToast();
@@ -105,6 +123,31 @@ const Profile = () => {
     toast({
       title: "Preference Updated",
       description: `${key} has been updated.`,
+    });
+  };
+
+  const handleNotificationPreferenceChange = (channel: string, field: string, value: any) => {
+    setNotificationPreferences(prev => ({
+      ...prev,
+      [channel]: {
+        ...prev[channel as keyof typeof prev],
+        [field]: value
+      }
+    }));
+
+    // Save to localStorage immediately
+    const updated = {
+      ...notificationPreferences,
+      [channel]: {
+        ...notificationPreferences[channel as keyof typeof notificationPreferences],
+        [field]: value
+      }
+    };
+    localStorage.setItem(`user-preferences-${user?.id || 'default'}`, JSON.stringify(updated));
+
+    toast({
+      title: "Notification Preference Updated",
+      description: `${channel} ${field} has been updated.`,
     });
   };
 
@@ -279,11 +322,12 @@ const Profile = () => {
                   Notification Preferences
                 </CardTitle>
                 <CardDescription>
-                  Choose how you want to receive notifications
+                  Choose how you want to receive notifications. Scheduling intervals are managed in Emergency Notification Settings.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
+                  {/* Email Notifications */}
                   <div className="flex items-center justify-between py-2">
                     <div className="flex items-center gap-3">
                       <Mail className="w-5 h-5 text-muted-foreground" />
@@ -293,11 +337,12 @@ const Profile = () => {
                       </div>
                     </div>
                     <Switch
-                      checked={preferences.emailNotifications}
-                      onCheckedChange={(checked) => handlePreferenceChange('emailNotifications', checked)}
+                      checked={notificationPreferences.email.enabled}
+                      onCheckedChange={(checked) => handleNotificationPreferenceChange('email', 'enabled', checked)}
                     />
                   </div>
-                  
+
+                  {/* Push Notifications */}
                   <div className="flex items-center justify-between py-2">
                     <div className="flex items-center gap-3">
                       <Smartphone className="w-5 h-5 text-muted-foreground" />
@@ -307,11 +352,12 @@ const Profile = () => {
                       </div>
                     </div>
                     <Switch
-                      checked={preferences.pushNotifications}
-                      onCheckedChange={(checked) => handlePreferenceChange('pushNotifications', checked)}
+                      checked={notificationPreferences.push.enabled}
+                      onCheckedChange={(checked) => handleNotificationPreferenceChange('push', 'enabled', checked)}
                     />
                   </div>
-                  
+
+                  {/* SMS Alerts */}
                   <div className="flex items-center justify-between py-2">
                     <div className="flex items-center gap-3">
                       <Phone className="w-5 h-5 text-muted-foreground" />
@@ -321,11 +367,12 @@ const Profile = () => {
                       </div>
                     </div>
                     <Switch
-                      checked={preferences.smsAlerts}
-                      onCheckedChange={(checked) => handlePreferenceChange('smsAlerts', checked)}
+                      checked={notificationPreferences.sms.enabled}
+                      onCheckedChange={(checked) => handleNotificationPreferenceChange('sms', 'enabled', checked)}
                     />
                   </div>
-                  
+
+                  {/* WhatsApp Notifications */}
                   <div className="flex items-center justify-between py-2">
                     <div className="flex items-center gap-3">
                       <MessageCircle className="w-5 h-5 text-green-600" />
@@ -335,8 +382,8 @@ const Profile = () => {
                       </div>
                     </div>
                     <Switch
-                      checked={preferences.whatsappNotifications}
-                      onCheckedChange={(checked) => handlePreferenceChange('whatsappNotifications', checked)}
+                      checked={notificationPreferences.whatsapp.enabled}
+                      onCheckedChange={(checked) => handleNotificationPreferenceChange('whatsapp', 'enabled', checked)}
                     />
                   </div>
                 </div>

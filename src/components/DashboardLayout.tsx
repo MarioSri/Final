@@ -2,10 +2,11 @@ import { ReactNode, useState, useEffect, useRef } from "react";
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { NotificationCenter } from "./NotificationCenter";
+import { TutorialModal } from "./TutorialModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { User, LogOut, Search, Settings, Crown, Shield, Users, Briefcase } from "lucide-react";
+import { User, LogOut, Search, Settings, Crown, Shield, Users, Briefcase, HelpCircle } from "lucide-react";
 import { UniversalSearchDropdown } from "./UniversalSearchDropdown";
 import {
   DropdownMenu,
@@ -15,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useTutorialContext } from "@/contexts/TutorialContext";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +28,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children, userRole, onLogout }: DashboardLayoutProps) {
   const navigate = useNavigate();
+  const { startTutorial } = useTutorialContext();
 
   const currentDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -146,6 +149,11 @@ export function DashboardLayout({ children, userRole, onLogout }: DashboardLayou
                       Profile Settings
                     </DropdownMenuItem>
                     
+                    <DropdownMenuItem onClick={startTutorial}>
+                      <HelpCircle className="w-4 h-4 mr-2" />
+                      Start Tutorial
+                    </DropdownMenuItem>
+                    
                     <DropdownMenuSeparator />
                     
                     <DropdownMenuItem onClick={onLogout} className="text-destructive focus:text-destructive">
@@ -163,6 +171,9 @@ export function DashboardLayout({ children, userRole, onLogout }: DashboardLayou
             {children}
           </main>
         </SidebarInset>
+        
+        {/* Tutorial Modal */}
+        <TutorialModal />
       </div>
     </SidebarProvider>
   );
