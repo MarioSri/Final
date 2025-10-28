@@ -42,6 +42,17 @@ const Approvals = () => {
     setComments(savedComments);
     
     const savedSharedComments = JSON.parse(localStorage.getItem('shared-comments') || '{}');
+    // Initialize with demo shared comment for Research Methodology Guidelines if not already present
+    if (!savedSharedComments['research-methodology']) {
+      savedSharedComments['research-methodology'] = [
+        {
+          comment: 'Insufficient literature review and theoretical framework. References need to be updated to the latest 3 years.',
+          sharedBy: 'Dr. Maria Garcia (HOD)',
+          timestamp: new Date().toISOString()
+        }
+      ];
+      localStorage.setItem('shared-comments', JSON.stringify(savedSharedComments));
+    }
     setSharedComments(savedSharedComments);
   }, []);
 
@@ -876,7 +887,7 @@ Generate a professional summary highlighting key points, objectives, and any act
                             <div className="space-y-2">
                               <div className="flex items-center gap-1">
                                 <Share2 className="h-4 w-4 text-blue-600" />
-                                <span className="text-sm font-medium text-blue-700">Shared by Previous Recipient</span>
+                                <span className="text-sm font-medium text-blue-700">Shared To Next Recipient(s)</span>
                               </div>
                               <div className="space-y-2">
                                 {sharedComments['faculty-meeting'].map((shared, index) => (
@@ -1096,7 +1107,7 @@ Generate a professional summary highlighting key points, objectives, and any act
                             <div className="space-y-2">
                               <div className="flex items-center gap-1">
                                 <Share2 className="h-4 w-4 text-blue-600" />
-                                <span className="text-sm font-medium text-blue-700">Shared by Previous Recipient</span>
+                                <span className="text-sm font-medium text-blue-700">Shared To Next Recipient(s)</span>
                               </div>
                               <div className="space-y-2">
                                 {sharedComments['budget-request'].map((shared, index) => (
@@ -1494,6 +1505,25 @@ Generate a professional summary highlighting key points, objectives, and any act
                             </div>
                           </div>
                           
+                          {/* Shared Comments from Previous Approvers */}
+                          {sharedComments['research-methodology']?.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-1">
+                                <Share2 className="h-4 w-4 text-blue-600" />
+                                <span className="text-sm font-medium text-blue-700">Shared by Previous Recipient</span>
+                              </div>
+                              <div className="space-y-2">
+                                {sharedComments['research-methodology'].map((shared, index) => (
+                                  <div key={index} className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded text-sm">
+                                    <p className="text-blue-800">{shared.comment}</p>
+                                    <p className="text-xs text-blue-600 mt-1">— {shared.sharedBy}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Your Comments */}
                           {comments['research-methodology']?.length > 0 && (
                             <div className="space-y-2">
                               <div className="flex items-center gap-1">
@@ -1526,6 +1556,7 @@ Generate a professional summary highlighting key points, objectives, and any act
                             </div>
                           )}
                           
+                          {/* Your Comments Header - only when no comments exist */}
                           {!comments['research-methodology']?.length && (
                             <div className="flex items-center gap-1">
                               <MessageSquare className="h-4 w-4" />
@@ -1533,27 +1564,43 @@ Generate a professional summary highlighting key points, objectives, and any act
                             </div>
                           )}
                           
-                          <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors bg-white">
-                            <textarea
-                              className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none bg-white"
-                              placeholder="Add your comment..."
-                              rows={1}
-                              style={{ resize: 'none' }}
-                              value={commentInputs['research-methodology'] || ''}
-                              onChange={(e) => setCommentInputs(prev => ({ ...prev, 'research-methodology': e.target.value }))}
-                              onInput={(e) => {
-                                const target = e.target as HTMLTextAreaElement;
-                                target.style.height = 'auto';
-                                target.style.height = target.scrollHeight + 'px';
-                              }}
-                            />
-                            <button 
-                              className="px-4 py-2 bg-gray-200 rounded-full m-2 flex items-center justify-center hover:bg-gray-300 transition-colors"
-                              title="Save comment"
-                              onClick={() => handleAddComment('research-methodology')}
-                            >
-                              <ChevronRight className="h-4 w-4 text-gray-600" />
-                            </button>
+                          {/* Input Field */}
+                          <div className="space-y-2">
+                            <div className="flex items-start border rounded-lg focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 transition-colors bg-white">
+                              <textarea
+                                className="flex-1 min-h-[40px] p-3 border-0 rounded-l-lg resize-none text-sm focus:outline-none bg-white"
+                                placeholder="Add your comment..."
+                                rows={1}
+                                style={{ resize: 'none' }}
+                                value={commentInputs['research-methodology'] || ''}
+                                onChange={(e) => {
+                                  const newInputs = { ...commentInputs, 'research-methodology': e.target.value };
+                                  setCommentInputs(newInputs);
+                                  localStorage.setItem('comment-inputs', JSON.stringify(newInputs));
+                                }}
+                                onInput={(e) => {
+                                  const target = e.target as HTMLTextAreaElement;
+                                  target.style.height = 'auto';
+                                  target.style.height = target.scrollHeight + 'px';
+                                }}
+                              />
+                              <div className="flex gap-1 m-2">
+                                <button 
+                                  className="px-3 py-2 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
+                                  title="Send comment"
+                                  onClick={() => handleAddComment('research-methodology')}
+                                >
+                                  <ChevronRight className="h-4 w-4 text-gray-600" />
+                                </button>
+                                <button 
+                                  className="px-3 py-2 bg-blue-100 rounded-full flex items-center justify-center hover:bg-blue-200 transition-colors"
+                                  title="Share comment with next recipient(s)"
+                                  onClick={() => handleShareComment('research-methodology')}
+                                >
+                                  <Share2 className="h-4 w-4 text-blue-600" />
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         </div>
                         <div className="flex flex-col gap-2 min-w-[150px]">
@@ -1699,6 +1746,20 @@ Generate a professional summary highlighting key points, objectives, and any act
                                 <p>{doc.description}</p>
                               </div>
                             </div>
+                            
+                            {/* Shared Comments from Previous Approvers - only for Research Grant Application */}
+                            {doc.title === 'Research Grant Application' && (
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-1">
+                                  <Share2 className="h-4 w-4 text-blue-600" />
+                                  <span className="text-sm font-medium text-blue-700">Shared To Next Recipient(s)</span>
+                                </div>
+                                <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded text-sm">
+                                  <p className="text-blue-800">Insufficient literature review and theoretical framework. References need to be updated to the latest 3 years.</p>
+                                  <p className="text-xs text-blue-600 mt-1">— Dr. Maria Garcia (HOD)</p>
+                                </div>
+                              </div>
+                            )}
                             
                             {/* Your Comments */}
                             <div className="space-y-2">

@@ -26,7 +26,8 @@ import {
   FileClock,
   Trash2,
   ArrowRight,
-  Building
+  Building,
+  CircleCheckBig
 } from "lucide-react";
 import { DigitalSignature } from "./DigitalSignature";
 import { useToast } from "@/hooks/use-toast";
@@ -663,7 +664,9 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
                     {document.workflow.steps.map((step, index) => (
                       <div key={index} className="flex items-center gap-2 text-sm">
                         {step.status === 'completed' && document.id === 'DOC-003' && step.name === 'Principal Review' && <XCircle className="h-4 w-4 text-red-600" />}
-                        {step.status === 'completed' && !(document.id === 'DOC-003' && step.name === 'Principal Review') && <CheckCircle className="h-4 w-4 text-green-600" />}
+                        {step.status === 'completed' && document.id === 'DOC-002' && step.name === 'Academic Committee' && <XCircle className="h-4 w-4 text-red-600" />}
+                        {step.status === 'completed' && document.id === 'DOC-002' && step.name === 'Department Review' && <CircleCheckBig className="h-4 w-4 text-green-600" />}
+                        {step.status === 'completed' && !(document.id === 'DOC-003' && step.name === 'Principal Review') && !(document.id === 'DOC-002' && step.name === 'Academic Committee') && !(document.id === 'DOC-002' && step.name === 'Department Review') && <CheckCircle className="h-4 w-4 text-green-600" />}
                         {step.status === 'current' && <Clock className="h-4 w-4 text-blue-600" />}
                         {step.status === 'pending' && <div className="h-4 w-4 rounded-full border border-gray-300" />}
                         <div className="flex-1">
@@ -675,6 +678,16 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
                             {document.id === 'DOC-DEMO' && step.name === 'HOD Review' && (
                               <Badge variant="destructive" className="text-xs">
                                 Escalated 2x
+                              </Badge>
+                            )}
+                            {document.id === 'DOC-002' && step.name === 'Department Review' && (
+                              <Badge variant="destructive" className="text-xs">
+                                Escalated 1x
+                              </Badge>
+                            )}
+                            {document.id === 'DOC-002' && step.name === 'Academic Committee' && (
+                              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-300">
+                                BYPASS
                               </Badge>
                             )}
                           </div>

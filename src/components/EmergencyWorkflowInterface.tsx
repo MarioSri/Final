@@ -60,9 +60,13 @@ interface EmergencySubmission {
   recipients: string[];
   submittedBy: string;
   submittedAt: Date;
-  status: 'submitted' | 'acknowledged' | 'resolved';
+  status: 'submitted' | 'acknowledged' | 'resolved' | 'rejected' | 'escalated';
   responseTime?: number;
   escalationLevel: number;
+  currentRecipientIndex?: number;
+  originalRecipients?: string[];
+  rejectedBy?: string;
+  escalationStopped?: boolean;
 }
 
 interface EmergencyWorkflowInterfaceProps {
@@ -85,7 +89,8 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
     attachments: [] as File[],
     autoEscalation: false,
     escalationTimeout: 24,
-    escalationTimeUnit: 'hours' as 'seconds' | 'minutes' | 'hours' | 'days' | 'weeks' | 'months'
+    escalationTimeUnit: 'hours' as 'seconds' | 'minutes' | 'hours' | 'days' | 'weeks' | 'months',
+    cyclicEscalation: true
   });
   const [useProfileDefaults, setUseProfileDefaults] = useState(true);
   const [overrideNotifications, setOverrideNotifications] = useState(false);
@@ -253,7 +258,11 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
       title: emergencyData.title,
       description: emergencyData.description,
       urgencyLevel: emergencyData.urgencyLevel,
-      submittedBy: userRole
+      submittedBy: userRole,
+      autoEscalation: emergencyData.autoEscalation,
+      escalationTimeout: emergencyData.escalationTimeout,
+      escalationTimeUnit: emergencyData.escalationTimeUnit,
+      cyclicEscalation: emergencyData.cyclicEscalation
     };
 
     // Prepare notification settings
@@ -282,6 +291,11 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
         emergencyNotificationSettings
       );
 
+      // Initialize escalation if enabled
+      if (emergencyData.autoEscalation) {
+        emergencyNotificationService.initializeEscalation(emergencyDocument, recipientsToSend);
+      }
+
       // Create submission record
       const newSubmission: EmergencySubmission = {
         id: emergencyDocument.id,
@@ -293,7 +307,10 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
         submittedBy: userRole,
         submittedAt: new Date(),
         status: 'submitted',
-        escalationLevel: 0
+        escalationLevel: 0,
+        currentRecipientIndex: 0,
+        originalRecipients: [...recipientsToSend],
+        escalationStopped: false
       };
 
       setEmergencyHistory([newSubmission, ...emergencyHistory]);
@@ -358,7 +375,8 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
       attachments: [],
       autoEscalation: false,
       escalationTimeout: 24,
-      escalationTimeUnit: 'hours' as 'seconds' | 'minutes' | 'hours' | 'days' | 'weeks' | 'months'
+      escalationTimeUnit: 'hours' as 'seconds' | 'minutes' | 'hours' | 'days' | 'weeks' | 'months',
+      cyclicEscalation: true
     });
     setSelectedRecipients([]);
     setFinalSelectedRecipients([]);
@@ -373,8 +391,27 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
     if (pendingSubmissionData) {
       const recipientsToSend = useSmartDelivery && showRecipientSelection ? finalSelectedRecipients : selectedRecipients;
       
-      const newSubmission: EmergencySubmission = {
+      const emergencyDoc = {
         id: Date.now().toString(),
+        title: pendingSubmissionData.title,
+        description: pendingSubmissionData.description,
+        urgencyLevel: pendingSubmissionData.urgencyLevel,
+        submittedBy: userRole,
+        autoEscalation: emergencyData.autoEscalation,
+        escalationTimeout: emergencyData.escalationTimeout,
+        escalationTimeUnit: emergencyData.escalationTimeUnit,
+        cyclicEscalation: emergencyData.cyclicEscalation
+      };
+
+      // Initialize escalation if enabled
+      if (emergencyData.autoEscalation) {
+        import('@/services/EmergencyNotificationService').then(({ emergencyNotificationService }) => {
+          emergencyNotificationService.initializeEscalation(emergencyDoc, recipientsToSend);
+        });
+      }
+
+      const newSubmission: EmergencySubmission = {
+        id: emergencyDoc.id,
         title: pendingSubmissionData.title,
         description: pendingSubmissionData.description,
         reason: '',
@@ -383,7 +420,10 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
         submittedBy: userRole,
         submittedAt: new Date(),
         status: 'submitted',
-        escalationLevel: 0
+        escalationLevel: 0,
+        currentRecipientIndex: 0,
+        originalRecipients: [...recipientsToSend],
+        escalationStopped: false
       };
 
       setEmergencyHistory([newSubmission, ...emergencyHistory]);
@@ -412,6 +452,29 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
     if (responseTime <= 15) return 'text-success';
     if (responseTime <= 60) return 'text-warning';
     return 'text-destructive';
+  };
+
+  // Handle document rejection - stops escalation
+  const handleDocumentRejection = async (documentId: string, rejectedBy: string) => {
+    try {
+      const { emergencyNotificationService } = await import('@/services/EmergencyNotificationService');
+      emergencyNotificationService.handleDocumentRejection(documentId, rejectedBy);
+      
+      // Update emergency history
+      setEmergencyHistory(prev => prev.map(item => 
+        item.id === documentId 
+          ? { ...item, status: 'rejected' as const, rejectedBy, escalationStopped: true }
+          : item
+      ));
+      
+      toast({
+        title: "Document Rejected",
+        description: "Escalation has been stopped due to rejection.",
+        variant: "destructive"
+      });
+    } catch (error) {
+      console.error('Error handling document rejection:', error);
+    }
   };
 
   return (
@@ -1174,24 +1237,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
               </div>
             )}
 
-            {/* Notification Behavior Preview */}
-            {selectedRecipients.length > 0 && (
-              <div className="space-y-4">
-                <NotificationBehaviorPreview
-                  useProfileDefaults={useProfileDefaults}
-                  overrideForEmergency={overrideNotifications}
-                  notificationStrategy={notificationSettings.notificationLogic as 'recipient-based' | 'document-based'}
-                  selectedRecipients={selectedRecipients}
-                  emergencyChannels={{
-                    email: notificationSettings.emailNotifications,
-                    sms: notificationSettings.smsAlerts,
-                    push: notificationSettings.pushNotifications,
-                    whatsapp: notificationSettings.whatsappNotifications
-                  }}
-                  schedulingInterval={`Every ${notificationSettings.emailInterval} ${notificationSettings.emailUnit}`}
-                />
-              </div>
-            )}
+
 
             {/* Expanded Recipient Selection */}
             <div className="space-y-4">

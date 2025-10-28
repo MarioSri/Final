@@ -29,6 +29,10 @@ interface EmergencyDocument {
   description: string;
   urgencyLevel: 'medium' | 'urgent' | 'high' | 'critical';
   submittedBy: string;
+  autoEscalation?: boolean;
+  escalationTimeout?: number;
+  escalationTimeUnit?: string;
+  cyclicEscalation?: boolean;
 }
 
 class EmergencyNotificationService {
@@ -246,6 +250,130 @@ class EmergencyNotificationService {
     ];
   }
 
+  // Handle document rejection - stops escalation
+  handleDocumentRejection(documentId: string, rejectedBy: string): void {
+    const escalationData = JSON.parse(localStorage.getItem(`escalation-${documentId}`) || '{}');
+    escalationData.escalationStopped = true;
+    escalationData.rejectedBy = rejectedBy;
+    escalationData.status = 'rejected';
+    localStorage.setItem(`escalation-${documentId}`, JSON.stringify(escalationData));
+    
+    // Stop all notifications for this document
+    this.stopNotifications(documentId);
+  }
+
+  // Handle cyclic escalation for non-responsive recipients
+  handleCyclicEscalation(documentId: string, recipients: string[]): void {
+    const escalationData = JSON.parse(localStorage.getItem(`escalation-${documentId}`) || '{}');
+    
+    if (escalationData.escalationStopped) {
+      return; // Don't escalate if document was rejected
+    }
+
+    const currentIndex = escalationData.currentRecipientIndex || 0;
+    const nextIndex = (currentIndex + 1) % recipients.length;
+    
+    escalationData.currentRecipientIndex = nextIndex;
+    escalationData.escalationLevel = (escalationData.escalationLevel || 0) + 1;
+    
+    // If we've completed a full cycle, return to original non-responding recipient
+    if (nextIndex === 0 && escalationData.escalationLevel > recipients.length) {
+      escalationData.returnedToOriginal = true;
+    }
+    
+    localStorage.setItem(`escalation-${documentId}`, JSON.stringify(escalationData));
+    
+    // Send notification to next recipient
+    const nextRecipient = recipients[nextIndex];
+    this.sendEscalationNotification(documentId, nextRecipient, escalationData.escalationLevel);
+  }
+
+  // Send escalation notification to specific recipient
+  private sendEscalationNotification(documentId: string, recipientId: string, escalationLevel: number): void {
+    const document = this.getDocumentById(documentId);
+    if (!document) return;
+
+    const notification = {
+      id: `${Date.now()}-${recipientId}`,
+      recipientId,
+      documentId,
+      channel: 'escalation',
+      title: `ESCALATED EMERGENCY (Level ${escalationLevel}): ${document.title}`,
+      message: `This document has been escalated due to no response. Please review urgently.`,
+      urgencyLevel: document.urgencyLevel,
+      timestamp: new Date().toISOString(),
+      escalationLevel,
+      delivered: true
+    };
+
+    // Store notification log
+    const logs = JSON.parse(localStorage.getItem('emergency-notification-logs') || '[]');
+    logs.unshift(notification);
+    localStorage.setItem('emergency-notification-logs', JSON.stringify(logs.slice(0, 1000)));
+  }
+
+  // Get document by ID
+  private getDocumentById(documentId: string): EmergencyDocument | null {
+    const submissions = JSON.parse(localStorage.getItem('emergency-submissions') || '[]');
+    const submission = submissions.find((s: any) => s.id === documentId);
+    return submission ? submission.document : null;
+  }
+
+  // Initialize escalation for a document
+  initializeEscalation(document: EmergencyDocument, recipients: string[]): void {
+    if (!document.autoEscalation) return;
+
+    const escalationData = {
+      documentId: document.id,
+      recipients,
+      originalRecipients: [...recipients],
+      currentRecipientIndex: 0,
+      escalationLevel: 0,
+      escalationStopped: false,
+      cyclicEscalation: document.cyclicEscalation || true,
+      timeout: document.escalationTimeout || 24,
+      timeUnit: document.escalationTimeUnit || 'hours'
+    };
+
+    localStorage.setItem(`escalation-${document.id}`, JSON.stringify(escalationData));
+
+    // Set up escalation timer
+    const timeoutMs = this.convertToMilliseconds(escalationData.timeout, escalationData.timeUnit);
+    
+    setTimeout(() => {
+      this.checkForEscalation(document.id);
+    }, timeoutMs);
+  }
+
+  // Check if escalation is needed
+  private checkForEscalation(documentId: string): void {
+    const escalationData = JSON.parse(localStorage.getItem(`escalation-${documentId}`) || '{}');
+    
+    if (escalationData.escalationStopped) {
+      return;
+    }
+
+    // Check if current recipient has responded
+    const hasResponse = this.checkRecipientResponse(documentId, escalationData.recipients[escalationData.currentRecipientIndex]);
+    
+    if (!hasResponse) {
+      // Escalate to next recipient
+      this.handleCyclicEscalation(documentId, escalationData.recipients);
+      
+      // Set up next escalation check
+      const timeoutMs = this.convertToMilliseconds(escalationData.timeout, escalationData.timeUnit);
+      setTimeout(() => {
+        this.checkForEscalation(documentId);
+      }, timeoutMs);
+    }
+  }
+
+  // Check if recipient has responded
+  private checkRecipientResponse(documentId: string, recipientId: string): boolean {
+    const responses = JSON.parse(localStorage.getItem(`document-responses-${documentId}`) || '[]');
+    return responses.some((response: any) => response.recipientId === recipientId);
+  }
+
   // Stop all notifications for a document
   stopNotifications(documentId: string): void {
     const logs = JSON.parse(localStorage.getItem('emergency-notification-logs') || '[]');
@@ -258,6 +386,9 @@ class EmergencyNotificationService {
         }
       }
     });
+    
+    // Clear escalation data
+    localStorage.removeItem(`escalation-${documentId}`);
   }
 }
 

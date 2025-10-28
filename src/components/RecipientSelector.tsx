@@ -20,7 +20,8 @@ import {
   Check,
   Minus,
   ArrowRight,
-  Plus
+  Plus,
+  Shuffle
 } from "lucide-react";
 
 interface Recipient {
@@ -50,6 +51,49 @@ interface RecipientSelectorProps {
 
 const branches = ['EEE', 'MECH', 'CSE', 'ECE', 'CSM', 'CSO', 'CSD', 'CSC'];
 const years = ['1st', '2nd', '3rd', '4th'];
+
+// Approval Flow Hierarchy Order
+const HIERARCHY_ORDER = {
+  'Faculty': 1,
+  'Employee': 2,
+  'CDC Head': 3,
+  'CDC Coordinator': 3,
+  'CDC Executive': 3,
+  'Program Department Head': 4,
+  'Program Head': 4,
+  'HOD': 5,
+  'Registrar': 6,
+  'Principal': 7,
+  // Administrative roles - placed appropriately in hierarchy
+  'Controller of Examinations': 5,
+  'Asst. Dean IIIC': 5,
+  'Head Operations': 5,
+  'Librarian': 5,
+  'SSG': 5,
+  'Dean': 6,
+  'Chairman': 7,
+  'Director (For Information)': 7,
+  'Leadership': 7
+};
+
+// Function to sort recipients according to hierarchy
+const sortRecipientsByHierarchy = (recipientIds: string[], allRecipients: Recipient[]): string[] => {
+  const recipientsData = recipientIds.map(id => allRecipients.find(r => r.id === id)).filter(Boolean) as Recipient[];
+  
+  return recipientsData
+    .sort((a, b) => {
+      const orderA = HIERARCHY_ORDER[a.role as keyof typeof HIERARCHY_ORDER] || 999;
+      const orderB = HIERARCHY_ORDER[b.role as keyof typeof HIERARCHY_ORDER] || 999;
+      
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      
+      // If same hierarchy level, sort alphabetically by name
+      return a.name.localeCompare(b.name);
+    })
+    .map(r => r.id);
+};
 
 // Mock data generation
 const generateRecipients = (userRole: string): RecipientGroup[] => {
@@ -264,6 +308,7 @@ export const RecipientSelector: React.FC<RecipientSelectorProps> = ({
     'hods': true,
     'program-heads': true
   });
+  const [useHierarchicalOrder, setUseHierarchicalOrder] = useState(true);
 
   const recipientGroups = useMemo(() => generateRecipients(userRole), [userRole]);
 
@@ -295,37 +340,52 @@ export const RecipientSelector: React.FC<RecipientSelectorProps> = ({
 
   const toggleRecipient = (recipientId: string) => {
     const isSelected = selectedRecipients.includes(recipientId);
+    const allRecipients = recipientGroups.flatMap(group => group.recipients);
     
     if (isSelected) {
-      onRecipientsChange(selectedRecipients.filter(id => id !== recipientId));
+      const newSelection = selectedRecipients.filter(id => id !== recipientId);
+      const finalSelection = useHierarchicalOrder ? sortRecipientsByHierarchy(newSelection, allRecipients) : newSelection;
+      onRecipientsChange(finalSelection);
     } else {
       if (maxSelections && selectedRecipients.length >= maxSelections) {
         return; // Don't add if max selections reached
       }
-      onRecipientsChange([...selectedRecipients, recipientId]);
+      const newSelection = [...selectedRecipients, recipientId];
+      const finalSelection = useHierarchicalOrder ? sortRecipientsByHierarchy(newSelection, allRecipients) : newSelection;
+      onRecipientsChange(finalSelection);
     }
   };
 
   const removeRecipient = (recipientId: string) => {
-    onRecipientsChange(selectedRecipients.filter(id => id !== recipientId));
+    const newSelection = selectedRecipients.filter(id => id !== recipientId);
+    const allRecipients = recipientGroups.flatMap(group => group.recipients);
+    const finalSelection = useHierarchicalOrder ? sortRecipientsByHierarchy(newSelection, allRecipients) : newSelection;
+    onRecipientsChange(finalSelection);
   };
 
   const selectAllInGroup = (group: RecipientGroup) => {
     const groupRecipientIds = group.recipients.map(r => r.id);
     const newSelections = [...new Set([...selectedRecipients, ...groupRecipientIds])];
+    const allRecipients = recipientGroups.flatMap(group => group.recipients);
     
     if (maxSelections && newSelections.length > maxSelections) {
       const remaining = maxSelections - selectedRecipients.length;
       const toAdd = groupRecipientIds.slice(0, remaining);
-      onRecipientsChange([...selectedRecipients, ...toAdd]);
+      const finalSelection = [...selectedRecipients, ...toAdd];
+      const sortedSelection = useHierarchicalOrder ? sortRecipientsByHierarchy(finalSelection, allRecipients) : finalSelection;
+      onRecipientsChange(sortedSelection);
     } else {
-      onRecipientsChange(newSelections);
+      const finalSelection = useHierarchicalOrder ? sortRecipientsByHierarchy(newSelections, allRecipients) : newSelections;
+      onRecipientsChange(finalSelection);
     }
   };
 
   const deselectAllInGroup = (group: RecipientGroup) => {
     const groupRecipientIds = group.recipients.map(r => r.id);
-    onRecipientsChange(selectedRecipients.filter(id => !groupRecipientIds.includes(id)));
+    const newSelection = selectedRecipients.filter(id => !groupRecipientIds.includes(id));
+    const allRecipients = recipientGroups.flatMap(group => group.recipients);
+    const finalSelection = useHierarchicalOrder ? sortRecipientsByHierarchy(newSelection, allRecipients) : newSelection;
+    onRecipientsChange(finalSelection);
   };
 
   const getGroupSelectionState = (group: RecipientGroup) => {
@@ -339,6 +399,16 @@ export const RecipientSelector: React.FC<RecipientSelectorProps> = ({
 
   const clearAllSelections = () => {
     onRecipientsChange([]);
+  };
+
+  const toggleOrderMode = () => {
+    const allRecipients = recipientGroups.flatMap(group => group.recipients);
+    if (!useHierarchicalOrder) {
+      // Switch to hierarchical - sort current selection
+      const sortedSelection = sortRecipientsByHierarchy(selectedRecipients, allRecipients);
+      onRecipientsChange(sortedSelection);
+    }
+    setUseHierarchicalOrder(!useHierarchicalOrder);
   };
 
   return (
@@ -370,33 +440,61 @@ export const RecipientSelector: React.FC<RecipientSelectorProps> = ({
         {selectedRecipients.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium">Selected Recipients ({selectedRecipients.length})</Label>
-              <Button variant="outline" size="sm" onClick={clearAllSelections}>
-                <X className="h-4 w-4 mr-1" />
-                Clear All
-              </Button>
+              <Label className="text-sm font-medium">Selected Recipients ({selectedRecipients.length}) - {useHierarchicalOrder ? 'Hierarchical Order' : 'Random Order'}</Label>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={toggleOrderMode}>
+                  <Shuffle className="h-4 w-4 mr-1" />
+                  {useHierarchicalOrder ? 'Random' : 'Hierarchical'}
+                </Button>
+                <Button variant="outline" size="sm" onClick={clearAllSelections}>
+                  <X className="h-4 w-4 mr-1" />
+                  Clear All
+                </Button>
+              </div>
             </div>
             <ScrollArea className="max-h-32">
               <div className="flex flex-wrap gap-2 p-1">
-                {selectedRecipientsData.map((recipient) => (
-                  <Badge key={recipient.id} variant="secondary" className="flex items-center gap-1 pr-1 max-w-xs">
-                    <span className="text-xs truncate">
-                      {recipient.name}
-                      {recipient.branch && ` (${recipient.branch})`}
-                      {recipient.year && ` - ${recipient.year}`}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-4 w-4 p-0 hover:bg-destructive/20 ml-1"
-                      onClick={() => removeRecipient(recipient.id)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                ))}
+                {selectedRecipientsData.map((recipient, index) => {
+                  const hierarchyLevel = HIERARCHY_ORDER[recipient.role as keyof typeof HIERARCHY_ORDER] || 999;
+                  const levelColors = {
+                    1: 'bg-purple-100 text-purple-800 border-purple-200',
+                    2: 'bg-green-100 text-green-800 border-green-200',
+                    3: 'bg-blue-100 text-blue-800 border-blue-200', 
+                    4: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+                    5: 'bg-orange-100 text-orange-800 border-orange-200',
+                    6: 'bg-red-100 text-red-800 border-red-200',
+                    7: 'bg-gray-100 text-gray-800 border-gray-200'
+                  };
+                  const colorClass = levelColors[hierarchyLevel as keyof typeof levelColors] || 'bg-gray-100 text-gray-800 border-gray-200';
+                  
+                  return (
+                    <div key={recipient.id} className="flex items-center gap-1">
+                      <span className="text-xs text-muted-foreground font-mono">{index + 1}.</span>
+                      <Badge variant="secondary" className={`flex items-center gap-1 pr-1 max-w-xs ${colorClass}`}>
+                        <span className="text-xs truncate">
+                          {recipient.name}
+                          {recipient.branch && ` (${recipient.branch})`}
+                          {recipient.year && ` - ${recipient.year}`}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-4 w-4 p-0 hover:bg-destructive/20 ml-1"
+                          onClick={() => removeRecipient(recipient.id)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </Badge>
+                    </div>
+                  );
+                })}
               </div>
             </ScrollArea>
+            <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
+              {useHierarchicalOrder 
+                ? 'Recipients are Automatically Arranged in Hierarchical Order' 
+                : 'Recipients are in Random Selection Order'}
+            </div>
           </div>
         )}
 
