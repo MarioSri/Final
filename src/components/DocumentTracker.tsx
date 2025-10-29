@@ -330,6 +330,7 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
       case 'rejected': return 'destructive';
       case 'pending': return 'warning';
       case 'in-review': return 'default';
+      case 'submitted': return 'warning';
       default: return 'default';
     }
   };
@@ -693,7 +694,7 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
                     <div className="flex items-center gap-2">
                       {getStatusIcon(document.status)}
                       <Badge variant={getStatusBadge(document.status)}>
-                        {document.status.charAt(0).toUpperCase() + document.status.slice(1)}
+                        {document.status === 'submitted' ? 'Pending' : document.status.charAt(0).toUpperCase() + document.status.slice(1)}
                       </Badge>
                       <Badge variant="outline" className={getPriorityTextColor(document.priority)}>
                         {document.priority.charAt(0).toUpperCase() + document.priority.slice(1)} Priority
@@ -761,9 +762,9 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
                       <Signature className="h-4 w-4" />
                       {document.signedBy && document.signedBy.length > 0 ? (
                         <>
-                          <span>Signed by {document.signedBy.length} Recipient{document.signedBy.length > 1 ? 's' : ''}</span>
+                          <span>{isEmergency ? 'Signed by Recipient' : `Signed by ${document.signedBy.length} Recipient${document.signedBy.length > 1 ? 's' : ''}`}</span>
                           <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
-                            {document.signedBy.length} Signature{document.signedBy.length > 1 ? 's' : ''}
+                            {isEmergency ? 'Signature' : `${document.signedBy.length} Signature${document.signedBy.length > 1 ? 's' : ''}`}
                           </Badge>
                         </>
                       ) : (

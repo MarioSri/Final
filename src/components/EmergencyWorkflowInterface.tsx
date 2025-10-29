@@ -234,7 +234,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
       isEmergency: true,
       workflow: {
         currentStep: 'Emergency Processing',
-        progress: 25,
+        progress: 0,
         steps: [
           { 
             name: 'Submission', 
