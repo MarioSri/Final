@@ -241,6 +241,29 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
   };
 
   const createEmergencyDocumentCard = async (emergencyDoc: any, recipientsToSend: string[]) => {
+    // Convert files to base64 for localStorage storage
+    const convertFilesToBase64 = async (files: File[]) => {
+      const filePromises = files.map(file => {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            resolve({
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              data: reader.result // base64 data URL
+            });
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+      return Promise.all(filePromises);
+    };
+
+    const serializedFiles = emergencyData.uploadedFiles.length > 0 
+      ? await convertFilesToBase64(emergencyData.uploadedFiles)
+      : [];
+
     // Create emergency document card for Track Documents page
     const emergencyCard = {
       id: emergencyDoc.id,
@@ -274,7 +297,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
       signedBy: [user?.fullName || user?.name || userRole],
       description: emergencyDoc.description,
       recipients: recipientsToSend,
-      files: emergencyData.uploadedFiles,
+      files: serializedFiles, // Store base64 serialized files
       emergencyFeatures: {
         autoEscalation: emergencyData.autoEscalation,
         escalationTimeout: emergencyData.escalationTimeout,

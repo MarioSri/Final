@@ -45,7 +45,7 @@ interface Document {
   type: 'Letter' | 'Circular' | 'Report';
   submittedBy: string;
   submittedDate: string;
-  status: 'pending' | 'approved' | 'rejected' | 'in-review';
+  status: 'pending' | 'approved' | 'rejected' | 'in-review' | 'submitted';
   priority: 'low' | 'medium' | 'high' | 'urgent';
   workflow: {
     currentStep: string;
@@ -65,6 +65,7 @@ interface Document {
     date: string;
     message: string;
   }>;
+  files?: File[];
 }
 
 const mockDocuments: Document[] = [
@@ -752,10 +753,6 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
                     ))}
                   </div>
 
-
-
-
-
                   {/* Signature Status */}
                   {document.requiresSignature && (
                     <div className="flex items-center gap-2 text-sm">
@@ -832,10 +829,40 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
                     <Trash2 className="h-4 w-4 mr-2" />
                     Remove
                   </Button>
-                  <Button variant="outline" size="sm" onClick={() => {
+                  <Button variant="outline" size="sm" onClick={async () => {
                     if (onViewFile) {
-                      const file = createDocumentFile(document);
-                      onViewFile(file);
+                      // Check if document has uploaded files (emergency documents)
+                      const documentFiles = (document as any).files;
+                      if (documentFiles && documentFiles.length > 0) {
+                        const file = documentFiles[0];
+                        const fileName = file.name || 'Unknown File';
+                        const fileType = file.type || 'application/octet-stream';
+                        const fileData = file.data || file;
+                        
+                        // If file has base64 data, reconstruct File object
+                        if (typeof fileData === 'string' && fileData.startsWith('data:')) {
+                          try {
+                            const response = await fetch(fileData);
+                            const blob = await response.blob();
+                            const reconstructedFile = new File([blob], fileName, { type: fileType });
+                            onViewFile(reconstructedFile);
+                          } catch (error) {
+                            console.error('Error reconstructing file:', error);
+                            toast({
+                              title: "Error",
+                              description: "Failed to load file",
+                              variant: "destructive"
+                            });
+                          }
+                        } else {
+                          // File is already a File object
+                          onViewFile(fileData);
+                        }
+                      } else {
+                        // Fallback to creating a demo HTML file for mock documents
+                        const file = createDocumentFile(document);
+                        onViewFile(file);
+                      }
                     }
                   }}>
                     <Eye className="h-4 w-4 mr-2" />
