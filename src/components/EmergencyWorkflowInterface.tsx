@@ -240,7 +240,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
     return recipientMap[recipientId] || recipientId.split('-').slice(-2).join(' ').replace(/\./g, '');
   };
 
-  const createEmergencyDocumentCard = (emergencyDoc: any, recipientsToSend: string[]) => {
+  const createEmergencyDocumentCard = async (emergencyDoc: any, recipientsToSend: string[]) => {
     // Create emergency document card for Track Documents page
     const emergencyCard = {
       id: emergencyDoc.id,
@@ -351,7 +351,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
     };
 
     // Create emergency document card for Track Documents
-    const emergencyCard = createEmergencyDocumentCard(emergencyDocument, recipientsToSend);
+    const emergencyCard = await createEmergencyDocumentCard(emergencyDocument, recipientsToSend);
 
     // Prepare notification settings
     const emergencyNotificationSettings = {
@@ -473,7 +473,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
     setIsEmergencyMode(false);
   };
   
-  const handleWatermarkComplete = () => {
+  const handleWatermarkComplete = async () => {
     setShowWatermarkModal(false);
     
     if (pendingSubmissionData) {
@@ -492,7 +492,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
       };
 
       // Create emergency document card for Track Documents
-      const emergencyCard = createEmergencyDocumentCard(emergencyDoc, recipientsToSend);
+      const emergencyCard = await createEmergencyDocumentCard(emergencyDoc, recipientsToSend);
 
       // Initialize escalation if enabled
       if (emergencyData.autoEscalation) {
