@@ -219,6 +219,27 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
     setShowFileViewer(true);
   };
 
+  const formatRecipientName = (recipientId: string) => {
+    // Map recipient IDs to proper names with designations like other cards
+    const recipientMap: {[key: string]: string} = {
+      'cdc-head-dr.-cdc-head': 'Dr. CDC Head',
+      'principal-dr.-robert-principal': 'Dr. Robert Smith',
+      'registrar-prof.-sarah-registrar': 'Prof. Sarah Registrar',
+      'hod-dr.-cse-hod': 'Prof. Michael Chen',
+      'hod-dr.-ece-hod': 'Ms. Lisa Wang',
+      'program-department-head-prof.-cse-head': 'Prof. James Wilson',
+      'dean-dr.-maria-dean': 'Dr. Maria Garcia',
+      'hod-dr.-eee-hod': 'Dr. EEE HOD',
+      'hod-dr.-mech-hod': 'Dr. MECH HOD',
+      'hod-dr.-csm-hod': 'Dr. CSM HOD',
+      'hod-dr.-cso-hod': 'Dr. CSO HOD',
+      'hod-dr.-csd-hod': 'Dr. CSD HOD',
+      'hod-dr.-csc-hod': 'Dr. CSC HOD'
+    };
+    
+    return recipientMap[recipientId] || recipientId.split('-').slice(-2).join(' ').replace(/\./g, '');
+  };
+
   const createEmergencyDocumentCard = (emergencyDoc: any, recipientsToSend: string[]) => {
     // Create emergency document card for Track Documents page
     const emergencyCard = {
@@ -242,16 +263,11 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
             assignee: user?.fullName || user?.name || userRole, 
             completedDate: new Date().toISOString().split('T')[0] 
           },
-          { 
-            name: 'Department Review', 
-            status: 'current', 
-            assignee: recipientsToSend.find(r => r.includes('hod') || r.includes('department')) || recipientsToSend[0]
-          },
-          { 
-            name: 'Principal Approval', 
-            status: 'pending', 
-            assignee: recipientsToSend.find(r => r.includes('principal')) || 'Dr. Principal'
-          }
+          ...recipientsToSend.map((recipient, index) => ({
+            name: formatRecipientName(recipient),
+            status: index === 0 ? 'current' : 'pending',
+            assignee: formatRecipientName(recipient)
+          }))
         ]
       },
       requiresSignature: true,
