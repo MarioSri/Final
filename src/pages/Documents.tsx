@@ -22,7 +22,7 @@ const Documents = () => {
     return null; // This should be handled by ProtectedRoute, but adding as safety
   }
 
-  const handleDocumentSubmit = (data: any) => {
+  const handleDocumentSubmit = async (data: any) => {
     console.log("Document submitted:", data);
     
     // Load user profile from Personal Information
@@ -30,6 +30,30 @@ const Documents = () => {
     const currentUserName = userProfile.name || user?.fullName || user?.name || 'User';
     const currentUserDept = userProfile.department || user?.department || 'Department';
     const currentUserDesignation = userProfile.designation || user?.role || 'Employee';
+    
+    // Convert files to base64 for localStorage storage
+    const convertFilesToBase64 = async (files: File[]) => {
+      const filePromises = files.map(file => {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            resolve({
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              data: reader.result // base64 data URL
+            });
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+      return Promise.all(filePromises);
+    };
+    
+    // Serialize uploaded files
+    const serializedFiles = data.files && data.files.length > 0 
+      ? await convertFilesToBase64(data.files)
+      : [];
     
     // Map recipient IDs to names for workflow steps
     const getRecipientName = (recipientId: string) => {
@@ -93,7 +117,7 @@ const Documents = () => {
       requiresSignature: true,
       signedBy: [],
       description: data.description,
-      files: data.files.map((file: File) => file.name),
+      files: serializedFiles, // Store base64 serialized files for preview
       assignments: data.assignments,
       comments: []
     };
