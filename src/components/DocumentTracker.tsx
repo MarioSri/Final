@@ -368,6 +368,8 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
       case 'medium priority':
       case 'Medium Priority': return 'text-blue-600';
       case 'low': return 'text-green-600';
+      case 'normal':
+      case 'Normal Priority': return 'text-gray-600';
       default: return 'text-gray-600';
     }
   };
@@ -700,7 +702,9 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
                         {document.status === 'submitted' ? 'Pending' : document.status.charAt(0).toUpperCase() + document.status.slice(1)}
                       </Badge>
                       <Badge variant="outline" className={getPriorityTextColor(document.priority)}>
-                        {document.priority.charAt(0).toUpperCase() + document.priority.slice(1)} Priority
+                        {typeof document.priority === 'string' && document.priority.includes('Priority') 
+                          ? document.priority 
+                          : `${document.priority.charAt(0).toUpperCase() + document.priority.slice(1)} Priority`}
                       </Badge>
 
                     </div>

@@ -322,7 +322,7 @@ const Profile = () => {
                   Notification Preferences
                 </CardTitle>
                 <CardDescription>
-                  Choose how you want to receive notifications. Scheduling intervals are managed in Emergency Notification Settings.
+                  Choose how you want to receive notifications.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">

@@ -86,7 +86,7 @@ const Documents = () => {
                data.priority === 'high' ? 'High Priority' : 'Urgent Priority',
       workflow: {
         currentStep: workflowSteps.length > 1 ? workflowSteps[1].name : 'Complete',
-        progress: Math.round((1 / workflowSteps.length) * 100),
+        progress: 0,
         steps: workflowSteps,
         recipients: data.recipients
       },

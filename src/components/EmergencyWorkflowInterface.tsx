@@ -277,7 +277,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
       priority: emergencyDoc.urgencyLevel,
       isEmergency: true,
       workflow: {
-        currentStep: 'Emergency Processing',
+        currentStep: 'Submission',
         progress: 0,
         steps: [
           { 
