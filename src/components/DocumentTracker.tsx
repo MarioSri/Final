@@ -27,7 +27,9 @@ import {
   Trash2,
   ArrowRight,
   Building,
-  CircleCheckBig
+  CircleCheckBig,
+  Siren,
+  Users
 } from "lucide-react";
 import { DigitalSignature } from "./DigitalSignature";
 import { useToast } from "@/hooks/use-toast";
@@ -112,7 +114,7 @@ const mockDocuments: Document[] = [
     signedBy: ['Prof. Alex Martinez'],
     description: 'This is a demonstration document for testing the document tracking system functionality.',
     comments: [
-      { author: 'Dr. Sarah Williams', date: '2024-01-20', message: 'Document submitted for departmental review and approval.' }
+      { author: 'Dr. Rachel Thompson', date: '2024-01-20', message: 'Document submitted for departmental review and approval.' }
     ]
   },
   {
@@ -225,6 +227,25 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
     const handleWorkflowUpdate = () => {
       loadSubmittedDocuments();
     };
+
+    const handleEmergencyDocumentCreated = (event: CustomEvent) => {
+      const { document: emergencyDoc } = event.detail;
+      setSubmittedDocuments(prev => {
+        // Check if document already exists to avoid duplicates
+        const exists = prev.some(doc => doc.id === emergencyDoc.id);
+        if (!exists) {
+          return [emergencyDoc, ...prev];
+        }
+        return prev;
+      });
+      
+      // Show notification that emergency document card was created
+      toast({
+        title: "Emergency Document Card Created",
+        description: `${emergencyDoc.title} is now visible with emergency features applied`,
+        duration: 5000,
+      });
+    };
     
     // Save track documents to localStorage for search
     const saveTrackDocuments = () => {
@@ -282,12 +303,14 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
     
     window.addEventListener('approval-comments-changed', handleApprovalChanges);
     window.addEventListener('workflow-updated', handleWorkflowUpdate);
+    window.addEventListener('emergency-document-created', handleEmergencyDocumentCreated as EventListener);
     
     window.addEventListener('storage', handleStorageChange);
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('approval-comments-changed', handleApprovalChanges);
       window.removeEventListener('workflow-updated', handleWorkflowUpdate);
+      window.removeEventListener('emergency-document-created', handleEmergencyDocumentCreated as EventListener);
     };
   }, []);
 
@@ -313,15 +336,35 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
 
   const getPriorityColor = (priority: string): string => {
     switch (priority) {
+      case 'critical':
+      case 'Critical Priority': return 'bg-red-100 text-red-800 border-red-200';
       case 'urgent':
       case 'urgent priority':
-      case 'Urgent Priority': return 'text-red-600 font-bold';
+      case 'Urgent Priority': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'high':
+      case 'high priority':
+      case 'High Priority': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'medium':
+      case 'medium priority':
+      case 'Medium Priority': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'low': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getPriorityTextColor = (priority: string): string => {
+    switch (priority) {
+      case 'critical':
+      case 'Critical Priority': return 'text-red-600 font-bold';
+      case 'urgent':
+      case 'urgent priority':
+      case 'Urgent Priority': return 'text-yellow-600 font-bold';
       case 'high':
       case 'high priority':
       case 'High Priority': return 'text-orange-600 font-semibold';
       case 'medium':
       case 'medium priority':
-      case 'Medium Priority': return 'text-yellow-600';
+      case 'Medium Priority': return 'text-blue-600';
       case 'low': return 'text-green-600';
       default: return 'text-gray-600';
     }
@@ -337,7 +380,14 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
     const matchesStatus = statusFilter === 'all' || doc.status === statusFilter;
     const matchesType = typeFilter === 'all' || doc.type === typeFilter;
     
-    return notRemoved && matchesSearch && matchesStatus && matchesType;
+    // Emergency documents are only visible to the user who submitted them
+    const isEmergencyDoc = (doc as any).isEmergency;
+    const isOwnDocument = !isEmergencyDoc || 
+                         (doc.submittedBy === currentUserProfile.name) ||
+                         (doc.submittedBy === userRole) ||
+                         ((doc as any).submittedByDesignation === userRole);
+    
+    return notRemoved && matchesSearch && matchesStatus && matchesType && isOwnDocument;
   });
 
   const handleApprove = (docId: string) => {
@@ -598,9 +648,13 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
 
       {/* Document List */}
       <div className="space-y-4">
-        {filteredDocuments.map((document) => (
+        {filteredDocuments.map((document) => {
+          const isEmergency = (document as any).isEmergency || document.id === 'DOC-DEMO';
+          const emergencyFeatures = (document as any).emergencyFeatures;
+          
+          return (
           <Card key={document.id} className={`hover:shadow-md transition-shadow ${
-            document.id === 'DOC-DEMO' ? 'border-destructive bg-red-50 animate-pulse' : ''
+            isEmergency ? 'border-destructive bg-red-50 animate-pulse' : ''
           }`}>
             <CardContent className="p-6">
               <div className="flex flex-col lg:flex-row gap-6">
@@ -610,7 +664,7 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-lg">{document.title}</h3>
-                        {document.id === 'DOC-DEMO' && (
+                        {isEmergency && (
                           <Badge variant="destructive" className="animate-pulse">
                             <AlertTriangle className="w-3 h-3 mr-1" />
                             EMERGENCY
@@ -641,9 +695,10 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
                       <Badge variant={getStatusBadge(document.status)}>
                         {document.status.charAt(0).toUpperCase() + document.status.slice(1)}
                       </Badge>
-                      <Badge variant="outline" className={getPriorityColor(document.priority)}>
-                        {document.priority.charAt(0).toUpperCase() + document.priority.slice(1)}
+                      <Badge variant="outline" className={getPriorityTextColor(document.priority)}>
+                        {document.priority.charAt(0).toUpperCase() + document.priority.slice(1)} Priority
                       </Badge>
+
                     </div>
                   </div>
 
@@ -695,6 +750,10 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
                       </div>
                     ))}
                   </div>
+
+
+
+
 
                   {/* Signature Status */}
                   {document.requiresSignature && (
@@ -799,12 +858,7 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
                     Download
                   </Button>
 
-                  {document.id === 'DOC-DEMO' && (
-                    <Button variant="outline" size="sm">
-                      <ArrowRight className="h-4 w-4 mr-2" />
-                      Escalate
-                    </Button>
-                  )}
+
                   
                   {userRole === 'Principal' || userRole === 'Registrar' || userRole === 'HOD' ? (
                     <>
@@ -887,7 +941,8 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
               </div>
             </CardContent>
           </Card>
-        ))}
+          );
+        })}
         
         {filteredDocuments.length === 0 && (
           <Card>

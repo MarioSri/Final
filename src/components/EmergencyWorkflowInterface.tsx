@@ -47,6 +47,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { WatermarkFeature } from "@/components/WatermarkFeature";
 import { useAuth } from "@/contexts/AuthContext";
+import { Siren as SirenIcon } from "lucide-react";
 import { FileViewer } from "@/components/FileViewer";
 import { NotificationBehaviorPreview } from "@/components/NotificationBehaviorPreview";
 import type { EmergencyNotificationSettings } from "@/services/EmergencyNotificationService";
@@ -218,6 +219,74 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
     setShowFileViewer(true);
   };
 
+  const createEmergencyDocumentCard = (emergencyDoc: any, recipientsToSend: string[]) => {
+    // Create emergency document card for Track Documents page
+    const emergencyCard = {
+      id: emergencyDoc.id,
+      title: emergencyDoc.title,
+      type: emergencyData.documentTypes.includes('circular') ? 'Circular' : 
+            emergencyData.documentTypes.includes('report') ? 'Report' : 'Letter',
+      submittedBy: user?.fullName || user?.name || userRole,
+      submittedByDesignation: userRole,
+      submittedDate: new Date().toISOString().split('T')[0],
+      status: 'submitted',
+      priority: emergencyDoc.urgencyLevel,
+      isEmergency: true,
+      workflow: {
+        currentStep: 'Emergency Processing',
+        progress: 25,
+        steps: [
+          { 
+            name: 'Submission', 
+            status: 'completed', 
+            assignee: user?.fullName || user?.name || userRole, 
+            completedDate: new Date().toISOString().split('T')[0] 
+          },
+          { 
+            name: 'Department Review', 
+            status: 'current', 
+            assignee: recipientsToSend.find(r => r.includes('hod') || r.includes('department')) || recipientsToSend[0]
+          },
+          { 
+            name: 'Principal Approval', 
+            status: 'pending', 
+            assignee: recipientsToSend.find(r => r.includes('principal')) || 'Dr. Principal'
+          }
+        ]
+      },
+      requiresSignature: true,
+      signedBy: [user?.fullName || user?.name || userRole],
+      description: emergencyDoc.description,
+      recipients: recipientsToSend,
+      files: emergencyData.uploadedFiles,
+      emergencyFeatures: {
+        autoEscalation: emergencyData.autoEscalation,
+        escalationTimeout: emergencyData.escalationTimeout,
+        escalationTimeUnit: emergencyData.escalationTimeUnit,
+        notificationSettings: useProfileDefaults ? 'profile-based' : 'emergency-override',
+        smartDelivery: useSmartDelivery,
+        assignedDocuments: documentAssignments
+      },
+      comments: [{
+        author: user?.fullName || user?.name || userRole,
+        date: new Date().toISOString().split('T')[0],
+        message: `Emergency document submitted with ${emergencyDoc.urgencyLevel} priority. ${emergencyData.autoEscalation ? 'Auto-escalation enabled.' : ''}`
+      }]
+    };
+
+    // Save to submitted documents for Track Documents page
+    const existingDocs = JSON.parse(localStorage.getItem('submitted-documents') || '[]');
+    existingDocs.unshift(emergencyCard);
+    localStorage.setItem('submitted-documents', JSON.stringify(existingDocs));
+
+    // Trigger real-time update for Track Documents page
+    window.dispatchEvent(new CustomEvent('emergency-document-created', { 
+      detail: { document: emergencyCard } 
+    }));
+
+    return emergencyCard;
+  };
+
   const handleEmergencySubmit = async () => {
     const recipientsToSend = useSmartDelivery && showRecipientSelection ? finalSelectedRecipients : selectedRecipients;
     
@@ -264,6 +333,9 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
       escalationTimeUnit: emergencyData.escalationTimeUnit,
       cyclicEscalation: emergencyData.cyclicEscalation
     };
+
+    // Create emergency document card for Track Documents
+    const emergencyCard = createEmergencyDocumentCard(emergencyDocument, recipientsToSend);
 
     // Prepare notification settings
     const emergencyNotificationSettings = {
@@ -341,15 +413,15 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
       const notificationBehavior = useProfileDefaults ? 'profile-based' : 'emergency override';
       toast({
         title: "EMERGENCY SUBMITTED",
-        description: `Emergency sent to ${recipientsToSend.length} recipients using ${notificationBehavior} notifications`,
+        description: `Emergency document card created and sent to ${recipientsToSend.length} recipients using ${notificationBehavior} notifications`,
         duration: 10000,
       });
 
       // Show delivery confirmation
       setTimeout(() => {
         toast({
-          title: "Notifications Delivered",
-          description: `Emergency notifications sent via ${emergencyNotificationSettings.channels.map(c => c.type).join(', ')}`,
+          title: "Emergency Card Created",
+          description: `Emergency document card is now visible in Track Documents with all selected features applied`,
           variant: "default"
         });
       }, 2000);
@@ -403,6 +475,9 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
         cyclicEscalation: emergencyData.cyclicEscalation
       };
 
+      // Create emergency document card for Track Documents
+      const emergencyCard = createEmergencyDocumentCard(emergencyDoc, recipientsToSend);
+
       // Initialize escalation if enabled
       if (emergencyData.autoEscalation) {
         import('@/services/EmergencyNotificationService').then(({ emergencyNotificationService }) => {
@@ -433,7 +508,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
 
       toast({
         title: "EMERGENCY SUBMITTED",
-        description: `Emergency document with watermark sent to ${recipientsToSend.length} recipient(s)`,
+        description: `Emergency document card with watermark created and sent to ${recipientsToSend.length} recipient(s)`,
         duration: 10000,
       });
     }

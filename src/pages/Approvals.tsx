@@ -887,7 +887,7 @@ Generate a professional summary highlighting key points, objectives, and any act
                             <div className="space-y-2">
                               <div className="flex items-center gap-1">
                                 <Share2 className="h-4 w-4 text-blue-600" />
-                                <span className="text-sm font-medium text-blue-700">Shared To Next Recipient(s)</span>
+                                <span className="text-sm font-medium text-blue-700">Share Comment with Next Recipient(s)</span>
                               </div>
                               <div className="space-y-2">
                                 {sharedComments['faculty-meeting'].map((shared, index) => (
@@ -1107,7 +1107,7 @@ Generate a professional summary highlighting key points, objectives, and any act
                             <div className="space-y-2">
                               <div className="flex items-center gap-1">
                                 <Share2 className="h-4 w-4 text-blue-600" />
-                                <span className="text-sm font-medium text-blue-700">Shared To Next Recipient(s)</span>
+                                <span className="text-sm font-medium text-blue-700">Share Comment with Next Recipient(s)</span>
                               </div>
                               <div className="space-y-2">
                                 {sharedComments['budget-request'].map((shared, index) => (
@@ -1752,7 +1752,7 @@ Generate a professional summary highlighting key points, objectives, and any act
                               <div className="space-y-2">
                                 <div className="flex items-center gap-1">
                                   <Share2 className="h-4 w-4 text-blue-600" />
-                                  <span className="text-sm font-medium text-blue-700">Shared To Next Recipient(s)</span>
+                                  <span className="text-sm font-medium text-blue-700">Comment Shared by Previous Recipient</span>
                                 </div>
                                 <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded text-sm">
                                   <p className="text-blue-800">Insufficient literature review and theoretical framework. References need to be updated to the latest 3 years.</p>
