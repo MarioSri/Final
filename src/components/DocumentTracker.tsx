@@ -382,14 +382,16 @@ export const DocumentTracker: React.FC<DocumentTrackerProps> = ({ userRole, onVi
     const matchesStatus = statusFilter === 'all' || doc.status === statusFilter;
     const matchesType = typeFilter === 'all' || doc.type === typeFilter;
     
-    // Emergency documents are only visible to the user who submitted them
-    const isEmergencyDoc = (doc as any).isEmergency;
-    const isOwnDocument = !isEmergencyDoc || 
-                         (doc.submittedBy === currentUserProfile.name) ||
-                         (doc.submittedBy === userRole) ||
-                         ((doc as any).submittedByDesignation === userRole);
+    // Mock documents are always visible
+    const isMockDocument = mockDocuments.some(mockDoc => mockDoc.id === doc.id);
     
-    return notRemoved && matchesSearch && matchesStatus && matchesType && isOwnDocument;
+    // For submitted documents, only show to the submitting user
+    const isOwnDocument = doc.submittedBy === currentUserProfile.name ||
+                         doc.submittedBy === userRole ||
+                         (doc as any).submittedByDesignation === userRole ||
+                         (doc as any).submittedByDesignation === currentUserProfile.designation;
+    
+    return notRemoved && matchesSearch && matchesStatus && matchesType && (isMockDocument || isOwnDocument);
   });
 
   const handleApprove = (docId: string) => {
