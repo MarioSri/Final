@@ -66,7 +66,8 @@ import {
   UserPlus,
   UserRoundPlus,
   Copy,
-  CheckSquare
+  CheckSquare,
+  Clock
 } from 'lucide-react';
 
 interface ChatInterfaceProps {
@@ -334,11 +335,53 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className, channel
         const messageTime = new Date(message.timestamp);
         return messageTime > twentyFourHoursAgo;
       });
+      
+      // Log deleted messages count for debugging
+      if (filtered.length !== prev.length) {
+        console.log(`Auto-deleted ${prev.length - filtered.length} message(s) older than 24 hours`);
+        toast({
+          title: 'Messages Cleaned',
+          description: `${prev.length - filtered.length} old message(s) automatically deleted`,
+          variant: 'default'
+        });
+      }
+      
       return filtered.length !== prev.length ? filtered : prev;
     });
-  }, []);
+  }, [toast]);
 
-  // Auto-delete messages after 24 hours
+  // Cleanup function for auto-delete channels after 1 week (7 days)
+  const cleanupChannels = useCallback(() => {
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    setChannels(prev => {
+      const filtered = prev.filter(channel => {
+        const channelCreationTime = new Date(channel.createdAt);
+        // Keep channels that are newer than 1 week
+        return channelCreationTime > oneWeekAgo;
+      });
+      
+      // Check if active channel was deleted
+      if (activeChannel && !filtered.find(ch => ch.id === activeChannel.id)) {
+        setActiveChannel(filtered.length > 0 ? filtered[0] : null);
+      }
+      
+      // Log deleted channels count for debugging
+      if (filtered.length !== prev.length) {
+        console.log(`Auto-deleted ${prev.length - filtered.length} channel(s) older than 1 week`);
+        toast({
+          title: 'Channels Cleaned',
+          description: `${prev.length - filtered.length} old channel(s) automatically deleted`,
+          variant: 'default'
+        });
+      }
+      
+      return filtered.length !== prev.length ? filtered : prev;
+    });
+  }, [activeChannel, toast]);
+
+  // Auto-delete messages after 24 hours - runs every hour
   useEffect(() => {
     // Run cleanup every hour
     const interval = setInterval(cleanupMessages, 60 * 60 * 1000);
@@ -348,6 +391,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ className, channel
 
     return () => clearInterval(interval);
   }, [cleanupMessages]);
+
+  // Auto-delete channels after 1 week - runs every day
+  useEffect(() => {
+    // Run cleanup every 24 hours
+    const interval = setInterval(cleanupChannels, 24 * 60 * 60 * 1000);
+    
+    // Initial cleanup
+    cleanupChannels();
+
+    return () => clearInterval(interval);
+  }, [cleanupChannels]);
 
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !activeChannel || !user) return;
@@ -1271,6 +1325,12 @@ Generated on: ${new Date().toLocaleString()}`;
             )}
           </div>
         </div>
+        <div className="mt-2 p-2 bg-yellow-500/10 rounded-md border border-yellow-500/20">
+          <p className="text-xs text-yellow-700 dark:text-yellow-400 flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3" />
+            <span>Auto-delete: Channels after 7 days</span>
+          </p>
+        </div>
       </div>
       
       <ScrollArea className="flex-1">
@@ -1426,14 +1486,20 @@ Generated on: ${new Date().toLocaleString()}`;
                 <Lock className="w-5 h-5" />
                 <div>
                   <h2 className="font-semibold">{activeChannel.name}</h2>
-                  <p className="text-sm text-muted-foreground">
-                    {activeChannel.members.length} members
-                    {typingUsers.length > 0 && (
-                      <span className="ml-2">
-                        • {typingUsers.length} typing...
-                      </span>
-                    )}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm text-muted-foreground">
+                      {activeChannel.members.length} members
+                      {typingUsers.length > 0 && (
+                        <span className="ml-2">
+                          • {typingUsers.length} typing...
+                        </span>
+                      )}
+                    </p>
+                    <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                      <Clock className="w-3 h-3 mr-1" />
+                      Auto-delete: 24h
+                    </Badge>
+                  </div>
                 </div>
               </div>
               

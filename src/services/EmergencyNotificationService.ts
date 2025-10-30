@@ -45,23 +45,18 @@ class EmergencyNotificationService {
     return EmergencyNotificationService.instance;
   }
 
-  // Get user notification preferences from profile
+  // Get user notification preferences from profile - simplified for one-time notifications
   private getUserPreferences(recipientId: string): UserNotificationPreferences {
-    const saved = localStorage.getItem(`user-preferences-${recipientId}`);
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    
-    // Default preferences if none found
+    // Fixed preferences - no custom options, notifications sent only once
     return {
-      email: { type: 'email', enabled: true, interval: 15, unit: 'minutes' },
-      sms: { type: 'sms', enabled: false, interval: 30, unit: 'minutes' },
-      push: { type: 'push', enabled: true, interval: 5, unit: 'minutes' },
-      whatsapp: { type: 'whatsapp', enabled: false, interval: 1, unit: 'hours' }
+      email: { type: 'email', enabled: true, interval: 1, unit: 'seconds' },
+      sms: { type: 'sms', enabled: true, interval: 1, unit: 'seconds' },
+      push: { type: 'push', enabled: true, interval: 1, unit: 'seconds' },
+      whatsapp: { type: 'whatsapp', enabled: true, interval: 1, unit: 'seconds' }
     };
   }
 
-  // Send notifications based on profile settings
+  // Send notifications based on profile settings - one-time only
   private async sendWithProfileSettings(
     recipients: string[],
     document: EmergencyDocument
@@ -69,10 +64,10 @@ class EmergencyNotificationService {
     for (const recipientId of recipients) {
       const preferences = this.getUserPreferences(recipientId);
       
-      // Send notifications according to each recipient's preferences
+      // Send one-time notifications for all enabled channels
       Object.values(preferences).forEach(channel => {
         if (channel.enabled) {
-          this.scheduleNotification(recipientId, document, channel);
+          this.deliverNotification(recipientId, document, channel);
         }
       });
     }
@@ -114,7 +109,7 @@ class EmergencyNotificationService {
     return settings.channels;
   }
 
-  // Schedule notification delivery
+  // Schedule notification delivery - modified for one-time delivery when using profile settings
   private scheduleNotification(
     recipientId: string,
     document: EmergencyDocument,
@@ -127,7 +122,7 @@ class EmergencyNotificationService {
       this.deliverNotification(recipientId, document, channel);
     }
     
-    // Schedule recurring notifications
+    // Schedule recurring notifications (only for emergency override mode)
     const notificationId = `${document.id}-${recipientId}-${channel.type}`;
     
     setTimeout(() => {

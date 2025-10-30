@@ -943,7 +943,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
                     <Settings className="w-5 h-5 text-muted-foreground" />
                     <div>
                       <p className="font-medium">Receive Notifications Based on Selected Recipients' Profile Settings</p>
-                      <p className="text-sm text-muted-foreground">Each selected recipient receives notifications according to their own profile preferences (Email, SMS, Push, WhatsApp)</p>
+                      <p className="text-sm text-muted-foreground">Each selected recipient receives one-time notifications through all channels (Email, SMS, Push, WhatsApp) - no recurring notifications</p>
                     </div>
                   </div>
                   <Switch
@@ -1226,8 +1226,8 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
                   <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4" />
                     <div>
-                      <p className="font-medium">Following Recipients' Profile Settings</p>
-                      <p className="text-xs">System follows recipients' profile-based notification settings</p>
+                      <p className="font-medium">One-Time Notification Mode Active</p>
+                      <p className="text-xs">Recipients will receive notifications only once through all available channels (Email, SMS, Push, WhatsApp)</p>
                     </div>
                   </div>
                 )}
