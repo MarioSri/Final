@@ -318,9 +318,41 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
     existingDocs.unshift(emergencyCard);
     localStorage.setItem('submitted-documents', JSON.stringify(existingDocs));
 
+    // Create approval card for Approval Center page
+    const approvalCard = {
+      id: emergencyDoc.id,
+      title: emergencyDoc.title,
+      type: emergencyData.documentTypes.includes('circular') ? 'Circular' : 
+            emergencyData.documentTypes.includes('report') ? 'Report' : 'Letter',
+      submitter: user?.fullName || user?.name || userRole,
+      submittedDate: new Date().toISOString().split('T')[0],
+      priority: emergencyDoc.urgencyLevel === 'critical' ? 'high' : emergencyDoc.urgencyLevel,
+      description: emergencyDoc.description,
+      files: serializedFiles,
+      recipients: recipientsToSend,
+      isEmergency: true,
+      emergencyFeatures: {
+        autoEscalation: emergencyData.autoEscalation,
+        escalationTimeout: emergencyData.escalationTimeout,
+        escalationTimeUnit: emergencyData.escalationTimeUnit,
+        notificationSettings: useProfileDefaults ? 'profile-based' : 'emergency-override',
+        smartDelivery: useSmartDelivery
+      }
+    };
+
+    // Save to pending approvals for Approval Center page
+    const existingApprovals = JSON.parse(localStorage.getItem('pending-approvals') || '[]');
+    existingApprovals.unshift(approvalCard);
+    localStorage.setItem('pending-approvals', JSON.stringify(existingApprovals));
+
     // Trigger real-time update for Track Documents page
     window.dispatchEvent(new CustomEvent('emergency-document-created', { 
       detail: { document: emergencyCard } 
+    }));
+
+    // Trigger real-time update for Approval Center page
+    window.dispatchEvent(new CustomEvent('approval-card-created', { 
+      detail: { approval: approvalCard } 
     }));
 
     return emergencyCard;
@@ -373,7 +405,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
       cyclicEscalation: emergencyData.cyclicEscalation
     };
 
-    // Create emergency document card for Track Documents
+    // Create emergency document card for Track Documents and approval card for Approval Center
     const emergencyCard = await createEmergencyDocumentCard(emergencyDocument, recipientsToSend);
 
     // Prepare notification settings
@@ -448,6 +480,15 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
       // Reset form
       resetEmergencyForm();
 
+      // Show additional confirmation for approval card creation
+      setTimeout(() => {
+        toast({
+          title: "Approval Card Ready",
+          description: `Recipients can now view and approve the emergency document in Approval Center → Pending Approvals section`,
+          variant: "default"
+        });
+      }, 4000);
+
       // Show success notification
       const notificationBehavior = useProfileDefaults ? 'profile-based' : 'emergency override';
       toast({
@@ -459,8 +500,8 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
       // Show delivery confirmation
       setTimeout(() => {
         toast({
-          title: "Emergency Card Created",
-          description: `Emergency document card is now visible in Track Documents with all selected features applied`,
+          title: "Cards Created Successfully",
+          description: `Emergency document card is now visible in Track Documents and approval card created in Approval Center → Pending Approvals`,
           variant: "default"
         });
       }, 2000);
@@ -514,7 +555,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
         cyclicEscalation: emergencyData.cyclicEscalation
       };
 
-      // Create emergency document card for Track Documents
+      // Create emergency document card for Track Documents and approval card for Approval Center
       const emergencyCard = await createEmergencyDocumentCard(emergencyDoc, recipientsToSend);
 
       // Initialize escalation if enabled
@@ -547,7 +588,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
 
       toast({
         title: "EMERGENCY SUBMITTED",
-        description: `Emergency document card with watermark created and sent to ${recipientsToSend.length} recipient(s)`,
+        description: `Emergency document card with watermark created and sent to ${recipientsToSend.length} recipient(s). Approval card created in Approval Center.`,
         duration: 10000,
       });
     }

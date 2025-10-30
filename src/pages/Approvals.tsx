@@ -175,8 +175,24 @@ const Approvals = () => {
     }
   };
 
-  // Create a demo file for the document
+  // Create a demo file for the document or convert from base64
   const createDocumentFile = (doc: any): File => {
+    // If document has uploaded files from Emergency Management, use the first one
+    if (doc.files && doc.files.length > 0) {
+      const fileData = doc.files[0];
+      if (fileData.data) {
+        // Convert base64 back to File
+        const byteCharacters = atob(fileData.data.split(',')[1]);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        return new File([byteArray], fileData.name, { type: fileData.type });
+      }
+    }
+
+    // Fallback to demo HTML file
     const htmlContent = `
 <!DOCTYPE html>
 <html>
@@ -206,9 +222,38 @@ const Approvals = () => {
     .section {
       margin: 20px 0;
     }
+    .emergency {
+      background: #fee2e2;
+      border: 2px solid #dc2626;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
   </style>
 </head>
 <body>
+  <h1>${doc.title}</h1>
+  ${doc.isEmergency ? '<div class="emergency"><strong>EMERGENCY DOCUMENT</strong><br>This document requires immediate attention.</div>' : ''}
+  <div class="info">
+    <p><strong>Submitted by:</strong> ${doc.submitter || doc.submittedBy}</p>
+    <p><strong>Date:</strong> ${doc.submittedDate || doc.date}</p>
+    <p><strong>Type:</strong> ${doc.type}</p>
+    <p><strong>Priority:</strong> ${doc.priority}</p>
+  </div>
+  <div class="section">
+    <h2>Description</h2>
+    <p>${doc.description}</p>
+  </div>
+  ${doc.emergencyFeatures ? `
+  <div class="section">
+    <h2>Emergency Features</h2>
+    <ul>
+      <li>Auto-escalation: ${doc.emergencyFeatures.autoEscalation ? 'Enabled' : 'Disabled'}</li>
+      <li>Notification Settings: ${doc.emergencyFeatures.notificationSettings}</li>
+      <li>Smart Delivery: ${doc.emergencyFeatures.smartDelivery ? 'Enabled' : 'Disabled'}</li>
+    </ul>
+  </div>
+  ` : ''}
 </body>
 </html>
     `;
@@ -501,13 +546,21 @@ Generate a professional summary highlighting key points, objectives, and any act
       const { docId } = event.detail;
       setPendingApprovals(prev => prev.filter(doc => doc.id !== docId));
     };
+
+    // Listen for new approval cards from Emergency Management
+    const handleApprovalCardCreated = (event: any) => {
+      const { approval } = event.detail;
+      setPendingApprovals(prev => [approval, ...prev]);
+    };
     
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('document-removed', handleDocumentRemoval);
+    window.addEventListener('approval-card-created', handleApprovalCardCreated);
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('document-removed', handleDocumentRemoval);
+      window.removeEventListener('approval-card-created', handleApprovalCardCreated);
     };
   }, []);
   
@@ -608,7 +661,7 @@ Generate a professional summary highlighting key points, objectives, and any act
                   <Clock className="h-6 w-6 text-warning" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{pendingApprovals.length + 3}</p>
+                  <p className="text-2xl font-bold">{pendingApprovals.length + 4}</p>
                   <p className="text-sm text-muted-foreground">Pending Approvals</p>
                 </div>
               </div>
@@ -661,7 +714,7 @@ Generate a professional summary highlighting key points, objectives, and any act
                 <div className="space-y-4">
                   {/* Dynamic Submitted Documents */}
                   {pendingApprovals.map((doc) => (
-                    <Card key={doc.id} className="hover:shadow-md transition-shadow">
+                    <Card key={doc.id} className={`hover:shadow-md transition-shadow ${doc.isEmergency ? 'border-destructive bg-red-50 animate-pulse' : ''}`}>
                       <CardContent className="p-6">
                         <div className="flex flex-col lg:flex-row gap-6">
                           <div className="flex-1 space-y-4">
@@ -669,6 +722,12 @@ Generate a professional summary highlighting key points, objectives, and any act
                               <div>
                                 <h3 className="font-semibold text-lg flex items-center gap-2">
                                   {doc.title}
+                                  {doc.isEmergency && (
+                                    <Badge variant="destructive" className="text-xs">
+                                      <AlertTriangle className="w-3 h-3 mr-1" />
+                                      EMERGENCY
+                                    </Badge>
+                                  )}
                                 </h3>
                                 <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                                   <div className="flex items-center gap-1">
@@ -689,12 +748,12 @@ Generate a professional summary highlighting key points, objectives, and any act
                                 <Clock className="h-4 w-4 text-yellow-600" />
                                 <Badge variant="warning">Pending</Badge>
                                 <Badge variant="outline" className={`${
-                                  doc.priority === 'high' ? 'text-orange-600 font-semibold' :
-                                  doc.priority === 'medium' ? 'text-yellow-600' :
+                                  doc.priority === 'high' || doc.priority === 'critical' ? 'text-orange-600 font-semibold' :
+                                  doc.priority === 'medium' || doc.priority === 'urgent' ? 'text-yellow-600' :
                                   'text-blue-600'
                                 }`}>
-                                  {doc.priority === 'high' ? 'High Priority' :
-                                   doc.priority === 'medium' ? 'Medium Priority' :
+                                  {doc.priority === 'high' || doc.priority === 'critical' ? 'High Priority' :
+                                   doc.priority === 'medium' || doc.priority === 'urgent' ? 'Medium Priority' :
                                    'Normal Priority'}
                                 </Badge>
                               </div>
@@ -709,6 +768,19 @@ Generate a professional summary highlighting key points, objectives, and any act
                                 <p>{doc.description}</p>
                               </div>
                             </div>
+
+                            {/* Action Required Indicator */}
+                            {doc.isEmergency && (
+                              <div className="flex items-center gap-2 p-2 bg-warning/10 rounded border border-warning/20">
+                                <Zap className="w-4 h-4 text-warning" />
+                                <span className="text-sm font-medium text-warning">
+                                  Action Required
+                                </span>
+                                <Badge variant="destructive" className="text-xs">
+                                  Escalated 2x
+                                </Badge>
+                              </div>
+                            )}
                             
                             {comments[doc.id]?.length > 0 && (
                               <div className="space-y-2">
