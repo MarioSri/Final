@@ -14,9 +14,11 @@ import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
 
-// Set up PDF.js worker
+// Set up PDF.js worker with unpkg CDN for better compatibility
 if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+  // Version 5.x uses .mjs extension for ES modules
+  const pdfjsVersion = pdfjsLib.version || '5.4.296';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsVersion}/build/pdf.worker.min.mjs`;
 }
 
 interface WatermarkFeatureProps {

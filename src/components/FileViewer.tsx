@@ -18,12 +18,14 @@ import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
 
-// Set up PDF.js worker with better configuration
+// Set up PDF.js worker with unpkg CDN for better compatibility
 if (typeof window !== 'undefined') {
-  // Try multiple worker sources for maximum compatibility
-  const workerSrc = '/pdf.worker.min.mjs';
+  // Use unpkg CDN which has better CORS support
+  // Version 5.x uses .mjs extension for ES modules
+  const pdfjsVersion = pdfjsLib.version || '5.4.296';
+  const workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsVersion}/build/pdf.worker.min.mjs`;
   
-  console.log('PDF.js version:', pdfjsLib.version);
+  console.log('PDF.js version:', pdfjsVersion);
   console.log('Setting worker source to:', workerSrc);
   
   pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
