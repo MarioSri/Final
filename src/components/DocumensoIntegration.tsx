@@ -60,11 +60,11 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
   const [showVerification, setShowVerification] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const [capturedSignature, setCapturedSignature] = useState<string | null>(null);
-  const [aiPlacementEnabled, setAiPlacementEnabled] = useState(true);
-  const [detectedSignatureZones, setDetectedSignatureZones] = useState<SignatureZone[]>([]);
-  const [documentAnalysis, setDocumentAnalysis] = useState<DocumentAnalysis | null>(null);
-  const [selectedZone, setSelectedZone] = useState<string | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [brushSize, setBrushSize] = useState(2);
+  const [brushColor, setBrushColor] = useState('#000000');
+  const [savedSignatures, setSavedSignatures] = useState<Array<{id: string, name: string, data: string, type: 'draw' | 'upload'}>>([]);
+  const [showLibrary, setShowLibrary] = useState(false);
   const [showFileViewer, setShowFileViewer] = useState(false);
   const [fileContent, setFileContent] = useState<any>(null);
   const [fileLoading, setFileLoading] = useState(false);
@@ -227,32 +227,6 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
     setActiveTab('complete');
     
     try {
-      // Get selected signature zone for AI placement
-      const selectedSignatureZone = detectedSignatureZones.find(zone => zone.id === selectedZone);
-      
-      if (aiPlacementEnabled && selectedSignatureZone) {
-        // Use AI-powered signature placement
-        const signingRequest = {
-          documentId: document.id,
-          signatureZone: selectedSignatureZone,
-          signerInfo: {
-            name: user.name,
-            email: user.email,
-            role: user.role
-          },
-          signatureMethod: signatureMethod as 'digital' | 'draw' | 'camera' | 'upload',
-          signatureData: capturedSignature || signatureData
-        };
-        
-        const response = await documensoAPI.signDocument(signingRequest);
-        
-        if (response.success) {
-          toast({
-            title: "AI-Powered Signature Applied",
-            description: `Document signed with ${Math.round(selectedSignatureZone.confidence * 100)}% placement confidence`,
-          });
-        }
-      }
       
       // Enhanced Documenso signing process
       const steps = [
@@ -297,7 +271,8 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
     }
   };
 
-  const handleDrawSignature = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    setIsDrawing(true);
     const canvas = canvasRef.current;
     if (!canvas) return;
     
@@ -305,17 +280,84 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = brushColor;
+    ctx.lineWidth = brushSize;
     ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
     ctx.lineTo(x, y);
     ctx.stroke();
+  };
+
+  const handleMouseUp = () => {
+    setIsDrawing(false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    setIsDrawing(true);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.strokeStyle = brushColor;
+    ctx.lineWidth = brushSize;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    
     ctx.beginPath();
     ctx.moveTo(x, y);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (!isDrawing) return;
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const touch = e.touches[0];
+    const x = touch.clientX - rect.left;
+    const y = touch.clientY - rect.top;
+    
+    ctx.lineTo(x, y);
+    ctx.stroke();
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    setIsDrawing(false);
   };
 
   const clearSignature = () => {
@@ -326,6 +368,69 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
     if (!ctx) return;
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const saveDrawnSignature = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const dataUrl = canvas.toDataURL();
+    const newSignature = {
+      id: Date.now().toString(),
+      name: `Signature ${savedSignatures.length + 1}`,
+      data: dataUrl,
+      type: 'draw' as const
+    };
+    
+    setSavedSignatures(prev => [...prev, newSignature]);
+    toast({
+      title: "Signature Saved",
+      description: "Your signature has been saved to the library"
+    });
+  };
+
+  const saveUploadedSignature = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const newSignature = {
+        id: Date.now().toString(),
+        name: file.name,
+        data: e.target?.result as string,
+        type: 'upload' as const
+      };
+      
+      setSavedSignatures(prev => [...prev, newSignature]);
+      toast({
+        title: "Signature Saved",
+        description: "Your uploaded signature has been saved to the library"
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const loadSavedSignature = (signature: typeof savedSignatures[0]) => {
+    if (signature.type === 'draw') {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      
+      const img = new Image();
+      img.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+      };
+      img.src = signature.data;
+    } else {
+      setCapturedSignature(signature.data);
+      setSignatureMethod('upload');
+    }
+    
+    toast({
+      title: "Signature Loaded",
+      description: `${signature.name} has been loaded`
+    });
   };
 
   const startCamera = async () => {
@@ -593,8 +698,9 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
           {/* Right Column - Signature Interaction & CTA */}
           <div className="pl-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <TabsList className="grid w-full grid-cols-3 mb-4">
+              <TabsList className="grid w-full grid-cols-4 mb-4">
                 <TabsTrigger value="signature">Sign</TabsTrigger>
+                <TabsTrigger value="library">Library</TabsTrigger>
                 <TabsTrigger value="verification">Verify</TabsTrigger>
                 <TabsTrigger value="complete">Complete</TabsTrigger>
               </TabsList>
@@ -604,22 +710,9 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
               <TabsContent value="signature" className="flex-1 overflow-y-auto">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Signature className="w-5 h-5" />
-                    Digital Signature Methods
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant={aiPlacementEnabled ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setAiPlacementEnabled(!aiPlacementEnabled)}
-                      className="text-xs"
-                    >
-                      <Bot className="w-3 h-3 mr-1" />
-                      AI Placement
-                    </Button>
-                  </div>
+                <CardTitle className="flex items-center gap-2">
+                  <Signature className="w-5 h-5" />
+                  Digital Signature Methods
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -654,18 +747,60 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
 
                 {signatureMethod === 'draw' && (
                   <div className="space-y-4">
+                    {/* Drawing Controls */}
+                    <div className="flex flex-wrap items-center gap-4 p-3 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-sm">Size:</Label>
+                        <div className="flex gap-1">
+                          {[1, 2, 4, 6].map(size => (
+                            <Button
+                              key={size}
+                              variant={brushSize === size ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setBrushSize(size)}
+                              className="text-xs px-2 py-1 h-7"
+                            >
+                              {size}px
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Label className="text-sm">Color:</Label>
+                        <input
+                          type="color"
+                          value={brushColor}
+                          onChange={(e) => setBrushColor(e.target.value)}
+                          className="w-8 h-8 rounded border cursor-pointer"
+                        />
+                      </div>
+                    </div>
+
                     <div className="border rounded-lg p-4">
-                      <Label className="mb-2 block">Draw Your Signature</Label>
+                      <Label className="mb-2 block">Touch and Hold to Sign</Label>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Press and hold while drawing your signature smoothly
+                      </p>
                       <canvas
                         ref={canvasRef}
                         width={400}
                         height={150}
-                        className="border border-dashed border-gray-300 rounded cursor-crosshair"
-                        onMouseMove={handleDrawSignature}
+                        className="border border-dashed border-gray-300 rounded cursor-crosshair touch-none"
+                        onMouseDown={handleMouseDown}
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={handleMouseUp}
+                        onMouseLeave={handleMouseUp}
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
                       />
                       <div className="flex gap-2 mt-2">
                         <Button size="sm" variant="outline" onClick={clearSignature}>
                           Clear
+                        </Button>
+                        <Button size="sm" onClick={saveDrawnSignature}>
+                          Save to Library
                         </Button>
                       </div>
                     </div>
@@ -750,10 +885,22 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
                       <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
                       <p className="text-sm text-gray-600">Upload your signature image</p>
-                      <Input type="file" accept="image/*" className="mt-2" />
+                      <Input 
+                        type="file" 
+                        accept="image/*" 
+                        className="mt-2" 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            saveUploadedSignature(file);
+                          }
+                        }}
+                      />
                     </div>
                   </div>
                 )}
+                
+
                 
 
                 
@@ -762,6 +909,70 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
                 </div>
               </CardContent>
             </Card>
+              </TabsContent>
+
+              <TabsContent value="library" className="flex-1 overflow-y-auto">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Settings className="w-5 h-5" />
+                      Signature Library
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {savedSignatures.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Signature className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                        <p className="text-sm text-muted-foreground mb-2">
+                          No saved signatures yet
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Create signatures in the Sign tab to save them here
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-4">
+                        {savedSignatures.map((sig) => (
+                          <div key={sig.id} className="border rounded-lg p-4">
+                            <div className="aspect-[2/1] bg-gray-50 rounded mb-3 overflow-hidden">
+                              <img
+                                src={sig.data}
+                                alt={sig.name}
+                                className="w-full h-full object-contain"
+                              />
+                            </div>
+                            <p className="text-sm font-medium truncate mb-3">{sig.name}</p>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                className="flex-1"
+                                onClick={() => {
+                                  loadSavedSignature(sig);
+                                  setActiveTab('signature');
+                                }}
+                              >
+                                Use This
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setSavedSignatures(prev => prev.filter(s => s.id !== sig.id));
+                                  toast({
+                                    title: "Signature Deleted",
+                                    description: `${sig.name} has been removed`
+                                  });
+                                }}
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="verification" className="flex-1 overflow-y-auto">
@@ -848,10 +1059,7 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
                     </div>
                     <h3 className="text-lg font-semibold text-green-800">Document Signed Successfully!</h3>
                     <p className="text-sm text-muted-foreground">
-                      {aiPlacementEnabled && selectedZone ? 
-                        `AI-optimized signature applied with ${Math.round(detectedSignatureZones.find(z => z.id === selectedZone)?.confidence * 100 || 0)}% placement confidence` :
-                        'Your signature has been applied and the document has been forwarded to the next recipient.'
-                      }
+                      Your signature has been applied and the document has been forwarded to the next recipient.
                     </p>
                     <div className="flex gap-2 justify-center">
                       <Button variant="outline" size="sm">
