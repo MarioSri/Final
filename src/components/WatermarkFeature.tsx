@@ -37,6 +37,7 @@ interface WatermarkFeatureProps {
     role: string;
   };
   files?: File[];  // NEW - Array of uploaded files
+  onFilesUpdate?: (updatedFiles: File[]) => void;  // NEW - Callback to update files
 }
 
 type TabType = 'basic' | 'style' | 'preview' | 'generate';
@@ -57,7 +58,8 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
   onClose,
   document,
   user,
-  files = []  // NEW - Default to empty array
+  files = [],  // NEW - Default to empty array
+  onFilesUpdate  // NEW - Callback to update files
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('basic');
   const [watermarkText, setWatermarkText] = useState('CONFIDENTIAL');
@@ -88,12 +90,23 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
   const [spacingY, setSpacingY] = useState(200);
   const [diagonalAngle, setDiagonalAngle] = useState(-45);
   
+  // State for undo functionality
+  const [originalFiles, setOriginalFiles] = useState<File[]>([]);
+  const [hasAppliedWatermark, setHasAppliedWatermark] = useState(false);
+  
   const { toast } = useToast();
 
   // Debug: Log files prop
   useEffect(() => {
     console.log('WatermarkFeature - files prop:', files);
     console.log('WatermarkFeature - files length:', files?.length);
+  }, [files]);
+
+  // Store original files for undo functionality
+  useEffect(() => {
+    if (files && files.length > 0 && originalFiles.length === 0) {
+      setOriginalFiles([...files]);
+    }
   }, [files]);
 
   // Set initial viewing file when files prop changes
@@ -573,6 +586,7 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
   };
 
   // Apply watermark to canvas (for PDF pages and images)
+  // This function draws the watermark directly on the canvas WITHOUT using the preview overlay
   const applyWatermarkToCanvas = async (sourceCanvas: HTMLCanvasElement): Promise<string> => {
     const canvas = window.document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -581,10 +595,10 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
     canvas.width = sourceCanvas.width;
     canvas.height = sourceCanvas.height;
 
-    // Draw original content
+    // Draw original content ONLY (no watermark overlay from preview)
     ctx.drawImage(sourceCanvas, 0, 0);
 
-    // Apply watermark
+    // Apply watermark directly to canvas
     ctx.save();
     ctx.globalAlpha = opacity[0];
 
@@ -735,6 +749,19 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
     }
   };
 
+  // Helper function to convert data URL to File
+  const dataURLtoFile = (dataUrl: string, filename: string): File => {
+    const arr = dataUrl.split(',');
+    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  };
+
   const handleSubmit = async () => {
     if (!viewingFile) {
       toast({
@@ -769,24 +796,30 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
     });
 
     try {
-      let watermarkedData: string[] | string | null = null;
+      let watermarkedFile: File | null = null;
 
       if (fileContent?.type === 'pdf') {
-        watermarkedData = await applyWatermarkToPDF();
-        if (watermarkedData) {
-          downloadWatermarkedFile(watermarkedData, viewingFile.name);
+        const watermarkedData = await applyWatermarkToPDF();
+        if (watermarkedData && watermarkedData.length > 0) {
+          // For PDFs, we'll create a single image file from the first page
+          // In a real implementation, you'd want to merge all pages back into a PDF
+          const newFileName = `watermarked_${viewingFile.name.replace('.pdf', '.png')}`;
+          watermarkedFile = dataURLtoFile(watermarkedData[0], newFileName);
+          
           toast({
             title: "Watermark Applied Successfully!",
-            description: `Downloaded ${watermarkedData.length} watermarked pages.`,
+            description: `Watermark applied to ${watermarkedData.length} pages. File updated in system.`,
           });
         }
       } else if (fileContent?.type === 'image') {
-        watermarkedData = await applyWatermarkToImage();
+        const watermarkedData = await applyWatermarkToImage();
         if (watermarkedData) {
-          downloadWatermarkedFile([watermarkedData], viewingFile.name);
+          const newFileName = `watermarked_${viewingFile.name}`;
+          watermarkedFile = dataURLtoFile(watermarkedData, newFileName);
+          
           toast({
             title: "Watermark Applied Successfully!",
-            description: "Downloaded watermarked image.",
+            description: "Watermark applied to image. File updated in system.",
           });
         }
       } else {
@@ -813,9 +846,27 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
           title: "Watermark Settings Saved",
           description: `Watermark configuration saved for ${viewingFile.name}. Full embedding available for PDF and images.`,
         });
+        
+        // Close modal after saving settings
+        onClose();
+        return;
       }
 
-      if (!watermarkedData && fileContent?.type !== 'word' && fileContent?.type !== 'excel') {
+      // Update the files array with the watermarked file
+      if (watermarkedFile && onFilesUpdate) {
+        const updatedFiles = [...files];
+        updatedFiles[currentFileIndex] = watermarkedFile;
+        onFilesUpdate(updatedFiles);
+        
+        // Mark that watermark has been applied
+        setHasAppliedWatermark(true);
+        
+        // Close the modal and return to previous screen
+        // Do NOT reload the watermarked file into the viewer to prevent double watermarking
+        setTimeout(() => {
+          onClose();
+        }, 500);
+      } else if (!watermarkedFile) {
         toast({
           title: "Error",
           description: "Failed to apply watermark. Please try again.",
@@ -828,6 +879,26 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
       toast({
         title: "Error",
         description: "An error occurred while applying the watermark.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Handle undo - revert to original files
+  const handleUndo = () => {
+    if (originalFiles.length > 0 && onFilesUpdate) {
+      onFilesUpdate([...originalFiles]);
+      setViewingFile(originalFiles[currentFileIndex] || originalFiles[0]);
+      setHasAppliedWatermark(false);
+      
+      toast({
+        title: "Watermark Removed",
+        description: "Reverted to original file without watermark.",
+      });
+    } else {
+      toast({
+        title: "Nothing to Undo",
+        description: "No previous version available.",
         variant: "destructive"
       });
     }
@@ -1512,11 +1583,12 @@ export const WatermarkFeature: React.FC<WatermarkFeatureProps> = ({
                     </Button>
                     <Button
                       variant="outline"
-                      onClick={onClose}
+                      onClick={handleUndo}
                       className="shadow-sm flex-shrink-0"
-                      title="Cancel"
+                      title="Undo - Revert to original file"
+                      disabled={!hasAppliedWatermark}
                     >
-                      <X className="h-5 w-5" />
+                      <RotateCw className="h-5 w-5" />
                     </Button>
                   </div>
                 </CardContent>

@@ -112,12 +112,6 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
   const handleDocumentTypeChange = (typeId: string, checked: boolean) => {
     if (checked) {
       setDocumentTypes([...documentTypes, typeId]);
-      // Auto-trigger watermark feature for circular documents
-      if (typeId === 'circular' && uploadedFiles.length > 0) {
-        setTimeout(() => {
-          setShowWatermarkModal(true);
-        }, 500);
-      }
     } else {
       setDocumentTypes(documentTypes.filter(id => id !== typeId));
     }
@@ -126,13 +120,6 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     setUploadedFiles([...uploadedFiles, ...files]);
-    
-    // Auto-trigger watermark feature if circular is already selected
-    if (documentTypes.includes('circular') && files.length > 0) {
-      setTimeout(() => {
-        setShowWatermarkModal(true);
-      }, 500);
-    }
   };
 
   const removeFile = (index: number) => {
@@ -952,22 +939,8 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
                       Cancel
                     </Button>
                     <Button
-onClick={async () => {
-                        // Check if circular is selected and watermark is needed
-                        if (documentTypes.includes('circular')) {
-                          const submissionData = {
-                            workflowName,
-                            documentTitle,
-                            documentTypes,
-                            uploadedFiles,
-                            selectedRecipients,
-                            documentDescription,
-                            documentPriority
-                          };
-                          setPendingSubmissionData(submissionData);
-                          setShowWatermarkModal(true);
-                          return;
-                        }
+                      onClick={async () => {
+                        // Submit directly without opening watermark modal
                         await handleSaveWorkflow();
                       }}
                       variant="default"
@@ -1260,9 +1233,14 @@ onClick={async () => {
       {showWatermarkModal && user && (
         <WatermarkFeature
           isOpen={showWatermarkModal}
-          onClose={() => {
+          onClose={async () => {
             setShowWatermarkModal(false);
-            setPendingSubmissionData(null);
+            
+            // If there's pending submission data, proceed with the submission
+            if (pendingSubmissionData) {
+              setPendingSubmissionData(null);
+              await handleSaveWorkflow();
+            }
           }}
           document={{
             id: `bypass-${Date.now()}`,
@@ -1277,6 +1255,13 @@ onClick={async () => {
             role: user.role || 'Employee'
           }}
           files={uploadedFiles}
+          onFilesUpdate={(updatedFiles) => {
+            setUploadedFiles(updatedFiles);
+            toast({
+              title: "Files Updated",
+              description: "Watermark has been applied to your files.",
+            });
+          }}
         />
       )}
 

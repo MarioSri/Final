@@ -73,12 +73,6 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
   const handleDocumentTypeChange = (typeId: string, checked: boolean) => {
     if (checked) {
       setDocumentTypes([...documentTypes, typeId]);
-      // Auto-trigger watermark feature for circular documents
-      if (typeId === 'circular' && uploadedFiles.length > 0) {
-        setTimeout(() => {
-          setShowWatermarkModal(true);
-        }, 500);
-      }
     } else {
       setDocumentTypes(documentTypes.filter(id => id !== typeId));
     }
@@ -87,13 +81,6 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     setUploadedFiles([...uploadedFiles, ...files]);
-    
-    // Auto-trigger watermark feature if circular is already selected
-    if (documentTypes.includes('circular') && files.length > 0) {
-      setTimeout(() => {
-        setShowWatermarkModal(true);
-      }, 500);
-    }
   };
 
   const removeFile = (index: number) => {
@@ -138,14 +125,7 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
       assignments: documentAssignments
     };
     
-    // Check if circular is selected and watermark is needed
-    if (documentTypes.includes('circular')) {
-      setPendingSubmissionData(data);
-      setShowWatermarkModal(true);
-      return;
-    }
-    
-    // Regular submission for non-circular documents
+    // Submit directly without opening watermark modal
     setIsUploading(true);
     
     setTimeout(() => {
@@ -520,7 +500,11 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
           isOpen={showWatermarkModal}
           onClose={() => {
             setShowWatermarkModal(false);
-            setPendingSubmissionData(null);
+            
+            // If there's pending submission data, proceed with the submission
+            if (pendingSubmissionData) {
+              handleWatermarkComplete();
+            }
           }}
           document={{
             id: `temp-${Date.now()}`,
@@ -535,6 +519,13 @@ export function DocumentUploader({ userRole, onSubmit }: DocumentUploaderProps) 
             role: user.role || 'Employee'
           }}
           files={uploadedFiles}
+          onFilesUpdate={(updatedFiles) => {
+            setUploadedFiles(updatedFiles);
+            toast({
+              title: "Files Updated",
+              description: "Watermark has been applied to your files.",
+            });
+          }}
         />
       )}
 

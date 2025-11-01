@@ -183,12 +183,6 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
   const handleDocumentTypeChange = (typeId: string, checked: boolean) => {
     if (checked) {
       setEmergencyData({...emergencyData, documentTypes: [...emergencyData.documentTypes, typeId]});
-      // Auto-trigger watermark feature for circular documents
-      if (typeId === 'circular' && emergencyData.uploadedFiles.length > 0) {
-        setTimeout(() => {
-          setShowWatermarkModal(true);
-        }, 500);
-      }
     } else {
       setEmergencyData({...emergencyData, documentTypes: emergencyData.documentTypes.filter(id => id !== typeId)});
     }
@@ -197,13 +191,6 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     setEmergencyData({...emergencyData, uploadedFiles: [...emergencyData.uploadedFiles, ...files]});
-    
-    // Auto-trigger watermark feature if circular is already selected
-    if (emergencyData.documentTypes.includes('circular') && files.length > 0) {
-      setTimeout(() => {
-        setShowWatermarkModal(true);
-      }, 500);
-    }
   };
 
   const removeFile = (index: number) => {
@@ -379,20 +366,7 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
       return;
     }
 
-    // Check if circular is selected and watermark is needed
-    if (emergencyData.documentTypes.includes('circular')) {
-      const submissionData = {
-        title: emergencyData.title,
-        description: emergencyData.description,
-        urgencyLevel: emergencyData.urgencyLevel,
-        recipients: recipientsToSend
-      };
-      setPendingSubmissionData(submissionData);
-      setShowWatermarkModal(true);
-      return;
-    }
-    
-    // Create emergency document
+    // Create emergency document directly without opening watermark modal
     const emergencyDocument = {
       id: Date.now().toString(),
       title: emergencyData.title,
@@ -1607,7 +1581,11 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
           isOpen={showWatermarkModal}
           onClose={() => {
             setShowWatermarkModal(false);
-            setPendingSubmissionData(null);
+            
+            // If there's pending submission data, proceed with the submission
+            if (pendingSubmissionData) {
+              handleWatermarkComplete();
+            }
           }}
           document={{
             id: `emergency-${Date.now()}`,
@@ -1622,6 +1600,13 @@ export const EmergencyWorkflowInterface: React.FC<EmergencyWorkflowInterfaceProp
             role: user?.role || userRole
           }}
           files={emergencyData.uploadedFiles}
+          onFilesUpdate={(updatedFiles) => {
+            setEmergencyData({ ...emergencyData, uploadedFiles: updatedFiles });
+            toast({
+              title: "Files Updated",
+              description: "Watermark has been applied to your files.",
+            });
+          }}
         />
       )}
 
