@@ -7,13 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle2, XCircle, Clock, FileText, User, Calendar, MessageSquare, Video, Eye, ChevronRight, CircleAlert, Undo2, SquarePen, AlertTriangle, Zap, Sparkles, Loader2, X, Share2 } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, FileText, User, Calendar, MessageSquare, Video, Eye, ChevronRight, CircleAlert, Undo2, SquarePen, AlertTriangle, Zap, Share2 } from "lucide-react";
 import { DocumensoIntegration } from "@/components/DocumensoIntegration";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const Approvals = () => {
   const { user, logout } = useAuth();
@@ -30,9 +29,6 @@ const Approvals = () => {
   const [showDocumentViewer, setShowDocumentViewer] = useState(false);
   const [viewingDocument, setViewingDocument] = useState<any>(null);
   const [viewingFile, setViewingFile] = useState<File | null>(null);
-  const [aiSummary, setAiSummary] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
-  const [animatedText, setAnimatedText] = useState('');
   
   useEffect(() => {
     const savedInputs = JSON.parse(localStorage.getItem('comment-inputs') || '{}');
@@ -54,6 +50,21 @@ const Approvals = () => {
       localStorage.setItem('shared-comments', JSON.stringify(savedSharedComments));
     }
     setSharedComments(savedSharedComments);
+    
+    // Listen for document management and bypass approval cards
+    const handleDocumentApprovalCreated = () => {
+      // Force re-render to show new approval cards
+      setComments(prev => ({ ...prev }));
+      // Reload pending approvals
+      const stored = JSON.parse(localStorage.getItem('pending-approvals') || '[]');
+      setPendingApprovals(stored);
+    };
+    
+    window.addEventListener('document-approval-created', handleDocumentApprovalCreated);
+    
+    return () => {
+      window.removeEventListener('document-approval-created', handleDocumentApprovalCreated);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -263,70 +274,33 @@ const Approvals = () => {
     return new File([blob], fileName, { type: 'text/html' });
   };
 
-  // Generate AI summary
-  const generateAISummary = async (doc: any) => {
-    setAiLoading(true);
-    setAiSummary('');
-    setAnimatedText('');
 
-    try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyDC41PALf1ZZ4IxRBwUcQFK7p3lw93SIyE`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `Please provide a concise summary of this document:
 
-Title: ${doc.title}
-Type: ${doc.type}
-Submitted by: ${doc.submitter || doc.submittedBy}
-Date: ${doc.submittedDate || doc.date}
-Description: ${doc.description}
-
-Generate a professional summary highlighting key points, objectives, and any action items. Keep it under 150 words.`
-            }]
-          }]
-        })
-      });
-
-      const data = await response.json();
-      const generatedSummary = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Unable to generate summary at this time.';
-      
-      setAiSummary(generatedSummary);
-      animateText(generatedSummary);
-    } catch (error) {
-      const fallbackSummary = `This ${doc.type.toLowerCase()} titled "${doc.title}" was submitted by ${doc.submitter || doc.submittedBy} on ${doc.submittedDate || doc.date}. ${doc.description} The document requires review and appropriate action from the relevant authorities.`;
-      setAiSummary(fallbackSummary);
-      animateText(fallbackSummary);
-    } finally {
-      setAiLoading(false);
-    }
-  };
-
-  const animateText = (text: string) => {
-    const words = text.split(' ');
-    let currentIndex = 0;
-
-    const interval = setInterval(() => {
-      if (currentIndex < words.length) {
-        setAnimatedText(prev => prev + (currentIndex === 0 ? '' : ' ') + words[currentIndex]);
-        currentIndex++;
-      } else {
-        clearInterval(interval);
-      }
-    }, 100);
-  };
-
-  // Handle view document with AI summarizer
+  // Handle view document with FileViewer
   const handleViewDocument = (doc: any) => {
     const file = createDocumentFile(doc);
     setViewingDocument(doc);
     setViewingFile(file);
     setShowDocumentViewer(true);
-    generateAISummary(doc);
+  };
+
+  // Handle Approve & Sign with file routing
+  const handleApproveSign = (doc: any) => {
+    // Create or retrieve file for the document
+    const file = createDocumentFile(doc);
+    
+    // Set document metadata for Documenso
+    setDocumensoDocument({
+      id: doc.id,
+      title: doc.title,
+      content: doc.description,
+      type: doc.type,
+      file: file  // Store file reference
+    });
+    
+    // Store the file for Documenso to use
+    setViewingFile(file);
+    setShowDocumenso(true);
   };
 
   if (!user) {
@@ -334,6 +308,12 @@ Generate a professional summary highlighting key points, objectives, and any act
   }
 
   const [pendingApprovals, setPendingApprovals] = useState<any[]>([]);
+  
+  // Load pending approvals on component mount
+  useEffect(() => {
+    const stored = JSON.parse(localStorage.getItem('pending-approvals') || '[]');
+    setPendingApprovals(stored);
+  }, []);
   
   const handleAcceptDocument = (docId: string) => {
     // Find the document in pending approvals
@@ -884,15 +864,7 @@ Generate a professional summary highlighting key points, objectives, and any act
                             <Button 
                               variant="outline" 
                               size="sm"
-                              onClick={() => {
-                                setDocumensoDocument({
-                                  id: doc.id,
-                                  title: doc.title,
-                                  content: doc.description,
-                                  type: doc.type
-                                });
-                                setShowDocumenso(true);
-                              }}
+                              onClick={() => handleApproveSign(doc)}
                             >
                               <CheckCircle2 className="h-4 w-4 mr-2" />
                               Approve & Sign
@@ -1908,85 +1880,16 @@ Generate a professional summary highlighting key points, objectives, and any act
               email: user?.email || 'user@university.edu',
               role: user?.role || 'Employee'
             }}
+            file={viewingFile || undefined}
           />
         )}
 
-        {/* Combined Document Viewer with AI Summarizer */}
-        <Dialog open={showDocumentViewer} onOpenChange={setShowDocumentViewer}>
-          <DialogContent className="max-w-[90vw] max-h-[90vh] overflow-hidden p-0">
-            <div className="grid grid-cols-[70%_30%] h-[85vh]">
-              {/* Left Panel: FileViewer */}
-              <div className="border-r overflow-hidden flex flex-col">
-                <DialogHeader className="p-6 pb-4 border-b">
-                  <DialogTitle className="flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-blue-600" />
-                    Document Preview
-                  </DialogTitle>
-                </DialogHeader>
-                
-                <div className="flex-1 overflow-auto p-6">
-                  {viewingFile && (
-                    <div className="h-full">
-                      <iframe
-                        src={URL.createObjectURL(viewingFile)}
-                        className="w-full h-full border rounded-lg"
-                        title="Document Preview"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Right Panel: AI Document Summarizer */}
-              <div className="overflow-auto">
-                <DialogHeader className="p-6 pb-4 border-b">
-                  <DialogTitle className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                    <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl">
-                      <Sparkles className="w-5 h-5 text-white" />
-                    </div>
-                    AI Document Summarizer
-                  </DialogTitle>
-                </DialogHeader>
-
-                <div className="p-6 space-y-6">
-                  {/* AI Summary */}
-                  <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-6 min-h-[200px]">
-                    <h3 className="font-semibold text-base text-gray-800 mb-4 flex items-center gap-2">
-                      <Sparkles className="w-5 h-5 text-blue-500" />
-                      AI-Generated Summary
-                    </h3>
-                    
-                    {aiLoading ? (
-                      <div className="flex items-center justify-center py-12">
-                        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                        <span className="ml-3 text-gray-600">Generating summary...</span>
-                      </div>
-                    ) : (
-                      <div className="prose prose-sm max-w-none">
-                        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-sm">
-                          {animatedText}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Regenerate Button */}
-                  <div className="flex justify-end">
-                    <Button 
-                      onClick={() => viewingDocument && generateAISummary(viewingDocument)} 
-                      disabled={aiLoading}
-                      size="sm"
-                      className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-                    >
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Regenerate Summary
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        {/* FileViewer Modal */}
+        <FileViewer
+          file={viewingFile}
+          open={showDocumentViewer}
+          onOpenChange={setShowDocumentViewer}
+        />
       </div>
     </DashboardLayout>
   );

@@ -137,13 +137,17 @@ const Documents = () => {
       status: 'pending',
       priority: data.priority,
       description: data.description,
-      recipients: data.recipients.map((id: string) => getRecipientName(id))
+      recipients: data.recipients.map((id: string) => getRecipientName(id)),
+      files: serializedFiles
     };
     
     // Save to localStorage for approvals
     const existingApprovals = JSON.parse(localStorage.getItem('pending-approvals') || '[]');
     existingApprovals.unshift(approvalCard);
     localStorage.setItem('pending-approvals', JSON.stringify(existingApprovals));
+    
+    // Dispatch event for real-time updates
+    window.dispatchEvent(new CustomEvent('document-approval-created'));
     
     // Create channel for document collaboration
     const channelName = `${data.title.substring(0, 30)}${data.title.length > 30 ? '...' : ''}`;

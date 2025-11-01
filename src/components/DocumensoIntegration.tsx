@@ -8,12 +8,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { CheckCircle2, FileText, PenTool, Shield, User, Calendar, Download, Upload, Eye, Settings, Signature, Lock, Globe, Mail, Phone, Camera, Scan, Bot, Target, Zap, MapPin, Search } from 'lucide-react';
+import { CheckCircle2, FileText, PenTool, Shield, User, Calendar, Download, Upload, Eye, Settings, Signature, Lock, Globe, Mail, Phone, Camera, Scan, Bot, Target, Zap, MapPin, Search, Loader2, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { aiSignaturePlacement, SignatureZone, DocumentAnalysis } from '@/services/aiSignaturePlacement';
 import { SignaturePlacementPreview } from '@/components/SignaturePlacementPreview';
 import { useDocumensoAPI } from '@/hooks/useDocumensoAPI';
 import { FileViewer } from '@/components/FileViewer';
+import * as pdfjsLib from 'pdfjs-dist';
+import mammoth from 'mammoth';
+import * as XLSX from 'xlsx';
+
+// Set up PDF.js worker
+if (typeof window !== 'undefined') {
+  const pdfjsVersion = pdfjsLib.version || '5.4.296';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsVersion}/build/pdf.worker.min.mjs`;
+}
 
 interface DocumensoIntegrationProps {
   isOpen: boolean;
@@ -57,6 +66,11 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showFileViewer, setShowFileViewer] = useState(false);
+  const [fileContent, setFileContent] = useState<any>(null);
+  const [fileLoading, setFileLoading] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [fileZoom, setFileZoom] = useState(100);
+  const [fileRotation, setFileRotation] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
@@ -67,10 +81,99 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
     webhookUrl: 'https://iaoms.edu/webhooks/documenso'
   });
 
+  // Load file content when file prop changes
+  React.useEffect(() => {
+    if (!file || !isOpen) {
+      setFileContent(null);
+      setFileError(null);
+      return;
+    }
+
+    const loadFile = async () => {
+      setFileLoading(true);
+      setFileError(null);
+      
+      try {
+        const fileType = file.type;
+        const fileName = file.name.toLowerCase();
+
+        if (fileType.includes('pdf') || fileName.endsWith('.pdf')) {
+          await loadPDF(file);
+        } else if (fileType.includes('image')) {
+          await loadImageFile(file);
+        } else if (fileType.includes('word') || fileName.endsWith('.docx') || fileName.endsWith('.doc')) {
+          await loadWord(file);
+        } else if (fileType.includes('sheet') || fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+          await loadExcel(file);
+        } else if (fileName.endsWith('.html')) {
+          // Handle HTML files
+          const text = await file.text();
+          setFileContent({ type: 'word', html: text });
+        } else {
+          setFileContent({ type: 'unsupported' });
+        }
+      } catch (error) {
+        console.error('Error loading file:', error);
+        setFileError(error instanceof Error ? error.message : 'Failed to load file');
+      } finally {
+        setFileLoading(false);
+      }
+    };
+
+    loadFile();
+  }, [file, isOpen]);
+
   const handleViewFile = () => {
     if (file) {
       setShowFileViewer(true);
     }
+  };
+
+  // Load PDF file
+  const loadPDF = async (file: File) => {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    
+    const pageCanvases: string[] = [];
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 1.5 });
+      const canvasEl = window.document.createElement('canvas');
+      const context = canvasEl.getContext('2d');
+      
+      if (!context) throw new Error('Could not get canvas context');
+      
+      canvasEl.height = viewport.height;
+      canvasEl.width = viewport.width;
+      
+      await page.render({ canvasContext: context, viewport: viewport } as any).promise;
+      pageCanvases.push(canvasEl.toDataURL());
+    }
+
+    setFileContent({ type: 'pdf', pageCanvases, totalPages: pdf.numPages });
+  };
+
+  // Load Word document
+  const loadWord = async (file: File) => {
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await mammoth.convertToHtml({ arrayBuffer });
+    setFileContent({ type: 'word', html: result.value });
+  };
+
+  // Load Excel file
+  const loadExcel = async (file: File) => {
+    const arrayBuffer = await file.arrayBuffer();
+    const workbook = XLSX.read(arrayBuffer);
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+    const html = XLSX.utils.sheet_to_html(worksheet);
+    setFileContent({ type: 'excel', html });
+  };
+
+  // Load image file
+  const loadImageFile = async (file: File) => {
+    const url = URL.createObjectURL(file);
+    setFileContent({ type: 'image', url });
   };
 
   const analyzeDocumentForSignatures = async () => {
@@ -324,74 +427,152 @@ export const DocumensoIntegration: React.FC<DocumensoIntegrationProps> = ({
                   Document Preview
                 </CardTitle>
               </CardHeader>
-              <CardContent className="flex-1 overflow-hidden p-6">
+              <CardContent className="flex-1 flex flex-col overflow-hidden p-0">
                 {file ? (
-                  <div className="h-full flex flex-col space-y-4">
-                    {/* File Info Card */}
-                    <div className="border rounded-lg p-4 bg-blue-50 flex-shrink-0">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <FileText className="w-8 h-8 text-blue-600 flex-shrink-0" />
-                          <div className="min-w-0 flex-1">
-                            <p className="font-medium text-sm truncate">{file.name}</p>
-                            <p className="text-xs text-gray-600">
-                              {(file.size / 1024 / 1024).toFixed(2)} MB
-                            </p>
+                  <div className="h-full flex flex-col">
+
+
+                    {/* Embedded Document Preview - Enhanced Scrolling with Increased Height */}
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden border-t bg-gray-50 scroll-smooth" style={{ maxHeight: 'calc(80vh - 180px)', minHeight: '500px' }}>
+                      {fileLoading ? (
+                        <div className="flex items-center justify-center h-full p-8 min-h-[400px]">
+                          <div className="text-center">
+                            <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-blue-500" />
+                            <p className="text-sm text-gray-600">Loading document...</p>
                           </div>
                         </div>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={handleViewFile}
-                          className="flex-shrink-0"
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          View Full
-                        </Button>
-                      </div>
-                    </div>
+                      ) : fileError ? (
+                        <div className="flex items-center justify-center h-full p-8 min-h-[400px]">
+                          <div className="text-center">
+                            <FileText className="h-12 w-12 mx-auto mb-4 text-red-500" />
+                            <p className="text-sm font-medium text-red-600 mb-2">Error Loading File</p>
+                            <p className="text-xs text-gray-500 break-words">{fileError}</p>
+                          </div>
+                        </div>
+                      ) : fileContent ? (
+                        <div className="p-4 pb-8 w-full">
+                          {/* Zoom and Rotation Controls */}
+                          <div className="flex items-center justify-center gap-2 mb-4 sticky top-0 bg-white/95 backdrop-blur-sm p-2 rounded-lg shadow-sm z-10">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setFileZoom(Math.max(50, fileZoom - 10))}
+                              disabled={fileZoom <= 50}
+                              title="Zoom Out"
+                            >
+                              <ZoomOut className="h-4 w-4" />
+                            </Button>
+                            <Badge variant="secondary" className="px-3 font-mono">{fileZoom}%</Badge>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setFileZoom(Math.min(200, fileZoom + 10))}
+                              disabled={fileZoom >= 200}
+                              title="Zoom In"
+                            >
+                              <ZoomIn className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setFileRotation((fileRotation + 90) % 360)}
+                              title="Rotate 90°"
+                            >
+                              <RotateCw className="h-4 w-4" />
+                            </Button>
+                            {fileContent.type === 'pdf' && fileContent.totalPages && (
+                              <Badge variant="outline">{fileContent.totalPages} pages</Badge>
+                            )}
+                          </div>
 
-                    {/* Document Information */}
-                    <div className="border rounded-lg p-4 flex-shrink-0">
-                      <h4 className="text-sm font-medium mb-3">Document Information</h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Title:</span>
-                          <span className="font-medium">{document.title}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Type:</span>
-                          <span className="font-medium">{document.type}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Status:</span>
-                          <Badge variant="outline">Ready for Signing</Badge>
-                        </div>
-                      </div>
-                    </div>
+                          {/* File Content Rendering with Overflow Protection */}
+                          <div className="space-y-4 pb-4 w-full">
+                            {fileContent.type === 'pdf' && fileContent.pageCanvases?.map((pageDataUrl: string, index: number) => (
+                              <div key={index} className="relative mb-6 overflow-hidden">
+                                <img
+                                  src={pageDataUrl}
+                                  alt={`Page ${index + 1}`}
+                                  style={{
+                                    transform: `scale(${fileZoom / 100}) rotate(${fileRotation}deg)`,
+                                    transformOrigin: 'center',
+                                    transition: 'transform 0.3s ease',
+                                    maxWidth: '100%',
+                                    height: 'auto',
+                                  }}
+                                  className="border shadow-lg rounded mx-auto block"
+                                />
+                                <Badge variant="secondary" className="absolute top-2 right-2 bg-background/95 backdrop-blur z-20">
+                                  Page {index + 1} of {fileContent.totalPages}
+                                </Badge>
+                              </div>
+                            ))}
 
-                    {/* Security Notice */}
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex-shrink-0">
-                      <div className="flex items-start gap-3">
-                        <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-                        <div className="text-sm">
-                          <p className="font-medium text-blue-900 mb-1">Secure Signing</p>
-                          <p className="text-blue-700 text-xs">
-                            This document will be signed using Documenso's enterprise-grade digital signature platform with full legal validity.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                            {fileContent.type === 'word' && (
+                              <div className="w-full overflow-hidden relative">
+                                <div
+                                  className="prose prose-sm max-w-none p-6 bg-white rounded shadow-sm min-h-[300px] break-words"
+                                  style={{
+                                    transform: `scale(${fileZoom / 100}) rotate(${fileRotation}deg)`,
+                                    transformOrigin: 'top center',
+                                    transition: 'transform 0.3s ease',
+                                    wordWrap: 'break-word',
+                                    overflowWrap: 'break-word',
+                                    maxWidth: '100%',
+                                  }}
+                                  dangerouslySetInnerHTML={{ __html: fileContent.html }}
+                                />
+                              </div>
+                            )}
 
-                    {/* Preview Message */}
-                    <div className="flex-1 flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg">
-                      <div className="text-center p-6">
-                        <Eye className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                        <p className="text-sm text-gray-600 mb-2">Click "View Full" to preview document</p>
-                        <p className="text-xs text-gray-500">
-                          Full document viewer with zoom and rotation controls
-                        </p>
-                      </div>
+                            {fileContent.type === 'excel' && (
+                              <div className="w-full overflow-hidden relative">
+                                <div
+                                  className="overflow-auto bg-white rounded shadow-sm p-4 min-h-[300px] max-h-[600px]"
+                                  style={{
+                                    transform: `scale(${fileZoom / 100}) rotate(${fileRotation}deg)`,
+                                    transformOrigin: 'top left',
+                                    transition: 'transform 0.3s ease',
+                                    maxWidth: '100%',
+                                  }}
+                                  dangerouslySetInnerHTML={{ __html: fileContent.html }}
+                                />
+                              </div>
+                            )}
+
+                            {fileContent.type === 'image' && (
+                              <div className="flex justify-center">
+                                <img
+                                  src={fileContent.url}
+                                  alt={file.name}
+                                  style={{
+                                    maxWidth: '100%',
+                                    height: 'auto',
+                                    transform: `scale(${fileZoom / 100}) rotate(${fileRotation}deg)`,
+                                    transition: 'transform 0.3s ease',
+                                  }}
+                                  className="border shadow-lg rounded"
+                                />
+                              </div>
+                            )}
+
+                            {fileContent.type === 'unsupported' && (
+                              <div className="flex items-center justify-center h-full p-8">
+                                <div className="text-center">
+                                  <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                                  <p className="text-sm text-gray-600">Unsupported file type</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center h-full p-8">
+                          <div className="text-center">
+                            <Eye className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                            <p className="text-sm text-gray-600">Loading preview...</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (

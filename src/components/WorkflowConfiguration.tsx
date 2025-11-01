@@ -215,21 +215,117 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
 
   };
 
-  const handleSaveWorkflow = () => {
-    if (!workflowName.trim()) {
+  const handleSaveWorkflow = async () => {
+    if (!user) return;
+
+    // If this is a document submission (has document title and files), create tracking card
+    if (documentTitle && (uploadedFiles.length > 0 || selectedRecipients.length > 0)) {
+      // Load user profile from Personal Information
+      const userProfile = JSON.parse(localStorage.getItem('user-profile') || '{}');
+      const currentUserName = userProfile.name || user?.fullName || user?.name || 'User';
+      const currentUserDept = userProfile.department || user?.department || 'Department';
+      const currentUserDesignation = userProfile.designation || user?.role || 'Employee';
+      
+      // Convert files to base64 for localStorage storage
+      const convertFilesToBase64 = async (files: File[]) => {
+        const filePromises = files.map(file => {
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              resolve({
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                data: reader.result // base64 data URL
+              });
+            };
+            reader.readAsDataURL(file);
+          });
+        });
+        return Promise.all(filePromises);
+      };
+      
+      // Serialize uploaded files
+      const serializedFiles = uploadedFiles.length > 0 
+        ? await convertFilesToBase64(uploadedFiles)
+        : [];
+      
+      // Create tracking card data following the exact same layout as "New Course Proposal – Data Science"
+      const trackingCard = {
+        id: `DOC-${Date.now()}`,
+        title: documentTitle,
+        type: documentTypes[0]?.charAt(0).toUpperCase() + documentTypes[0]?.slice(1) || 'Document',
+        submittedBy: currentUserName,
+        submittedByDepartment: currentUserDept,
+        submittedByDesignation: currentUserDesignation,
+        submittedDate: new Date().toISOString().split('T')[0],
+        status: selectedRecipients.length > 0 ? 'pending' : 'approved', // Pending if has recipients, approved if bypass only
+        priority: documentPriority === 'normal' ? 'Normal Priority' : 
+                 documentPriority === 'medium' ? 'Medium Priority' :
+                 documentPriority === 'high' ? 'High Priority' : 'Urgent Priority',
+        workflow: {
+          currentStep: 'Complete',
+          progress: 100,
+          steps: [
+            { name: 'Submission', status: 'completed', assignee: currentUserName, completedDate: new Date().toISOString().split('T')[0] },
+            { name: 'Bypass Approval', status: 'completed', assignee: 'System', completedDate: new Date().toISOString().split('T')[0] }
+          ]
+        },
+        requiresSignature: true,
+        signedBy: [currentUserName],
+        description: documentDescription,
+        files: serializedFiles,
+        comments: []
+      };
+      
+      // Save to localStorage for tracking
+      const existingCards = JSON.parse(localStorage.getItem('submitted-documents') || '[]');
+      existingCards.unshift(trackingCard);
+      localStorage.setItem('submitted-documents', JSON.stringify(existingCards));
+      
+      // Create approval card for Approval Center following "Budget Request – Lab Equipment" layout
+      if (selectedRecipients.length > 0) {
+        const approvalCard = {
+          id: trackingCard.id,
+          title: documentTitle,
+          type: documentTypes[0]?.charAt(0).toUpperCase() + documentTypes[0]?.slice(1) || 'Document',
+          submitter: currentUserName,
+          submittedDate: new Date().toISOString().split('T')[0],
+          status: 'pending',
+          priority: documentPriority,
+          description: documentDescription,
+          files: serializedFiles
+        };
+        
+        // Save to localStorage for approvals
+        const existingApprovals = JSON.parse(localStorage.getItem('pending-approvals') || '[]');
+        existingApprovals.unshift(approvalCard);
+        localStorage.setItem('pending-approvals', JSON.stringify(existingApprovals));
+        
+        // Dispatch event for real-time updates
+        window.dispatchEvent(new CustomEvent('document-approval-created'));
+      }
+      
       toast({
-        title: 'Validation Error',
-        description: 'Workflow name is required',
-        variant: 'destructive'
+        title: "Bypass Document Submitted",
+        description: `Your document has been submitted with bypass approval and is now visible in Track Documents${selectedRecipients.length > 0 ? ' and Approval Center' : ''}.`,
       });
+      
+      // Reset form
+      setDocumentTitle('');
+      setDocumentTypes([]);
+      setUploadedFiles([]);
+      setSelectedRecipients([]);
+      setDocumentDescription('');
+      setDocumentPriority('normal');
+      setDocumentAssignments({});
+      
       return;
     }
 
-    if (!user) return;
-
     const workflow: WorkflowRoute = {
       id: selectedWorkflow?.id || `workflow-${Date.now()}`,
-      name: workflowName,
+      name: documentTitle || 'Bypass Workflow',
       description: workflowDescription,
       type: workflowType,
       documentType: 'general',
@@ -592,23 +688,8 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
             {(isEditing || hideWorkflowsTab) ? (
               /* Workflow Editor */
               <Card>
-                <CardHeader>
-                  <CardTitle>
-                    {isCreating ? 'Create New Workflow' : 'Edit Workflow'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <label className="text-sm font-medium">Workflow Name</label>
-                      <Input
-                        value={workflowName}
-                        onChange={(e) => setWorkflowName(e.target.value)}
-                        placeholder="Enter workflow name"
-                        className="mt-1"
-                      />
-                    </div>
-                    
+                <CardContent className="pt-6 space-y-4">
+                  <div>
                     <div>
                       <label className="text-sm font-medium">Routing Type</label>
                       <Select value={workflowType} onValueChange={(value: 'sequential' | 'parallel' | 'reverse' | 'bidirectional') => setWorkflowType(value as any)}>
@@ -871,7 +952,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
                       Cancel
                     </Button>
                     <Button
-                      onClick={() => {
+onClick={async () => {
                         // Check if circular is selected and watermark is needed
                         if (documentTypes.includes('circular')) {
                           const submissionData = {
@@ -887,7 +968,7 @@ export const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({ cl
                           setShowWatermarkModal(true);
                           return;
                         }
-                        handleSaveWorkflow();
+                        await handleSaveWorkflow();
                       }}
                       variant="default"
                       className="font-bold animate-pulse bg-green-600 hover:bg-green-700 text-white"
